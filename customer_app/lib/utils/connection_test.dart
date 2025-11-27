@@ -16,10 +16,10 @@ class ConnectionTest {
 
     if (isConnected) {
       print('✅ All tests passed! Backend is accessible.');
-      _showSuccessDialog(context);
+      if (context.mounted) _showSuccessDialog(context);
     } else {
       print('❌ Connection test failed. Check the troubleshooting steps above.');
-      _showErrorDialog(context);
+      if (context.mounted) _showErrorDialog(context);
     }
   }
 

@@ -14,8 +14,12 @@ class AppConfig {
 
   // Debug method to check current API URL
   static void printCurrentApiUrl() {
-    print('🔗 Current API Base URL: $apiBaseUrl');
-    print('🌐 Platform: ${kIsWeb ? 'Web' : Platform.isAndroid ? 'Android' : Platform.isIOS ? 'iOS' : 'Other'}');
+    // Only print in debug mode
+    assert(() {
+      print('🔗 Current API Base URL: $apiBaseUrl');
+      print('🌐 Platform: ${kIsWeb ? 'Web' : Platform.isAndroid ? 'Android' : Platform.isIOS ? 'iOS' : 'Other'}');
+      return true;
+    }());
   }
 
   // Test connection to backend
@@ -27,24 +31,36 @@ class AppConfig {
       // Health endpoint is at root level, not under /api
       final baseUrl = apiBaseUrl.replaceAll('/api', '');
       final uri = Uri.parse('$baseUrl/health');
-      print('🔍 Testing connection to: $uri');
+      assert(() {
+        print('🔍 Testing connection to: $uri');
+        return true;
+      }());
 
       final request = await client.getUrl(uri);
       final response = await request.close();
 
       if (response.statusCode == 200) {
-        print('✅ Backend connection successful: ${response.statusCode}');
+        assert(() {
+          print('✅ Backend connection successful: ${response.statusCode}');
+          return true;
+        }());
         return true;
       } else {
-        print('❌ Backend responded with status: ${response.statusCode}');
+        assert(() {
+          print('❌ Backend responded with status: ${response.statusCode}');
+          return true;
+        }());
         return false;
       }
     } catch (e) {
-      print('❌ Connection failed: $e');
-      print('💡 Troubleshooting steps:');
-      print('   1. Check if production backend is running: https://indulink-1.onrender.com/health');
-      print('   2. Verify internet connection');
-      print('   3. Check if Render service is active');
+      assert(() {
+        print('❌ Connection failed: $e');
+        print('💡 Troubleshooting steps:');
+        print('   1. Check if production backend is running: https://indulink-1.onrender.com/health');
+        print('   2. Verify internet connection');
+        print('   3. Check if Render service is active');
+        return true;
+      }());
       return false;
     }
   }
