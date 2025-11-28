@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_constants.dart';
@@ -119,42 +119,42 @@ class OrderCard extends StatelessWidget {
 
     switch (status) {
       case OrderStatus.pending:
-        backgroundColor = AppColors.warning.withOpacity(0.1);
+        backgroundColor = AppColors.warning.withValues(alpha: 0.1);
         textColor = AppColors.warning;
         label = 'Pending';
         break;
       case OrderStatus.confirmed:
-        backgroundColor = AppColors.info.withOpacity(0.1);
+        backgroundColor = AppColors.info.withValues(alpha: 0.1);
         textColor = AppColors.info;
         label = 'Confirmed';
         break;
       case OrderStatus.processing:
-        backgroundColor = AppColors.primaryBlue.withOpacity(0.1);
+        backgroundColor = AppColors.primaryBlue.withValues(alpha: 0.1);
         textColor = AppColors.primaryBlue;
         label = 'Processing';
         break;
       case OrderStatus.shipped:
-        backgroundColor = Colors.orange.withOpacity(0.1);
+        backgroundColor = Colors.orange.withValues(alpha: 0.1);
         textColor = Colors.orange;
         label = 'Shipped';
         break;
       case OrderStatus.outForDelivery:
-        backgroundColor = Colors.purple.withOpacity(0.1);
+        backgroundColor = Colors.purple.withValues(alpha: 0.1);
         textColor = Colors.purple;
         label = 'Out for Delivery';
         break;
       case OrderStatus.delivered:
-        backgroundColor = AppColors.success.withOpacity(0.1);
+        backgroundColor = AppColors.success.withValues(alpha: 0.1);
         textColor = AppColors.success;
         label = 'Delivered';
         break;
       case OrderStatus.cancelled:
-        backgroundColor = AppColors.error.withOpacity(0.1);
+        backgroundColor = AppColors.error.withValues(alpha: 0.1);
         textColor = AppColors.error;
         label = 'Cancelled';
         break;
       case OrderStatus.refunded:
-        backgroundColor = Colors.grey.withOpacity(0.1);
+        backgroundColor = Colors.grey.withValues(alpha: 0.1);
         textColor = Colors.grey;
         label = 'Refunded';
         break;

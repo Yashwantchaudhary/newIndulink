@@ -25,7 +25,7 @@ class _ModernNotificationsScreenState
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // Load notifications on init
     Future.microtask(() {
       ref.read(notificationProvider.notifier).getNotifications();
@@ -89,30 +89,29 @@ class _ModernNotificationsScreenState
           ],
         ),
       ),
-      body: notificationState.isLoading && notificationState.notifications.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildNotificationsList(null),
-                _buildNotificationsList('order'),
-                _buildNotificationsList('rfq'),
-              ],
-            ),
+      body:
+          notificationState.isLoading && notificationState.notifications.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildNotificationsList(null),
+                    _buildNotificationsList('order'),
+                    _buildNotificationsList('rfq'),
+                  ],
+                ),
     );
   }
 
   Widget _buildNotificationsList(String? type) {
     final notificationState = ref.watch(notificationProvider);
-    
+
     final filteredNotifications = type == null
         ? notificationState.notifications
-        : notificationState.notifications
-            .where((n) => n.type == type)
-            .toList();
+        : notificationState.notifications.where((n) => n.type == type).toList();
 
     if (filteredNotifications.isEmpty) {
-      return EmptyStateWidget(
+      return const EmptyStateWidget(
         icon: Icons.notifications_none,
         title: 'No Notifications',
         message: 'You\'re all caught up!',
@@ -143,7 +142,7 @@ class _ModernNotificationsScreenState
       direction: DismissDirection.endToStart,
       background: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.error,
           borderRadius: AppConstants.borderRadiusMedium,
         ),
@@ -156,7 +155,7 @@ class _ModernNotificationsScreenState
           await ref
               .read(notificationProvider.notifier)
               .deleteNotification(notification.id);
-          
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -183,8 +182,8 @@ class _ModernNotificationsScreenState
               ? null
               : LinearGradient(
                   colors: [
-                    AppColors.primaryBlue.withOpacity(0.05),
-                    AppColors.secondaryPurple.withOpacity(0.05),
+                    AppColors.primaryBlue.withValues(alpha: 0.05),
+                    AppColors.secondaryPurple.withValues(alpha: 0.05),
                   ],
                 ),
           color: notification.isRead
@@ -194,12 +193,13 @@ class _ModernNotificationsScreenState
           border: Border.all(
             color: notification.isRead
                 ? (isDark ? AppColors.darkBorder : AppColors.lightBorder)
-                : AppColors.primaryBlue.withOpacity(0.3),
+                : AppColors.primaryBlue.withValues(alpha: 0.3),
             width: notification.isRead ? 1 : 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: (isDark ? Colors.black : Colors.grey).withOpacity(0.06),
+              color:
+                  (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.06),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -224,7 +224,7 @@ class _ModernNotificationsScreenState
                       boxShadow: [
                         BoxShadow(
                           color: _getNotificationColor(notification.type)
-                              .withOpacity(0.3),
+                              .withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -275,7 +275,7 @@ class _ModernNotificationsScreenState
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.access_time,
                               size: 14,
                               color: AppColors.lightTextSecondary,
@@ -347,7 +347,7 @@ class _ModernNotificationsScreenState
       case 'quote':
       case 'quote_accepted':
         return LinearGradient(
-          colors: [AppColors.success, AppColors.success.withOpacity(0.7)],
+          colors: [AppColors.success, AppColors.success.withValues(alpha: 0.7)],
         );
       case 'promotion':
         return AppColors.accentGradient;
@@ -357,7 +357,7 @@ class _ModernNotificationsScreenState
         return LinearGradient(
           colors: [
             AppColors.lightTextSecondary,
-            AppColors.lightTextSecondary.withOpacity(0.7)
+            AppColors.lightTextSecondary.withValues(alpha: 0.7)
           ],
         );
       default:
@@ -397,7 +397,7 @@ class _ModernNotificationsScreenState
     // Handle navigation based on notification type and data
     if (notification.data != null) {
       final data = notification.data!;
-      
+
       if (data.containsKey('orderId')) {
         // Navigate to order details
         if (mounted) {
@@ -426,7 +426,7 @@ class _ModernNotificationsScreenState
   void _markAllAsRead() async {
     try {
       await ref.read(notificationProvider.notifier).markAllAsRead();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

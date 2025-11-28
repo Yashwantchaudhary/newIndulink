@@ -42,8 +42,8 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
                       top: AppConstants.spacing16,
                       bottom: AppConstants.spacing16,
                     ),
-                    itemCount: orderState.orders.length +
-                        (orderState.hasMore ? 1 : 0),
+                    itemCount:
+                        orderState.orders.length + (orderState.hasMore ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index == orderState.orders.length) {
                         // Load more indicator
@@ -88,7 +88,7 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
 
   Widget _buildEmptyState(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Center(
       child: Padding(
         padding: AppConstants.paddingPage,

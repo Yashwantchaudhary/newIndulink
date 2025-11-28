@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../services/analytics_service.dart';
 import '../models/analytics_models.dart';
@@ -222,7 +221,7 @@ class ExportNotifier extends _$ExportNotifier {
     required String endDate,
   }) async {
     state = ExportState(status: ExportStatus.loading);
-    
+
     try {
       final service = ref.read(analyticsServiceProvider);
       final file = await service.exportCSV(
@@ -230,7 +229,7 @@ class ExportNotifier extends _$ExportNotifier {
         startDate: startDate,
         endDate: endDate,
       );
-      
+
       state = ExportState(
         status: ExportStatus.success,
         file: file,
@@ -245,5 +244,47 @@ class ExportNotifier extends _$ExportNotifier {
 
   void reset() {
     state = ExportState(status: ExportStatus.idle);
+  }
+}
+
+// Predictive Insights Provider
+@riverpod
+class PredictiveInsightsNotifier extends _$PredictiveInsightsNotifier {
+  @override
+  Future<PredictiveInsights?> build() async {
+    return null;
+  }
+
+  Future<void> fetchPredictiveInsights({int period = 30}) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final service = ref.read(analyticsServiceProvider);
+      return await service.getPredictiveInsights(period: period);
+    });
+  }
+
+  void reset() {
+    state = const AsyncValue.data(null);
+  }
+}
+
+// User Segmentation Provider
+@riverpod
+class UserSegmentationNotifier extends _$UserSegmentationNotifier {
+  @override
+  Future<UserSegmentation?> build() async {
+    return null;
+  }
+
+  Future<void> fetchUserSegmentation() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final service = ref.read(analyticsServiceProvider);
+      return await service.getUserSegmentation();
+    });
+  }
+
+  void reset() {
+    state = const AsyncValue.data(null);
   }
 }

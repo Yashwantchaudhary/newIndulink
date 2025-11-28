@@ -90,11 +90,31 @@ class AnalyticsService {
     return response;
   }
 
+  /// Get predictive insights and trend analysis
+  /// [period] - number of days to analyze (default 30)
+  Future<PredictiveInsights> getPredictiveInsights({int period = 30}) async {
+    final response = await _apiClient.get(
+      '/dashboard/analytics/predictive-insights',
+      queryParameters: {'period': period.toString()},
+    );
+
+    return PredictiveInsights.fromJson(response['data']);
+  }
+
+  /// Get user segmentation analytics
+  /// Only available for suppliers and admins
+  Future<UserSegmentation> getUserSegmentation() async {
+    final response = await _apiClient.get(
+      '/dashboard/analytics/user-segmentation',
+    );
+
+    return UserSegmentation.fromJson(response['data']);
+  }
+
   /// Export analytics data as PDF
-  /// [reportType] can be 'sales' or 'products'
+  /// [reportType] can be 'sales', 'products', or 'customers'
   /// [startDate] and [endDate] in format 'YYYY-MM-DD'
   /// Returns the downloaded file path
-  /// Note: Currently not implemented on backend
   Future<File> exportPDF({
     required String reportType,
     required String startDate,

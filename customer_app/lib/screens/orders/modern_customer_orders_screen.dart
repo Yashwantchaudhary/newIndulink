@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -71,7 +70,7 @@ class _ModernCustomerOrdersScreenState
                           Text(
                             'Track and manage your orders',
                             style: theme.textTheme.bodyLarge?.copyWith(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                             ),
                           ),
                         ],
@@ -85,7 +84,7 @@ class _ModernCustomerOrdersScreenState
                 indicatorColor: Colors.white,
                 indicatorWeight: 3,
                 labelColor: Colors.white,
-                unselectedLabelColor: Colors.white.withOpacity(0.7),
+                unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
                 tabs: const [
                   Tab(text: 'All'),
                   Tab(text: 'Active'),
@@ -119,8 +118,7 @@ class _ModernCustomerOrdersScreenState
         items: 2 + (index % 3),
         total: 5000 + (index * 750),
         date: DateTime.now().subtract(Duration(days: index * 2)),
-        estimatedDelivery:
-            DateTime.now().add(Duration(days: 3 + (index % 5))),
+        estimatedDelivery: DateTime.now().add(Duration(days: 3 + (index % 5))),
       ),
     );
 
@@ -155,23 +153,23 @@ class _ModernCustomerOrdersScreenState
           colors: isDark
               ? [
                   AppColors.darkSurface,
-                  AppColors.darkSurface.withOpacity(0.95),
+                  AppColors.darkSurface.withValues(alpha: 0.95),
                 ]
               : [
                   AppColors.lightSurface,
-                  AppColors.lightSurface.withOpacity(0.98),
+                  AppColors.lightSurface.withValues(alpha: 0.98),
                 ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: AppConstants.borderRadiusLarge,
         border: Border.all(
-          color: _getStatusColor(order.status).withOpacity(0.3),
+          color: _getStatusColor(order.status).withValues(alpha: 0.3),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: _getStatusColor(order.status).withOpacity(0.1),
+            color: _getStatusColor(order.status).withValues(alpha: 0.1),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -196,13 +194,15 @@ class _ModernCustomerOrdersScreenState
                         gradient: LinearGradient(
                           colors: [
                             _getStatusColor(order.status),
-                            _getStatusColor(order.status).withOpacity(0.7),
+                            _getStatusColor(order.status)
+                                .withValues(alpha: 0.7),
                           ],
                         ),
                         borderRadius: AppConstants.borderRadiusSmall,
                         boxShadow: [
                           BoxShadow(
-                            color: _getStatusColor(order.status).withOpacity(0.3),
+                            color: _getStatusColor(order.status)
+                                .withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -244,7 +244,8 @@ class _ModernCustomerOrdersScreenState
                   Container(
                     padding: AppConstants.paddingAll12,
                     decoration: BoxDecoration(
-                      color: _getStatusColor(order.status).withOpacity(0.1),
+                      color:
+                          _getStatusColor(order.status).withValues(alpha: 0.1),
                       borderRadius: AppConstants.borderRadiusSmall,
                     ),
                     child: Row(
@@ -459,8 +460,8 @@ class _ModernCustomerOrdersScreenState
           'Processing', 'Preparing your items', order.status != 'pending'),
       _TimelineStage('Shipped', 'Order is on the way',
           order.status == 'shipped' || order.status == 'delivered'),
-      _TimelineStage(
-          'Delivered', 'Order delivered successfully', order.status == 'delivered'),
+      _TimelineStage('Delivered', 'Order delivered successfully',
+          order.status == 'delivered'),
     ];
 
     return Column(
@@ -487,7 +488,7 @@ class _ModernCustomerOrdersScreenState
                 boxShadow: stage.isCompleted
                     ? [
                         BoxShadow(
-                          color: AppColors.success.withOpacity(0.3),
+                          color: AppColors.success.withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -510,7 +511,8 @@ class _ModernCustomerOrdersScreenState
                   stage.title,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: stage.isCompleted ? null : AppColors.lightTextTertiary,
+                    color:
+                        stage.isCompleted ? null : AppColors.lightTextTertiary,
                   ),
                 ),
                 const SizedBox(height: 4),

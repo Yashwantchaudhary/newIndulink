@@ -108,14 +108,15 @@ class _PremiumLoyaltyScreenState extends ConsumerState<PremiumLoyaltyScreen>
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(30),
                             border: Border.all(color: Colors.white, width: 2),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.star, color: Colors.amber[300], size: 24),
+                              Icon(Icons.star,
+                                  color: Colors.amber[300], size: 24),
                               const SizedBox(width: 8),
                               const Text(
                                 'Gold Member',
@@ -148,13 +149,15 @@ class _PremiumLoyaltyScreenState extends ConsumerState<PremiumLoyaltyScreen>
                   const SizedBox(height: 24),
 
                   // Quick Actions
-                  SectionHeader(title: 'Earn More Points', icon: Icons.add_circle),
+                  const SectionHeader(
+                      title: 'Earn More Points', icon: Icons.add_circle),
                   const SizedBox(height: 12),
                   _buildQuickActions(isDark),
                   const SizedBox(height: 24),
 
                   // Achievements/Badges
-                  SectionHeader(title: 'Your Achievements', icon: Icons.emoji_events),
+                  const SectionHeader(
+                      title: 'Your Achievements', icon: Icons.emoji_events),
                   const SizedBox(height: 12),
                   _buildAchievements(isDark, theme),
                   const SizedBox(height: 24),
@@ -171,7 +174,8 @@ class _PremiumLoyaltyScreenState extends ConsumerState<PremiumLoyaltyScreen>
                   const SizedBox(height: 24),
 
                   // Points History
-                  SectionHeader(title: 'Recent Activity', icon: Icons.history),
+                  const SectionHeader(
+                      title: 'Recent Activity', icon: Icons.history),
                   const SizedBox(height: 12),
                   _buildPointsHistory(isDark, theme),
                 ],
@@ -186,20 +190,20 @@ class _PremiumLoyaltyScreenState extends ConsumerState<PremiumLoyaltyScreen>
   Widget _buildTierProgress(ThemeData theme, bool isDark) {
     const currentPoints = 2450;
     const nextTierPoints = 5000;
-    final progress = currentPoints / nextTierPoints;
+    const progress = currentPoints / nextTierPoints;
 
     return Container(
       padding: AppConstants.paddingAll20,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primaryBlue.withOpacity(0.1),
-            AppColors.secondaryPurple.withOpacity(0.1),
+            AppColors.primaryBlue.withValues(alpha: 0.1),
+            AppColors.secondaryPurple.withValues(alpha: 0.1),
           ],
         ),
         borderRadius: AppConstants.borderRadiusLarge,
         border: Border.all(
-          color: AppColors.primaryBlue.withOpacity(0.3),
+          color: AppColors.primaryBlue.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -258,7 +262,9 @@ class _PremiumLoyaltyScreenState extends ConsumerState<PremiumLoyaltyScreen>
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: achieved ? color.withOpacity(0.2) : Colors.grey.withOpacity(0.1),
+            color: achieved
+                ? color.withValues(alpha: 0.2)
+                : Colors.grey.withValues(alpha: 0.1),
             shape: BoxShape.circle,
             border: Border.all(
               color: achieved ? color : Colors.grey,
@@ -304,13 +310,13 @@ class _PremiumLoyaltyScreenState extends ConsumerState<PremiumLoyaltyScreen>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppColors.primaryBlue.withOpacity(0.1),
-                AppColors.accentOrange.withOpacity(0.05),
+                AppColors.primaryBlue.withValues(alpha: 0.1),
+                AppColors.accentOrange.withValues(alpha: 0.05),
               ],
             ),
             borderRadius: AppConstants.borderRadiusMedium,
             border: Border.all(
-              color: AppColors.primaryBlue.withOpacity(0.2),
+              color: AppColors.primaryBlue.withValues(alpha: 0.2),
             ),
           ),
           child: Material(
@@ -401,7 +407,9 @@ class _PremiumLoyaltyScreenState extends ConsumerState<PremiumLoyaltyScreen>
               color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
               borderRadius: AppConstants.borderRadiusMedium,
               border: Border.all(
-                color: earned ? color.withOpacity(0.3) : Colors.grey.withOpacity(0.2),
+                color: earned
+                    ? color.withValues(alpha: 0.3)
+                    : Colors.grey.withValues(alpha: 0.2),
                 width: 2,
               ),
             ),
@@ -411,7 +419,9 @@ class _PremiumLoyaltyScreenState extends ConsumerState<PremiumLoyaltyScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: earned ? color.withOpacity(0.2) : Colors.grey.withOpacity(0.1),
+                    color: earned
+                        ? color.withValues(alpha: 0.2)
+                        : Colors.grey.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -464,7 +474,7 @@ class _PremiumLoyaltyScreenState extends ConsumerState<PremiumLoyaltyScreen>
             borderRadius: AppConstants.borderRadiusMedium,
             border: Border.all(
               color: canRedeem
-                  ? AppColors.success.withOpacity(0.3)
+                  ? AppColors.success.withValues(alpha: 0.3)
                   : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
             ),
           ),
@@ -475,7 +485,8 @@ class _PremiumLoyaltyScreenState extends ConsumerState<PremiumLoyaltyScreen>
                 decoration: BoxDecoration(
                   gradient: canRedeem
                       ? AppColors.successGradient
-                      : LinearGradient(colors: [Colors.grey, Colors.grey.shade400]),
+                      : LinearGradient(
+                          colors: [Colors.grey, Colors.grey.shade400]),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -521,7 +532,11 @@ class _PremiumLoyaltyScreenState extends ConsumerState<PremiumLoyaltyScreen>
 
   Widget _buildPointsHistory(bool isDark, ThemeData theme) {
     final history = [
-      {'action': 'Purchase Order #1234', 'points': '+50', 'date': '2 hours ago'},
+      {
+        'action': 'Purchase Order #1234',
+        'points': '+50',
+        'date': '2 hours ago'
+      },
       {'action': 'Daily Check-in', 'points': '+5', 'date': 'Today'},
       {'action': 'Product Review', 'points': '+20', 'date': 'Yesterday'},
       {'action': 'Redeemed Coupon', 'points': '-500', 'date': '3 days ago'},

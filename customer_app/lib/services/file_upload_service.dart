@@ -19,7 +19,7 @@ class FileUploadService {
 
       final uri = Uri.parse('${ApiClient.baseUrl}/rfq/upload');
       final request = http.MultipartRequest('POST', uri);
-      
+
       // Add authorization header
       request.headers['Authorization'] = 'Bearer $token';
 
@@ -67,7 +67,7 @@ class FileUploadService {
 
       final uri = Uri.parse('${ApiClient.baseUrl}/messages/upload');
       final request = http.MultipartRequest('POST', uri);
-      
+
       request.headers['Authorization'] = 'Bearer $token';
 
       for (var file in files) {
@@ -110,7 +110,7 @@ class FileUploadService {
 
       final uri = Uri.parse('${ApiClient.baseUrl}/products/upload');
       final request = http.MultipartRequest('POST', uri);
-      
+
       request.headers['Authorization'] = 'Bearer $token';
 
       final stream = http.ByteStream(file.openRead());

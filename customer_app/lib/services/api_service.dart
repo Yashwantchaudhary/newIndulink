@@ -8,13 +8,13 @@ import '../config/app_config.dart';
 class ApiService {
   late final Dio _dio;
   static ApiService? _instance;
-  
+
   factory ApiService() {
     print('ApiService: Factory called');
     _instance ??= ApiService._internal();
     return _instance!;
   }
-  
+
   ApiService._internal() {
     print('ApiService: Initializing with baseUrl: ${AppConfig.apiBaseUrl}');
     _dio = Dio(
@@ -43,23 +43,31 @@ class ApiService {
       httpClient.badCertificateCallback = (cert, host, port) => true;
       // Increase timeout for local network requests
       httpClient.connectionTimeout = const Duration(seconds: 10);
-      _dio.httpClientAdapter = IOHttpClientAdapter(createHttpClient: () => httpClient);
+      _dio.httpClientAdapter =
+          IOHttpClientAdapter(createHttpClient: () => httpClient);
     }
-    
+
     // Add interceptors (simplified for debugging)
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        print('ApiService: Interceptor - Request: ${options.method} ${options.path}');
+        print(
+            'ApiService: Interceptor - Request: ${options.method} ${options.path}');
         print('ApiService: Interceptor - Headers: ${options.headers}');
+
         // Add authorization token
         final token = await _getToken();
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
+
+        // Add default language header (will be overridden by specific requests if needed)
+        options.headers['Accept-Language'] = 'en';
+
         return handler.next(options);
       },
       onError: (error, handler) async {
-        print('ApiService: Interceptor - Error: ${error.type} ${error.message}');
+        print(
+            'ApiService: Interceptor - Error: ${error.type} ${error.message}');
         // Handle 401 errors (token expired)
         if (error.response?.statusCode == 401) {
           // Try to refresh token
@@ -73,24 +81,30 @@ class ApiService {
       },
     ));
   }
-  
+
+  // Method to update language header dynamically
+  void setLanguage(String languageCode) {
+    _dio.options.headers['Accept-Language'] = languageCode;
+    print('ApiService: Language updated to: $languageCode');
+  }
+
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(AppConfig.keyAccessToken);
   }
-  
+
   Future<bool> _refreshToken() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final refreshToken = prefs.getString(AppConfig.keyRefreshToken);
-      
+
       if (refreshToken == null) return false;
-      
+
       final response = await _dio.post(
         '/auth/refresh',
         data: {'refreshToken': refreshToken},
       );
-      
+
       if (response.statusCode == 200) {
         final accessToken = response.data['data']['accessToken'];
         await prefs.setString(AppConfig.keyAccessToken, accessToken);
@@ -101,7 +115,7 @@ class ApiService {
     }
     return false;
   }
-  
+
   Future<Response<dynamic>> _retry(RequestOptions requestOptions) async {
     final options = Options(
       method: requestOptions.method,
@@ -114,7 +128,7 @@ class ApiService {
       options: options,
     );
   }
-  
+
   // GET request
   Future<Response> get(
     String path, {
@@ -126,7 +140,7 @@ class ApiService {
       rethrow;
     }
   }
-  
+
   // POST request
   Future<Response> post(
     String path, {
@@ -163,7 +177,7 @@ class ApiService {
       rethrow;
     }
   }
-  
+
   // PUT request
   Future<Response> put(
     String path, {
@@ -180,7 +194,7 @@ class ApiService {
       rethrow;
     }
   }
-  
+
   // DELETE request
   Future<Response> delete(
     String path, {
@@ -192,7 +206,7 @@ class ApiService {
       rethrow;
     }
   }
-  
+
   // Upload file
   Future<Response> uploadFile(
     String path,

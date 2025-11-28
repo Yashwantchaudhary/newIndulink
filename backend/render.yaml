@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: indulink-backend
+    plan: free
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        value: mongodb+srv://yashwantchaudhary_db_user:Vilgax%40%23%24123@cluster0.r0gzvfw.mongodb.net/indulink?retryWrites=true&w=majority&appName=Cluster0
+      - key: JWT_SECRET
+        value: indulink-super-secret-jwt-key-2024-change-this
+      - key: JWT_REFRESH_SECRET
+        value: indulink-super-secret-refresh-key-2024-change-this
+      - key: JWT_EXPIRE
+        value: 24h
+      - key: JWT_REFRESH_EXPIRE
+        value: 7d
+      - key: ALLOWED_ORIGINS
+        value: https://indulink-1.onrender.com,https://indulink.com,https://www.indulink.com,http://localhost:3000
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100
+      - key: UPLOAD_DIR
+        value: uploads
+      - key: MAX_FILE_SIZE
+        value: 5242880

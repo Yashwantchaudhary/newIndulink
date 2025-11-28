@@ -113,7 +113,7 @@ class SalesLineChart extends StatelessWidget {
               ),
               belowBarData: BarAreaData(
                 show: true,
-                color: lineColor.withOpacity(0.1),
+                color: lineColor.withValues(alpha: 0.1),
               ),
             ),
           ],
@@ -125,7 +125,7 @@ class SalesLineChart extends StatelessWidget {
                   final date = data[spot.x.toInt()].date;
                   final revenue = spot.y;
                   final orders = data[spot.x.toInt()].orders;
-                  
+
                   return LineTooltipItem(
                     '${_formatDateFull(date)}\n',
                     const TextStyle(

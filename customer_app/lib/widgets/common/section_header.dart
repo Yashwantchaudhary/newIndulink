@@ -36,16 +36,16 @@ class SectionHeader extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 4),
                   Text(
                     subtitle!,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.neutral600,
-                    ),
+                          color: AppColors.neutral600,
+                        ),
                   ),
                 ],
               ],
@@ -56,7 +56,7 @@ class SectionHeader extends StatelessWidget {
               onPressed: onViewAll,
               child: Text(
                 viewAllText!,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.primaryBlue,
                   fontWeight: FontWeight.w600,
                 ),

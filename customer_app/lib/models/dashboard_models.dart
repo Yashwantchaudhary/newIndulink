@@ -1,4 +1,5 @@
 /// Dashboard data models for customer and supplier analytics
+library;
 
 class CustomerDashboardData {
   final CustomerStats stats;
@@ -211,7 +212,11 @@ class TopProduct {
       '_id': {
         '_id': productId,
         'title': title,
-        'images': image != null ? [{'url': image}] : [],
+        'images': image != null
+            ? [
+                {'url': image}
+              ]
+            : [],
         'price': price,
       },
       'totalQuantity': totalQuantity,
@@ -320,10 +325,12 @@ class OrderSummary {
           ? DateTime.parse(json['createdAt'] as String)
           : DateTime.now(),
       customerName: customerData != null
-          ? '${customerData['firstName'] ?? ''} ${customerData['lastName'] ?? ''}'.trim()
+          ? '${customerData['firstName'] ?? ''} ${customerData['lastName'] ?? ''}'
+              .trim()
           : null,
       supplierName: supplierData != null
-          ? '${supplierData['firstName'] ?? ''} ${supplierData['lastName'] ?? ''}'.trim()
+          ? '${supplierData['firstName'] ?? ''} ${supplierData['lastName'] ?? ''}'
+              .trim()
           : null,
       businessName: supplierData?['businessName'] as String?,
       items: (json['items'] as List<dynamic>?)
@@ -376,8 +383,10 @@ class OrderItem {
     final firstImage = images?.isNotEmpty == true ? images![0] : null;
 
     return OrderItem(
-      productId: (productData?['_id'] as String?) ?? json['product'] as String? ?? '',
-      title: (productData?['title'] as String?) ?? snapshotData?['title'] as String?,
+      productId:
+          (productData?['_id'] as String?) ?? json['product'] as String? ?? '',
+      title: (productData?['title'] as String?) ??
+          snapshotData?['title'] as String?,
       image: firstImage is Map
           ? firstImage['url'] as String?
           : snapshotData?['image'] as String?,
@@ -397,6 +406,312 @@ class OrderItem {
       'quantity': quantity,
       'price': price,
       'subtotal': subtotal,
+    };
+  }
+}
+
+// ===== ADMIN/HOST DASHBOARD MODELS =====
+
+class AdminDashboardData {
+  final PlatformAnalytics platformAnalytics;
+  final AdminMetrics adminMetrics;
+  final List<UserSummary> recentUsers;
+  final List<OrderSummary> recentOrders;
+  final SystemHealth systemHealth;
+
+  AdminDashboardData({
+    required this.platformAnalytics,
+    required this.adminMetrics,
+    required this.recentUsers,
+    required this.recentOrders,
+    required this.systemHealth,
+  });
+
+  factory AdminDashboardData.fromJson(Map<String, dynamic> json) {
+    return AdminDashboardData(
+      platformAnalytics:
+          PlatformAnalytics.fromJson(json['platformAnalytics'] ?? {}),
+      adminMetrics: AdminMetrics.fromJson(json['adminMetrics'] ?? {}),
+      recentUsers: (json['recentUsers'] as List<dynamic>?)
+              ?.map((e) => UserSummary.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      recentOrders: (json['recentOrders'] as List<dynamic>?)
+              ?.map((e) => OrderSummary.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      systemHealth: SystemHealth.fromJson(json['systemHealth'] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'platformAnalytics': platformAnalytics.toJson(),
+      'adminMetrics': adminMetrics.toJson(),
+      'recentUsers': recentUsers.map((e) => e.toJson()).toList(),
+      'recentOrders': recentOrders.map((e) => e.toJson()).toList(),
+      'systemHealth': systemHealth.toJson(),
+    };
+  }
+}
+
+class PlatformAnalytics {
+  final double totalPlatformRevenue;
+  final int totalActiveUsers;
+  final int totalOrders;
+  final double averageOrderValue;
+  final double platformGrowthRate;
+
+  PlatformAnalytics({
+    required this.totalPlatformRevenue,
+    required this.totalActiveUsers,
+    required this.totalOrders,
+    required this.averageOrderValue,
+    required this.platformGrowthRate,
+  });
+
+  factory PlatformAnalytics.fromJson(Map<String, dynamic> json) {
+    return PlatformAnalytics(
+      totalPlatformRevenue:
+          (json['totalPlatformRevenue'] as num?)?.toDouble() ?? 0.0,
+      totalActiveUsers: (json['totalActiveUsers'] as num?)?.toInt() ?? 0,
+      totalOrders: (json['totalOrders'] as num?)?.toInt() ?? 0,
+      averageOrderValue: (json['averageOrderValue'] as num?)?.toDouble() ?? 0.0,
+      platformGrowthRate:
+          (json['platformGrowthRate'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'totalPlatformRevenue': totalPlatformRevenue,
+      'totalActiveUsers': totalActiveUsers,
+      'totalOrders': totalOrders,
+      'averageOrderValue': averageOrderValue,
+      'platformGrowthRate': platformGrowthRate,
+    };
+  }
+}
+
+class AdminMetrics {
+  final double totalCommissions;
+  final double platformFees;
+  final UserGrowthMetrics userGrowth;
+  final RevenueBreakdown revenueBreakdown;
+
+  AdminMetrics({
+    required this.totalCommissions,
+    required this.platformFees,
+    required this.userGrowth,
+    required this.revenueBreakdown,
+  });
+
+  factory AdminMetrics.fromJson(Map<String, dynamic> json) {
+    return AdminMetrics(
+      totalCommissions: (json['totalCommissions'] as num?)?.toDouble() ?? 0.0,
+      platformFees: (json['platformFees'] as num?)?.toDouble() ?? 0.0,
+      userGrowth: UserGrowthMetrics.fromJson(json['userGrowth'] ?? {}),
+      revenueBreakdown:
+          RevenueBreakdown.fromJson(json['revenueBreakdown'] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'totalCommissions': totalCommissions,
+      'platformFees': platformFees,
+      'userGrowth': userGrowth.toJson(),
+      'revenueBreakdown': revenueBreakdown.toJson(),
+    };
+  }
+}
+
+class UserGrowthMetrics {
+  final int newUsersThisMonth;
+  final int newUsersLastMonth;
+  final double growthRate;
+  final int totalSuppliers;
+  final int totalCustomers;
+
+  UserGrowthMetrics({
+    required this.newUsersThisMonth,
+    required this.newUsersLastMonth,
+    required this.growthRate,
+    required this.totalSuppliers,
+    required this.totalCustomers,
+  });
+
+  factory UserGrowthMetrics.fromJson(Map<String, dynamic> json) {
+    return UserGrowthMetrics(
+      newUsersThisMonth: (json['newUsersThisMonth'] as num?)?.toInt() ?? 0,
+      newUsersLastMonth: (json['newUsersLastMonth'] as num?)?.toInt() ?? 0,
+      growthRate: (json['growthRate'] as num?)?.toDouble() ?? 0.0,
+      totalSuppliers: (json['totalSuppliers'] as num?)?.toInt() ?? 0,
+      totalCustomers: (json['totalCustomers'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'newUsersThisMonth': newUsersThisMonth,
+      'newUsersLastMonth': newUsersLastMonth,
+      'growthRate': growthRate,
+      'totalSuppliers': totalSuppliers,
+      'totalCustomers': totalCustomers,
+    };
+  }
+}
+
+class RevenueBreakdown {
+  final double supplierRevenue;
+  final double platformRevenue;
+  final double commissionRevenue;
+  final double feeRevenue;
+
+  RevenueBreakdown({
+    required this.supplierRevenue,
+    required this.platformRevenue,
+    required this.commissionRevenue,
+    required this.feeRevenue,
+  });
+
+  factory RevenueBreakdown.fromJson(Map<String, dynamic> json) {
+    return RevenueBreakdown(
+      supplierRevenue: (json['supplierRevenue'] as num?)?.toDouble() ?? 0.0,
+      platformRevenue: (json['platformRevenue'] as num?)?.toDouble() ?? 0.0,
+      commissionRevenue: (json['commissionRevenue'] as num?)?.toDouble() ?? 0.0,
+      feeRevenue: (json['feeRevenue'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'supplierRevenue': supplierRevenue,
+      'platformRevenue': platformRevenue,
+      'commissionRevenue': commissionRevenue,
+      'feeRevenue': feeRevenue,
+    };
+  }
+}
+
+class UserSummary {
+  final String id;
+  final String firstName;
+  final String lastName;
+  final String email;
+  final String role;
+  final DateTime createdAt;
+  final bool isActive;
+
+  UserSummary({
+    required this.id,
+    required this.firstName,
+    required this.lastName,
+    required this.email,
+    required this.role,
+    required this.createdAt,
+    required this.isActive,
+  });
+
+  factory UserSummary.fromJson(Map<String, dynamic> json) {
+    return UserSummary(
+      id: json['_id'] as String? ?? '',
+      firstName: json['firstName'] as String? ?? '',
+      lastName: json['lastName'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      role: json['role'] as String? ?? 'customer',
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
+      isActive: json['isActive'] as bool? ?? true,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'firstName': firstName,
+      'lastName': lastName,
+      'email': email,
+      'role': role,
+      'createdAt': createdAt.toIso8601String(),
+      'isActive': isActive,
+    };
+  }
+
+  String get fullName => '$firstName $lastName';
+}
+
+class SystemHealth {
+  final String status;
+  final double uptime;
+  final int activeConnections;
+  final Map<String, ServiceStatus> services;
+
+  SystemHealth({
+    required this.status,
+    required this.uptime,
+    required this.activeConnections,
+    required this.services,
+  });
+
+  factory SystemHealth.fromJson(Map<String, dynamic> json) {
+    final servicesMap = <String, ServiceStatus>{};
+    if (json['services'] is Map) {
+      (json['services'] as Map<String, dynamic>).forEach((key, value) {
+        servicesMap[key] =
+            ServiceStatus.fromJson(value as Map<String, dynamic>);
+      });
+    }
+
+    return SystemHealth(
+      status: json['status'] as String? ?? 'unknown',
+      uptime: (json['uptime'] as num?)?.toDouble() ?? 0.0,
+      activeConnections: (json['activeConnections'] as num?)?.toInt() ?? 0,
+      services: servicesMap,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'uptime': uptime,
+      'activeConnections': activeConnections,
+      'services': services.map((key, value) => MapEntry(key, value.toJson())),
+    };
+  }
+}
+
+class ServiceStatus {
+  final String name;
+  final String status;
+  final String? message;
+  final DateTime? lastChecked;
+
+  ServiceStatus({
+    required this.name,
+    required this.status,
+    this.message,
+    this.lastChecked,
+  });
+
+  factory ServiceStatus.fromJson(Map<String, dynamic> json) {
+    return ServiceStatus(
+      name: json['name'] as String? ?? '',
+      status: json['status'] as String? ?? 'unknown',
+      message: json['message'] as String?,
+      lastChecked: json['lastChecked'] != null
+          ? DateTime.parse(json['lastChecked'] as String)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'status': status,
+      'message': message,
+      'lastChecked': lastChecked?.toIso8601String(),
     };
   }
 }

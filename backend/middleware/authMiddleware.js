@@ -68,4 +68,4 @@ exports.authorize = (...roles) => {
 // Convenience middleware for common roles
 exports.requireCustomer = exports.authorize('customer', 'admin');
 exports.requireSupplier = exports.authorize('supplier', 'admin');
-exports.requireAdmin = exports.authorize('admin');
+exports.requireAdmin = exports.authorize('admin'); // Only admin role allowed

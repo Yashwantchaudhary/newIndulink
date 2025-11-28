@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_constants.dart';
-import '../../widgets/common/premium_widgets.dart';
 import '../../providers/wishlist_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../models/product.dart';
@@ -56,7 +55,8 @@ class _ModernWishlistScreenState extends ConsumerState<ModernWishlistScreen> {
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [Colors.pink.shade400, Colors.pink.shade600],
@@ -64,7 +64,7 @@ class _ModernWishlistScreenState extends ConsumerState<ModernWishlistScreen> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.pink.withOpacity(0.3),
+                        color: Colors.pink.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -176,7 +176,8 @@ class _ModernWishlistScreenState extends ConsumerState<ModernWishlistScreen> {
                   builder: (BuildContext context) {
                     return AlertDialog(
                       title: const Text('Remove from Wishlist'),
-                      content: Text('Remove "${product.title}" from your wishlist?'),
+                      content:
+                          Text('Remove "${product.title}" from your wishlist?'),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
@@ -216,7 +217,7 @@ class _ModernWishlistScreenState extends ConsumerState<ModernWishlistScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.black : Colors.grey).withOpacity(0.1),
+            color: (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -295,7 +296,7 @@ class _ModernWishlistScreenState extends ConsumerState<ModernWishlistScreen> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.success.withOpacity(0.1),
+                                color: AppColors.success.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -313,7 +314,7 @@ class _ModernWishlistScreenState extends ConsumerState<ModernWishlistScreen> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.error.withOpacity(0.1),
+                                color: AppColors.error.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -352,7 +353,8 @@ class _ModernWishlistScreenState extends ConsumerState<ModernWishlistScreen> {
                             icon: const Icon(Icons.delete_outline),
                             color: AppColors.error,
                             style: IconButton.styleFrom(
-                              backgroundColor: AppColors.error.withOpacity(0.1),
+                              backgroundColor:
+                                  AppColors.error.withValues(alpha: 0.1),
                             ),
                           ),
                         ],

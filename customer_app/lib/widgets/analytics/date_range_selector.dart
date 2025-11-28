@@ -58,17 +58,17 @@ class DateRangeSelector extends StatelessWidget {
             ],
           ),
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Display selected range
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Theme.of(context).primaryColor.withOpacity(0.3),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
             ),
           ),
           child: Row(
@@ -83,9 +83,9 @@ class DateRangeSelector extends StatelessWidget {
               Text(
                 '${_formatDate(startDate)} - ${_formatDate(endDate)}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).primaryColor,
-                  fontWeight: FontWeight.w500,
-                ),
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
               ),
             ],
           ),
@@ -149,7 +149,7 @@ class _PresetChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(

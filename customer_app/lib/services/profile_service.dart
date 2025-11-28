@@ -8,7 +8,7 @@ class ProfileService {
   Future<User> getProfile() async {
     try {
       final response = await _apiService.get('/users/me');
-      
+
       if (response.statusCode == 200 && response.data['success'] == true) {
         return User.fromJson(response.data['data']);
       }
@@ -35,7 +35,7 @@ class ProfileService {
           if (businessName != null) 'businessName': businessName,
         },
       );
-      
+
       if (response.statusCode == 200 && response.data['success'] == true) {
         return User.fromJson(response.data['data']);
       }
@@ -53,7 +53,7 @@ class ProfileService {
         filePath,
         fieldName: 'avatar',
       );
-      
+
       if (response.statusCode == 200 && response.data['success'] == true) {
         return response.data['data']['profileImage'];
       }

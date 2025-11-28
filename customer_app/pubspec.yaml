@@ -68,9 +68,10 @@ dependencies:
   url_launcher: ^6.2.2
   path_provider: ^2.1.0
   permission_handler: ^11.0.0
+  connectivity_plus: ^6.0.1
   
   # Coming Soon Features
-  speech_to_text: ^6.6.0      # Voice search
+  speech_to_text: ^7.0.0      # Voice search
   mobile_scanner: ^3.5.5      # Barcode scanner
   share_plus: ^7.2.1          # Wishlist sharing
   
@@ -89,15 +90,39 @@ dependencies:
   firebase_messaging: ^15.0.0
   firebase_database: ^11.0.0
   cloud_firestore: ^5.0.0
+  firebase_remote_config: ^5.0.0
   google_sign_in: ^6.2.1
 
+  # Monitoring & Error Reporting
+  sentry_flutter: ^8.0.0
+
   # Notifications
-  flutter_local_notifications: ^16.3.3
+  flutter_local_notifications: ^17.0.0
+  flutter_launcher_icons: ^0.14.4
+  image: ^4.3.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+
+  # Testing Framework
+  mockito: ^5.4.4
+  bloc_test: ^9.1.4
+
+  # Test Utilities
+  build_runner: ^2.4.7
+  json_serializable: ^6.7.1
+
+  # Integration Testing
+  integration_test:
+    sdk: flutter
+
+  # Golden Tests
+  golden_toolkit: ^0.15.0
+
+  # Coverage
+  coverage: ^1.6.3
 
   
 # For information on the generic Dart part of this file, see the
@@ -146,3 +171,12 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# App Icon Configuration
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/icons/indulink_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#1a73e8"
+  adaptive_icon_foreground: "assets/icons/indulink_icon.png"

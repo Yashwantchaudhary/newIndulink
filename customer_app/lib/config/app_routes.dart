@@ -17,7 +17,7 @@ class AppRoutes {
   static const String customerNotifications = '/customer/notifications';
   static const String customerAddresses = '/customer/addresses';
   static const String customerPaymentMethods = '/customer/payment-methods';
- static const String customerRFQList = '/customer/rfq-list';
+  static const String customerRFQList = '/customer/rfq-list';
   static const String customerConversations = '/customer/conversations';
   static const String customerChat = '/customer/chat';
   static const String customerHelpCenter = '/customer/help-center';

@@ -24,7 +24,8 @@ class FirebaseAuthService {
     required String role,
   }) async {
     try {
-      final firebase_auth.UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      final firebase_auth.UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -58,9 +59,11 @@ class FirebaseAuthService {
   }
 
   // Sign in with email and password
-  Future<Map<String, dynamic>> signInWithEmail(String email, String password) async {
+  Future<Map<String, dynamic>> signInWithEmail(
+      String email, String password) async {
     try {
-      final firebase_auth.UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      final firebase_auth.UserCredential userCredential =
+          await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -97,12 +100,23 @@ class FirebaseAuthService {
       if (googleUser == null) {
         return {
           'success': false,
-          'message': 'Google sign in was cancelled',
+          'message': 'Google sign in was cancelled by user',
+          'errorCode': 'cancelled',
         };
       }
 
       // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      // Validate that we have the required tokens
+      if (googleAuth.accessToken == null || googleAuth.idToken == null) {
+        return {
+          'success': false,
+          'message': 'Failed to obtain authentication tokens from Google',
+          'errorCode': 'missing_tokens',
+        };
+      }
 
       // Create a new credential
       final credential = firebase_auth.GoogleAuthProvider.credential(
@@ -111,7 +125,8 @@ class FirebaseAuthService {
       );
 
       // Sign in to Firebase with the credential
-      final firebase_auth.UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final firebase_auth.UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
 
       // Check if user profile exists
       User? user = await _getUserProfile(userCredential.user!.uid);
@@ -121,7 +136,8 @@ class FirebaseAuthService {
         final displayName = userCredential.user!.displayName ?? '';
         final nameParts = displayName.split(' ');
         final firstName = nameParts.isNotEmpty ? nameParts.first : 'User';
-        final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+        final lastName =
+            nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
 
         user = User(
           id: userCredential.user!.uid,
@@ -144,9 +160,62 @@ class FirebaseAuthService {
         'firebaseUser': userCredential.user,
       };
     } catch (e) {
+      // Handle specific Firebase Auth exceptions
+      if (e is firebase_auth.FirebaseAuthException) {
+        String errorMessage;
+        String errorCode = e.code;
+
+        switch (e.code) {
+          case 'account-exists-with-different-credential':
+            errorMessage =
+                'An account already exists with the same email address but different sign-in credentials. Try signing in with a different method.';
+            break;
+          case 'invalid-credential':
+            errorMessage =
+                'The authentication credential is invalid or has expired.';
+            break;
+          case 'operation-not-allowed':
+            errorMessage = 'Google sign-in is not enabled for this project.';
+            break;
+          case 'user-disabled':
+            errorMessage = 'This user account has been disabled.';
+            break;
+          case 'user-not-found':
+            errorMessage = 'No user found with this Google account.';
+            break;
+          case 'wrong-password':
+            errorMessage = 'Invalid credentials provided.';
+            break;
+          case 'network-request-failed':
+            errorMessage =
+                'Network error occurred. Please check your internet connection.';
+            break;
+          case 'popup-closed-by-user':
+            errorMessage =
+                'Google sign-in popup was closed before completing authentication.';
+            break;
+          case 'popup-blocked':
+            errorMessage =
+                'Google sign-in popup was blocked by your browser. Please allow popups for this site.';
+            break;
+          default:
+            errorMessage =
+                'Google sign-in failed: ${e.message ?? 'Unknown error'}';
+        }
+
+        return {
+          'success': false,
+          'message': errorMessage,
+          'errorCode': errorCode,
+        };
+      }
+
+      // Handle other exceptions
       return {
         'success': false,
-        'message': 'Google sign in failed: ${e.toString()}',
+        'message':
+            'An unexpected error occurred during Google sign-in: ${e.toString()}',
+        'errorCode': 'unknown_error',
       };
     }
   }
@@ -171,7 +240,7 @@ class FirebaseAuthService {
       await _firestore.collection('users').doc(user.id).set(user.toJson());
     } catch (e) {
       print('Error creating user profile: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -181,7 +250,7 @@ class FirebaseAuthService {
       await _firestore.collection('users').doc(user.id).update(user.toJson());
     } catch (e) {
       print('Error updating user profile: $e');
-      throw e;
+      rethrow;
     }
   }
 

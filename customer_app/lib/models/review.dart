@@ -41,16 +41,19 @@ class Review {
       rating: json['rating'] ?? 5,
       title: json['title'],
       review: json['review'] ?? json['comment'] ?? '',
-      images: (json['images'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
-      helpful: (json['helpful'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      images:
+          (json['images'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
+      helpful: (json['helpful'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
       helpfulCount: json['helpfulCount'] ?? 0,
       isVerifiedPurchase: json['isVerifiedPurchase'] ?? true,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
-          : null,
+      updatedAt:
+          json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
     );
   }
 

@@ -81,7 +81,7 @@ class WishlistNotifier extends StateNotifier<WishlistState> {
   Future<bool> removeFromWishlist(String productId) async {
     // Store current items for rollback
     final previousItems = state.items;
-    
+
     // Optimistic update
     state = state.copyWith(
       items: state.items.where((p) => p.id != productId).toList(),
@@ -113,7 +113,7 @@ class WishlistNotifier extends StateNotifier<WishlistState> {
   Future<bool> clearWishlist() async {
     // Store current items for rollback
     final previousItems = state.items;
-    
+
     // Optimistic update
     state = state.copyWith(items: []);
 
@@ -141,6 +141,7 @@ class WishlistNotifier extends StateNotifier<WishlistState> {
 }
 
 // Provider
-final wishlistProvider = StateNotifierProvider<WishlistNotifier, WishlistState>((ref) {
+final wishlistProvider =
+    StateNotifierProvider<WishlistNotifier, WishlistState>((ref) {
   return WishlistNotifier();
 });

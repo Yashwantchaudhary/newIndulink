@@ -76,6 +76,7 @@ const orderSchema = new mongoose.Schema(
         status: {
             type: String,
             enum: [
+                'pending_approval',
                 'pending',
                 'confirmed',
                 'processing',
@@ -85,7 +86,7 @@ const orderSchema = new mongoose.Schema(
                 'cancelled',
                 'refunded',
             ],
-            default: 'pending',
+            default: 'pending_approval',
         },
         // Payment information
         paymentMethod: {
@@ -103,6 +104,8 @@ const orderSchema = new mongoose.Schema(
         trackingNumber: String,
         estimatedDelivery: Date,
         // Status timestamps
+        approvedAt: Date,
+        rejectedAt: Date,
         confirmedAt: Date,
         shippedAt: Date,
         deliveredAt: Date,
@@ -131,6 +134,9 @@ orderSchema.pre('save', function (next) {
     if (this.isModified('status')) {
         const now = new Date();
         switch (this.status) {
+            case 'pending':
+                this.approvedAt = now;
+                break;
             case 'confirmed':
                 this.confirmedAt = now;
                 break;

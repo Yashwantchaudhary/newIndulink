@@ -45,7 +45,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   /// Show image source selection bottom sheet
   Future<void> _showImageSourceSheet() async {
     final l10n = AppLocalizations.of(context);
-    
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -63,7 +63,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
               const SizedBox(height: 20),
               ListTile(
-                leading: const Icon(Icons.photo_library, color: AppColors.primaryBlue),
+                leading: const Icon(Icons.photo_library,
+                    color: AppColors.primaryBlue),
                 title: const Text('Gallery'),
                 onTap: () {
                   Navigator.pop(context);
@@ -71,14 +72,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: AppColors.primaryBlue),
+                leading:
+                    const Icon(Icons.camera_alt, color: AppColors.primaryBlue),
                 title: const Text('Camera'),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
                 },
               ),
-              if (_selectedImage != null || null != null) // Show remove option if image exists
+              if (_selectedImage != null ||
+                  null != null) // Show remove option if image exists
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
                   title: const Text('Remove Photo'),
@@ -140,7 +143,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     try {
       // TODO: Replace with actual API call to upload image
       await ref.read(authProvider.notifier).uploadProfileImage(_selectedImage!);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -187,7 +190,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   // Avatar
                   CircleAvatar(
                     radius: 60,
-                    backgroundColor: AppColors.primaryBlue.withOpacity(0.1),
+                    backgroundColor:
+                        AppColors.primaryBlue.withValues(alpha: 0.1),
                     backgroundImage: _selectedImage != null
                         ? FileImage(_selectedImage!)
                         : (user?.profileImage != null
@@ -205,19 +209,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           )
                         : null,
                   ),
-                  
+
                   // Loading indicator overlay
                   if (_isUploadingImage)
-                    Positioned.fill(
+                    const Positioned.fill(
                       child: CircleAvatar(
                         radius: 60,
                         backgroundColor: Colors.black54,
-                        child: const CircularProgressIndicator(
+                        child: CircularProgressIndicator(
                           color: Colors.white,
                         ),
                       ),
                     ),
-                  
+
                   // Camera button
                   Positioned(
                     bottom: 0,
@@ -228,7 +232,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       child: IconButton(
                         icon: const Icon(Icons.camera_alt,
                             size: 18, color: Colors.white),
-                        onPressed: _isUploadingImage ? null : _showImageSourceSheet,
+                        onPressed:
+                            _isUploadingImage ? null : _showImageSourceSheet,
                         padding: EdgeInsets.zero,
                       ),
                     ),
@@ -352,7 +357,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             backgroundColor: AppColors.success,
           ),
         );
-        
+
         Navigator.pop(context);
       }
     } catch (e) {

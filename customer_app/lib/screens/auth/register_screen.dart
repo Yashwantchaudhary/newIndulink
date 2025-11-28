@@ -108,7 +108,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: isDark
-              ? LinearGradient(
+              ? const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
@@ -120,8 +120,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.accentCoral.withOpacity(0.05),
-                    AppColors.primaryBlue.withOpacity(0.05),
+                    AppColors.accentCoral.withValues(alpha: 0.05),
+                    AppColors.primaryBlue.withValues(alpha: 0.05),
                   ],
                 ),
         ),
@@ -333,7 +333,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 TextSpan(
                                   text: 'I agree to the ',
                                   style: theme.textTheme.bodySmall,
-                                  children: [
+                                  children: const [
                                     TextSpan(
                                       text: 'Terms & Conditions',
                                       style: TextStyle(
@@ -341,7 +341,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                    const TextSpan(text: ' and '),
+                                    TextSpan(text: ' and '),
                                     TextSpan(
                                       text: 'Privacy Policy',
                                       style: TextStyle(

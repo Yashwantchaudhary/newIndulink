@@ -9,8 +9,15 @@ const {
     deleteAddress,
     toggleWishlist,
     getWishlist,
+    getUsers,
+    updateUser,
+    deleteUser,
+    registerFCMToken,
+    unregisterFCMToken,
+    updateNotificationPreferences,
+    getNotificationPreferences,
 } = require('../controllers/userController');
-const { protect, requireCustomer } = require('../middleware/authMiddleware');
+const { protect, requireCustomer, requireAdmin } = require('../middleware/authMiddleware');
 const { uploadSingle } = require('../middleware/upload');
 
 // Profile routes
@@ -26,5 +33,18 @@ router.delete('/addresses/:addressId', protect, deleteAddress);
 // Wishlist routes (customer only)
 router.get('/wishlist', protect, requireCustomer, getWishlist);
 router.put('/wishlist/:productId', protect, requireCustomer, toggleWishlist);
+
+// FCM token routes
+router.post('/fcm-token', protect, registerFCMToken);
+router.delete('/fcm-token', protect, unregisterFCMToken);
+
+// Notification preferences routes
+router.get('/notification-preferences', protect, getNotificationPreferences);
+router.put('/notification-preferences', protect, updateNotificationPreferences);
+
+// Admin routes
+router.get('/', protect, requireAdmin, getUsers);
+router.put('/:id', protect, requireAdmin, updateUser);
+router.delete('/:id', protect, requireAdmin, deleteUser);
 
 module.exports = router;

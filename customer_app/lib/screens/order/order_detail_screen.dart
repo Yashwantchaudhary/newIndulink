@@ -126,13 +126,13 @@ class OrderDetailScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                _buildRow('Subtotal', currencyFormat.format(order.subtotal),
-                    theme),
+                _buildRow(
+                    'Subtotal', currencyFormat.format(order.subtotal), theme),
                 const SizedBox(height: 8),
                 _buildRow('Tax', currencyFormat.format(order.tax), theme),
                 const SizedBox(height: 8),
-                _buildRow(
-                    'Shipping', currencyFormat.format(order.shippingCost), theme),
+                _buildRow('Shipping', currencyFormat.format(order.shippingCost),
+                    theme),
                 const Divider(height: 24),
                 _buildRow('Total', currencyFormat.format(order.total), theme,
                     isBold: true),
@@ -152,7 +152,7 @@ class OrderDetailScreen extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.location_on, color: AppColors.primaryBlue),
+                    const Icon(Icons.location_on, color: AppColors.primaryBlue),
                     const SizedBox(width: 8),
                     Text(
                       'Shipping Address',
@@ -194,7 +194,7 @@ class OrderDetailScreen extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.payment, color: AppColors.primaryBlue),
+                    const Icon(Icons.payment, color: AppColors.primaryBlue),
                     const SizedBox(width: 8),
                     Text(
                       'Payment Information',
@@ -205,13 +205,11 @@ class OrderDetailScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                _buildRow('Payment Method', order.paymentMethod.displayName,
-                    theme),
-                const SizedBox(height: 8),
                 _buildRow(
-                    'Status',
-                    order.paymentStatus?.toUpperCase() ?? 'PENDING',
-                    theme),
+                    'Payment Method', order.paymentMethod.displayName, theme),
+                const SizedBox(height: 8),
+                _buildRow('Status',
+                    order.paymentStatus?.toUpperCase() ?? 'PENDING', theme),
               ],
             ),
           ),

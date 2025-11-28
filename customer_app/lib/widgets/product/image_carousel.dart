@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../config/app_colors.dart';
@@ -95,7 +95,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
                       }
                     },
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.9),
+                      backgroundColor: Colors.white.withValues(alpha: 0.9),
                       padding: const EdgeInsets.all(8),
                     ),
                     icon: const Icon(Icons.chevron_left, size: 28),
@@ -120,7 +120,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
                       }
                     },
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.9),
+                      backgroundColor: Colors.white.withValues(alpha: 0.9),
                       padding: const EdgeInsets.all(8),
                     ),
                     icon: const Icon(Icons.chevron_right, size: 28),

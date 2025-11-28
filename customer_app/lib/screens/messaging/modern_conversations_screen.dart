@@ -19,7 +19,6 @@ class ModernConversationsScreen extends ConsumerStatefulWidget {
 
 class _ModernConversationsScreenState
     extends ConsumerState<ModernConversationsScreen> {
-  
   @override
   void initState() {
     super.initState();
@@ -105,8 +104,8 @@ class _ModernConversationsScreenState
         gradient: hasUnread
             ? LinearGradient(
                 colors: [
-                  AppColors.primaryBlue.withOpacity(0.05),
-                  AppColors.secondaryPurple.withOpacity(0.05),
+                  AppColors.primaryBlue.withValues(alpha: 0.05),
+                  AppColors.secondaryPurple.withValues(alpha: 0.05),
                 ],
               )
             : null,
@@ -116,13 +115,14 @@ class _ModernConversationsScreenState
         borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(
           color: hasUnread
-              ? AppColors.primaryBlue.withOpacity(0.3)
+              ? AppColors.primaryBlue.withValues(alpha: 0.3)
               : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
           width: hasUnread ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.black : Colors.grey).withOpacity(0.06),
+            color:
+                (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.06),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -145,13 +145,14 @@ class _ModernConversationsScreenState
                     gradient: LinearGradient(
                       colors: [
                         _getAvatarColor(conversation.id),
-                        _getAvatarColor(conversation.id).withOpacity(0.7),
+                        _getAvatarColor(conversation.id).withValues(alpha: 0.7),
                       ],
                     ),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: _getAvatarColor(conversation.id).withOpacity(0.3),
+                        color: _getAvatarColor(conversation.id)
+                            .withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -193,8 +194,9 @@ class _ModernConversationsScreenState
                                 color: hasUnread
                                     ? AppColors.primaryBlue
                                     : AppColors.lightTextSecondary,
-                                fontWeight:
-                                    hasUnread ? FontWeight.w600 : FontWeight.normal,
+                                fontWeight: hasUnread
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
                               ),
                             ),
                         ],
@@ -209,8 +211,9 @@ class _ModernConversationsScreenState
                                 color: hasUnread
                                     ? theme.textTheme.bodyMedium?.color
                                     : AppColors.lightTextSecondary,
-                                fontWeight:
-                                    hasUnread ? FontWeight.w600 : FontWeight.normal,
+                                fontWeight: hasUnread
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -228,8 +231,8 @@ class _ModernConversationsScreenState
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color:
-                                        AppColors.primaryBlue.withOpacity(0.3),
+                                    color: AppColors.primaryBlue
+                                        .withValues(alpha: 0.3),
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
                                   ),
@@ -290,7 +293,7 @@ class _ModernConversationsScreenState
   void _openConversation(Conversation conversation) {
     // Mark messages as read
     ref.read(messageProvider.notifier).markAsRead(conversation.id);
-    
+
     // Navigate to chat screen
     Navigator.push(
       context,
@@ -314,11 +317,11 @@ class _ModernConversationsScreenState
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('New Conversation'),
-        content: Column(
+        content: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Recipient ID',
                 hintText: 'Enter user ID',
                 prefixIcon: Icon(Icons.person),
@@ -383,7 +386,7 @@ class _ChatSearchDelegate extends SearchDelegate {
 
     // TODO: Implement search with API
     ref.read(messageProvider.notifier).searchConversations(query);
-    
+
     return const Center(
       child: Text('Search results will appear here'),
     );

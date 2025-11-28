@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/common/language_selector.dart';
 import '../../providers/auth_provider.dart';
@@ -25,8 +24,8 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         children: [
           // Account Section
-          _SectionHeader(title: 'Account'),
-          
+          const _SectionHeader(title: 'Account'),
+
           if (user != null) ...[
             _SettingsTile(
               icon: Icons.person_outline,
@@ -47,8 +46,8 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(height: 32),
 
           // Preferences Section
-          _SectionHeader(title: 'Preferences'),
-          
+          const _SectionHeader(title: 'Preferences'),
+
           _SettingsTile(
             icon: Icons.language,
             title: l10n.language,
@@ -85,8 +84,8 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(height: 32),
 
           // App Section
-          _SectionHeader(title: 'App'),
-          
+          const _SectionHeader(title: 'App'),
+
           _SettingsTile(
             icon: Icons.info_outline,
             title: 'About',
@@ -192,7 +191,7 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showThemeDialog(BuildContext context, WidgetRef ref) {
     final currentMode = ref.read(themeProvider).themeMode;
-    
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -251,7 +250,7 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Text(
@@ -284,12 +283,12 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: theme.primaryColor.withOpacity(0.1),
+          color: theme.primaryColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(

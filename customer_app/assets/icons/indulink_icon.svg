@@ -1,0 +1,29 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="512" cy="512" r="480" fill="#1a73e8"/>
+  
+  <!-- Link symbol -->
+  <g transform="translate(256, 256)">
+    <!-- Left link -->
+    <path d="M128 256c0-70.692-57.308-128-128-128s-128 57.308-128 128c0 57.897 38.563 107.026 92.031 122.667L92.031 378.667C38.563 363.026 0 313.897 0 256z" 
+          fill="white" transform="translate(128, 0)"/>
+    
+    <!-- Right link -->
+    <path d="M384 256c0-70.692 57.308-128 128-128s128 57.308 128 128c0 57.897-38.563 107.026-92.031 122.667L411.969 378.667C465.437 363.026 504 313.897 504 256z" 
+          fill="white" transform="translate(-128, 0)"/>
+    
+    <!-- Connecting chain -->
+    <rect x="248" y="240" width="8" height="32" fill="white"/>
+    <rect x="264" y="240" width="8" height="32" fill="white"/>
+  </g>
+  
+  <!-- Business handshake in center -->
+  <g transform="translate(412, 412)">
+    <!-- Left hand -->
+    <path d="M50 50 L30 30 L40 20 L60 40 Z" fill="white"/>
+    <!-- Right hand -->
+    <path d="M150 50 L170 30 L160 20 L140 40 Z" fill="white"/>
+    <!-- Connection point -->
+    <circle cx="100" cy="35" r="8" fill="#1a73e8"/>
+  </g>
+</svg>

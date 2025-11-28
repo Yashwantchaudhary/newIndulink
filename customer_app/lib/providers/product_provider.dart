@@ -71,7 +71,8 @@ class ProductNotifier extends StateNotifier<ProductState> {
         if (supplierId != null) 'supplierId': supplierId,
       };
 
-      final response = await _apiService.get('/products', queryParameters: queryParams);
+      final response =
+          await _apiService.get('/products', queryParameters: queryParams);
 
       if (response.statusCode == 200) {
         final List<Product> newProducts = (response.data['data'] as List)
@@ -79,7 +80,8 @@ class ProductNotifier extends StateNotifier<ProductState> {
             .toList();
 
         state = state.copyWith(
-          products: loadMore ? [...state.products, ...newProducts] : newProducts,
+          products:
+              loadMore ? [...state.products, ...newProducts] : newProducts,
           isLoading: false,
           currentPage: page,
           hasMore: newProducts.length >= 20,
@@ -95,6 +97,8 @@ class ProductNotifier extends StateNotifier<ProductState> {
 
   // Fetch products by category
   Future<void> fetchProductsByCategory(String categoryId) async {
+    // Reset state for new category
+    state = ProductState();
     await fetchProducts(category: categoryId, page: 1);
   }
 
@@ -117,12 +121,14 @@ class ProductNotifier extends StateNotifier<ProductState> {
 }
 
 // Product Provider
-final productProvider = StateNotifierProvider<ProductNotifier, ProductState>((ref) {
+final productProvider =
+    StateNotifierProvider<ProductNotifier, ProductState>((ref) {
   return ProductNotifier();
 });
 
 // Single Product Provider
-final productDetailProvider = FutureProvider.family<Product?, String>((ref, productId) async {
+final productDetailProvider =
+    FutureProvider.family<Product?, String>((ref, productId) async {
   final apiService = ApiService();
   try {
     final response = await apiService.get('/products/$productId');
@@ -192,7 +198,8 @@ class SupplierProductNotifier extends StateNotifier<SupplierProductState> {
         'limit': '20',
       };
 
-      final response = await _apiService.get('/products/supplier/me', queryParameters: queryParams);
+      final response = await _apiService.get('/products/supplier/me',
+          queryParameters: queryParams);
 
       if (response.statusCode == 200) {
         final List<Product> newProducts = (response.data['products'] as List)
@@ -200,7 +207,8 @@ class SupplierProductNotifier extends StateNotifier<SupplierProductState> {
             .toList();
 
         state = state.copyWith(
-          products: loadMore ? [...state.products, ...newProducts] : newProducts,
+          products:
+              loadMore ? [...state.products, ...newProducts] : newProducts,
           isLoading: false,
           currentPage: page,
           hasMore: newProducts.length >= 20,
@@ -241,12 +249,44 @@ class SupplierProductNotifier extends StateNotifier<SupplierProductState> {
 
   // Remove product from local state
   void removeProduct(String productId) {
-    final updatedProducts = state.products.where((product) => product.id != productId).toList();
+    final updatedProducts =
+        state.products.where((product) => product.id != productId).toList();
     state = state.copyWith(products: updatedProducts);
+  }
+
+  // Delete product from backend and local state
+  Future<bool> deleteProduct(String productId) async {
+    try {
+      final response = await _apiService.delete('/products/$productId');
+      if (response.statusCode == 200) {
+        removeProduct(productId);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Update product active status
+  Future<bool> toggleProductActive(String productId, bool isActive) async {
+    try {
+      final response = await _apiService
+          .put('/products/$productId', data: {'isActive': isActive});
+      if (response.statusCode == 200) {
+        final updatedProduct = Product.fromJson(response.data['data']);
+        updateProduct(updatedProduct);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
   }
 }
 
 // Supplier Product Provider
-final supplierProductProvider = StateNotifierProvider<SupplierProductNotifier, SupplierProductState>((ref) {
+final supplierProductProvider =
+    StateNotifierProvider<SupplierProductNotifier, SupplierProductState>((ref) {
   return SupplierProductNotifier();
 });

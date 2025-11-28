@@ -170,12 +170,13 @@ class _PremiumButtonState extends State<PremiumButton>
     switch (widget.variant) {
       case PremiumButtonVariant.filled:
         return BoxDecoration(
-          gradient: widget.gradient ?? LinearGradient(
-            colors: [
-              widget.color ?? AppColors.primaryBlue,
-              widget.color ?? AppColors.primaryBlue,
-            ],
-          ),
+          gradient: widget.gradient ??
+              LinearGradient(
+                colors: [
+                  widget.color ?? AppColors.primaryBlue,
+                  widget.color ?? AppColors.primaryBlue,
+                ],
+              ),
           borderRadius: AppConstants.borderRadiusMedium,
           boxShadow: widget.onPressed == null || widget.isLoading
               ? null
@@ -184,7 +185,7 @@ class _PremiumButtonState extends State<PremiumButton>
                     color: (widget.gradient?.colors.first ??
                             widget.color ??
                             AppColors.primaryBlue)
-                        .withOpacity(0.3),
+                        .withValues(alpha: 0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -220,8 +221,7 @@ class _PremiumButtonState extends State<PremiumButton>
     final contentColor = _getContentColor(theme.brightness == Brightness.dark);
 
     return Row(
-      mainAxisSize:
-          widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisSize: widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (widget.icon != null && !widget.isLoading) ...[
@@ -259,9 +259,7 @@ class _PremiumButtonState extends State<PremiumButton>
     final isDisabled = widget.onPressed == null || widget.isLoading;
 
     if (isDisabled) {
-      return isDark
-          ? AppColors.darkTextTertiary
-          : AppColors.lightTextTertiary;
+      return isDark ? AppColors.darkTextTertiary : AppColors.lightTextTertiary;
     }
 
     switch (widget.variant) {
@@ -269,9 +267,7 @@ class _PremiumButtonState extends State<PremiumButton>
         return widget.textColor ?? AppColors.neutral100;
       case PremiumButtonVariant.outlined:
       case PremiumButtonVariant.text:
-        return widget.textColor ??
-            widget.color ??
-            AppColors.primaryBlue;
+        return widget.textColor ?? widget.color ?? AppColors.primaryBlue;
     }
   }
 }

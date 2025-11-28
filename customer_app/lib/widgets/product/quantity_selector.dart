@@ -59,7 +59,8 @@ class QuantitySelector extends StatelessWidget {
           // Increment button
           _buildButton(
             icon: Icons.add,
-            onTap: quantity < maxQuantity ? () => onChanged(quantity + 1) : null,
+            onTap:
+                quantity < maxQuantity ? () => onChanged(quantity + 1) : null,
             size: buttonSize,
           ),
         ],

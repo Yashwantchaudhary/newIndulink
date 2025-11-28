@@ -25,16 +25,22 @@ class AppConstants {
   static const EdgeInsets paddingAll20 = EdgeInsets.all(spacing20);
   static const EdgeInsets paddingAll24 = EdgeInsets.all(spacing24);
   static const EdgeInsets paddingAll32 = EdgeInsets.all(spacing32);
-  
-  static const EdgeInsets paddingH16 = EdgeInsets.symmetric(horizontal: spacing16);
-  static const EdgeInsets paddingH20 = EdgeInsets.symmetric(horizontal: spacing20);
-  static const EdgeInsets paddingH24 = EdgeInsets.symmetric(horizontal: spacing24);
-  
+
+  static const EdgeInsets paddingH16 =
+      EdgeInsets.symmetric(horizontal: spacing16);
+  static const EdgeInsets paddingH20 =
+      EdgeInsets.symmetric(horizontal: spacing20);
+  static const EdgeInsets paddingH24 =
+      EdgeInsets.symmetric(horizontal: spacing24);
+
   static const EdgeInsets paddingV8 = EdgeInsets.symmetric(vertical: spacing8);
-  static const EdgeInsets paddingV12 = EdgeInsets.symmetric(vertical: spacing12);
-  static const EdgeInsets paddingV16 = EdgeInsets.symmetric(vertical: spacing16);
-  static const EdgeInsets paddingV20 = EdgeInsets.symmetric(vertical: spacing20);
-  
+  static const EdgeInsets paddingV12 =
+      EdgeInsets.symmetric(vertical: spacing12);
+  static const EdgeInsets paddingV16 =
+      EdgeInsets.symmetric(vertical: spacing16);
+  static const EdgeInsets paddingV20 =
+      EdgeInsets.symmetric(vertical: spacing20);
+
   static const EdgeInsets paddingPage = EdgeInsets.symmetric(
     horizontal: spacing16,
     vertical: spacing20,
@@ -42,12 +48,12 @@ class AppConstants {
 
   // ===== BORDER RADIUS - Smooth & Modern =====
   static const double radiusSmall = 8.0; // Buttons, chips
-  static const double radiusMedium = 12.0; // Cards, containers  
+  static const double radiusMedium = 12.0; // Cards, containers
   static const double radiusLarge = 16.0; // Modals, sheets
   static const double radiusXLarge = 20.0; // Large cards
   static const double radiusXXLarge = 24.0; // Hero sections
   static const double radiusCircle = 999.0; // Pills, avatars
-  
+
   static const BorderRadius borderRadiusSmall = BorderRadius.all(
     Radius.circular(radiusSmall),
   );
@@ -63,12 +69,12 @@ class AppConstants {
   static const BorderRadius borderRadiusXXLarge = BorderRadius.all(
     Radius.circular(radiusXXLarge),
   );
-  
+
   static const BorderRadius borderRadiusTop = BorderRadius.only(
     topLeft: Radius.circular(radiusLarge),
     topRight: Radius.circular(radiusLarge),
   );
-  
+
   static const BorderRadius borderRadiusBottom = BorderRadius.only(
     bottomLeft: Radius.circular(radiusLarge),
     bottomRight: Radius.circular(radiusLarge),
@@ -94,14 +100,20 @@ class AppConstants {
   static const double elevationXHigh = 16.0;
 
   // ===== ANIMATION DURATIONS - World-Class Standards =====
-  static const Duration durationInstant = Duration(milliseconds: 100); // State changes
-  static const Duration durationFast = Duration(milliseconds: 200); // Micro-interactions
-  static const Duration durationNormal = Duration(milliseconds: 300); // Standard transitions
-  static const Duration durationSlow = Duration(milliseconds: 500); // Page transitions
-  static const Duration durationXSlow = Duration(milliseconds: 800); // Hero animations
-  static const Duration durationChart = Duration(milliseconds: 800); // Chart animations
+  static const Duration durationInstant =
+      Duration(milliseconds: 100); // State changes
+  static const Duration durationFast =
+      Duration(milliseconds: 200); // Micro-interactions
+  static const Duration durationNormal =
+      Duration(milliseconds: 300); // Standard transitions
+  static const Duration durationSlow =
+      Duration(milliseconds: 500); // Page transitions
+  static const Duration durationXSlow =
+      Duration(milliseconds: 800); // Hero animations
+  static const Duration durationChart =
+      Duration(milliseconds: 800); // Chart animations
   static const Duration durationPageTransition = Duration(milliseconds: 350);
-  
+
   // ===== ANIMATION CURVES - Smooth & Purposeful =====
   static const Curve curveStandard = Curves.easeInOutCubic; // Most animations
   static const Curve curveEmphasized = Curves.easeOutCubic; // Enter animations
@@ -110,27 +122,27 @@ class AppConstants {
   static const Curve curveSpring = Curves.fastOutSlowIn; // Natural motion
 
   // ===== SHADOWS - Material 3 Inspired =====
-  static List<BoxShadow> get shadowSmall => [
+  static const List<BoxShadow> shadowSmall = [
     BoxShadow(
-      color: const Color(0x1A000000),
+      color: Color(0x1A000000),
       blurRadius: 8,
-      offset: const Offset(0, 1),
+      offset: Offset(0, 1),
     ),
   ];
 
-  static List<BoxShadow> get shadowMedium => [
+  static const List<BoxShadow> shadowMedium = [
     BoxShadow(
-      color: const Color(0x33000000),
+      color: Color(0x33000000),
       blurRadius: 16,
-      offset: const Offset(0, 4),
+      offset: Offset(0, 4),
     ),
   ];
 
-  static List<BoxShadow> get shadowLarge => [
+  static const List<BoxShadow> shadowLarge = [
     BoxShadow(
-      color: const Color(0x4D000000),
+      color: Color(0x4D000000),
       blurRadius: 24,
-      offset: const Offset(0, 8),
+      offset: Offset(0, 8),
     ),
   ];
 
@@ -206,7 +218,7 @@ class AppConstants {
   static const double listItemHeightLarge = 96.0;
 
   // ===== HELPER METHODS =====
-  
+
   /// Get grid cross axis count based on screen width
   static int getGridCrossAxisCount(double screenWidth) {
     if (screenWidth >= breakpointDesktop) {
@@ -217,23 +229,23 @@ class AppConstants {
       return gridCrossAxisCountMobile;
     }
   }
-  
+
   /// Check if screen is mobile size
   static bool isMobile(BuildContext context) {
     return MediaQuery.of(context).size.width < breakpointMobile;
   }
-  
+
   /// Check if screen is tablet size
   static bool isTablet(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     return width >= breakpointMobile && width < breakpointDesktop;
   }
-  
+
   /// Check if screen is desktop size
   static bool isDesktop(BuildContext context) {
     return MediaQuery.of(context).size.width >= breakpointDesktop;
   }
-  
+
   /// Get responsive padding based on screen size
   static EdgeInsets getResponsivePadding(BuildContext context) {
     if (isDesktop(context)) {
@@ -244,7 +256,7 @@ class AppConstants {
       return paddingAll16;
     }
   }
-  
+
   /// Get responsive font size multiplier
   static double getResponsiveFontMultiplier(BuildContext context) {
     if (isDesktop(context)) {

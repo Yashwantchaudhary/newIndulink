@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_constants.dart';
@@ -41,13 +41,13 @@ class CategoryCard extends StatelessWidget {
                         errorWidget: (context, url, error) => Icon(
                           Icons.category,
                           size: 48,
-                          color: AppColors.primaryBlue.withOpacity(0.3),
+                          color: AppColors.primaryBlue.withValues(alpha: 0.3),
                         ),
                       )
                     : Icon(
                         Icons.category,
                         size: 48,
-                        color: AppColors.primaryBlue.withOpacity(0.3),
+                        color: AppColors.primaryBlue.withValues(alpha: 0.3),
                       ),
               ),
             ),

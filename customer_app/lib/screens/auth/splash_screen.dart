@@ -12,7 +12,8 @@ class SplashScreen extends ConsumerStatefulWidget {
   SplashScreenState createState() => SplashScreenState();
 }
 
-class SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderStateMixin {
+class SplashScreenState extends ConsumerState<SplashScreen>
+    with TickerProviderStateMixin {
   late AnimationController _floatController1;
   late AnimationController _floatController2;
   late AnimationController _floatController3;
@@ -23,12 +24,23 @@ class SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderS
   @override
   void initState() {
     super.initState();
-    _floatController1 = AnimationController(vsync: this, duration: const Duration(seconds: 8))..repeat(reverse: true);
-    _floatController2 = AnimationController(vsync: this, duration: const Duration(seconds: 10))..repeat(reverse: true);
-    _floatController3 = AnimationController(vsync: this, duration: const Duration(seconds: 6))..repeat(reverse: true);
-    _scaleController = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
-    _bounceController = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
-    _dotsController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat();
+    _floatController1 =
+        AnimationController(vsync: this, duration: const Duration(seconds: 8))
+          ..repeat(reverse: true);
+    _floatController2 =
+        AnimationController(vsync: this, duration: const Duration(seconds: 10))
+          ..repeat(reverse: true);
+    _floatController3 =
+        AnimationController(vsync: this, duration: const Duration(seconds: 6))
+          ..repeat(reverse: true);
+    _scaleController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 800));
+    _bounceController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 2))
+          ..repeat(reverse: true);
+    _dotsController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1500))
+      ..repeat();
 
     _scaleController.forward();
     _checkAuth();
@@ -75,7 +87,8 @@ class SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderS
           children: [
             // Floating circles with blur
             AnimatedBuilder(
-              animation: Listenable.merge([_floatController1, _floatController2, _floatController3]),
+              animation: Listenable.merge(
+                  [_floatController1, _floatController2, _floatController3]),
               builder: (context, child) {
                 return Stack(
                   children: [
@@ -110,7 +123,8 @@ class SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderS
                       ),
                     ),
                     Positioned(
-                      top: MediaQuery.of(context).size.height * 0.5 + 60 * sin(_floatController3.value * 2 * pi),
+                      top: MediaQuery.of(context).size.height * 0.5 +
+                          60 * sin(_floatController3.value * 2 * pi),
                       right: 120 + 60 * sin(_floatController3.value * 2 * pi),
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
@@ -131,9 +145,12 @@ class SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderS
             // Main content
             Center(
               child: ScaleTransition(
-                scale: Tween<double>(begin: 0.8, end: 1.0).animate(CurvedAnimation(parent: _scaleController, curve: Curves.easeOut)),
+                scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                    CurvedAnimation(
+                        parent: _scaleController, curve: Curves.easeOut)),
                 child: FadeTransition(
-                  opacity: Tween<double>(begin: 0, end: 1).animate(_scaleController),
+                  opacity:
+                      Tween<double>(begin: 0, end: 1).animate(_scaleController),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -142,7 +159,8 @@ class SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderS
                         animation: _bounceController,
                         builder: (context, child) {
                           return Transform.translate(
-                            offset: Offset(0, -10 * sin(_bounceController.value * 2 * pi)),
+                            offset: Offset(
+                                0, -10 * sin(_bounceController.value * 2 * pi)),
                             child: Container(
                               padding: const EdgeInsets.all(24),
                               decoration: BoxDecoration(
@@ -161,7 +179,8 @@ class SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderS
                                   ),
                                 ],
                               ),
-                              child: Icon(Icons.inventory, size: 64, color: Color(0xFF7C3AED)),
+                              child: const Icon(Icons.inventory,
+                                  size: 64, color: Color(0xFF7C3AED)),
                             ),
                           );
                         },
@@ -169,19 +188,29 @@ class SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderS
                       const SizedBox(height: 24),
                       // Title
                       FadeTransition(
-                        opacity: Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _scaleController, curve: Interval(0.3, 1.0))),
+                        opacity: Tween<double>(begin: 0, end: 1).animate(
+                            CurvedAnimation(
+                                parent: _scaleController,
+                                curve: const Interval(0.3, 1.0))),
                         child: const Text(
                           'InduLink',
-                          style: TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                       const SizedBox(height: 12),
                       // Subtitle
                       FadeTransition(
-                        opacity: Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _scaleController, curve: Interval(0.5, 1.0))),
+                        opacity: Tween<double>(begin: 0, end: 1).animate(
+                            CurvedAnimation(
+                                parent: _scaleController,
+                                curve: const Interval(0.5, 1.0))),
                         child: Text(
                           'Smart B2B Raw Materials Trading',
-                          style: TextStyle(color: Colors.white.withAlpha(204), fontSize: 20),
+                          style: TextStyle(
+                              color: Colors.white.withAlpha(204), fontSize: 20),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -194,11 +223,18 @@ class SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderS
                             animation: _dotsController,
                             builder: (context, child) {
                               return Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 4),
                                 width: 12,
                                 height: 12,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(((sin(_dotsController.value * 2 * pi - i * 0.4 * pi) + 1) / 2 * 255).toInt()),
+                                  color: Colors.white.withAlpha(
+                                      ((sin(_dotsController.value * 2 * pi -
+                                                      i * 0.4 * pi) +
+                                                  1) /
+                                              2 *
+                                              255)
+                                          .toInt()),
                                   shape: BoxShape.circle,
                                 ),
                               );

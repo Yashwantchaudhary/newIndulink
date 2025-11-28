@@ -89,9 +89,9 @@ class _EnhancedEmptyStateState extends State<EnhancedEmptyState>
                           gradient: LinearGradient(
                             colors: [
                               (widget.iconColor ?? AppColors.primaryBlue)
-                                  .withOpacity(0.1),
+                                  .withValues(alpha: 0.1),
                               (widget.iconColor ?? AppColors.secondaryPurple)
-                                  .withOpacity(0.05),
+                                  .withValues(alpha: 0.05),
                             ],
                           ),
                           shape: BoxShape.circle,
@@ -216,8 +216,8 @@ class _EnhancedErrorStateState extends State<EnhancedErrorState>
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.error.withOpacity(0.1),
-                      AppColors.error.withOpacity(0.05),
+                      AppColors.error.withValues(alpha: 0.1),
+                      AppColors.error.withValues(alpha: 0.05),
                     ],
                   ),
                   shape: BoxShape.circle,
@@ -271,9 +271,8 @@ class _EnhancedErrorStateState extends State<EnhancedErrorState>
                         : AppColors.lightSurfaceVariant,
                     borderRadius: AppConstants.borderRadiusSmall,
                     border: Border.all(
-                      color: isDark
-                          ? AppColors.darkBorder
-                          : AppColors.lightBorder,
+                      color:
+                          isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     ),
                   ),
                   child: Text(

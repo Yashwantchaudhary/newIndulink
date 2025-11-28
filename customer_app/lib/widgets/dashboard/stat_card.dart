@@ -32,7 +32,7 @@ class StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Card(
       elevation: AppConstants.elevationMedium,
       child: InkWell(
@@ -57,8 +57,8 @@ class StatCard extends StatelessWidget {
                   Container(
                     padding: AppConstants.paddingAll12,
                     decoration: BoxDecoration(
-                      color: (iconColor ?? AppColors.primaryBlue).withOpacity(
-                        gradient != null ? 0.2 : 0.1,
+                      color: (iconColor ?? AppColors.primaryBlue).withValues(
+                        alpha: gradient != null ? 0.2 : 0.1,
                       ),
                       borderRadius: AppConstants.borderRadiusSmall,
                     ),
@@ -70,7 +70,7 @@ class StatCard extends StatelessWidget {
                           : (iconColor ?? AppColors.primaryBlue),
                     ),
                   ),
-                  
+
                   // Trend indicator
                   if (trend != null && !isLoading)
                     Container(
@@ -79,8 +79,9 @@ class StatCard extends StatelessWidget {
                         vertical: AppConstants.spacing4,
                       ),
                       decoration: BoxDecoration(
-                        color: (trend! >= 0 ? AppColors.success : AppColors.error)
-                            .withOpacity(0.1),
+                        color:
+                            (trend! >= 0 ? AppColors.success : AppColors.error)
+                                .withValues(alpha: 0.1),
                         borderRadius: AppConstants.borderRadiusSmall,
                       ),
                       child: Row(
@@ -110,15 +111,15 @@ class StatCard extends StatelessWidget {
                     ),
                 ],
               ),
-              
+
               const SizedBox(height: AppConstants.spacing12),
-              
+
               // Title
               Text(
                 title,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: gradient != null
-                      ? Colors.white.withOpacity(0.9)
+                      ? Colors.white.withValues(alpha: 0.9)
                       : (isDark
                           ? AppColors.darkTextSecondary
                           : AppColors.lightTextSecondary),
@@ -126,9 +127,9 @@ class StatCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              
+
               const SizedBox(height: AppConstants.spacing4),
-              
+
               // Value
               if (isLoading)
                 Container(
@@ -138,7 +139,7 @@ class StatCard extends StatelessWidget {
                     color: (gradient != null
                             ? Colors.white
                             : AppColors.lightBorder)
-                        .withOpacity(0.3),
+                        .withValues(alpha: 0.3),
                     borderRadius: AppConstants.borderRadiusSmall,
                   ),
                 )
@@ -156,7 +157,7 @@ class StatCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              
+
               // Subtitle
               if (subtitle != null) ...[
                 const SizedBox(height: AppConstants.spacing4),
@@ -164,7 +165,7 @@ class StatCard extends StatelessWidget {
                   subtitle!,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: gradient != null
-                        ? Colors.white.withOpacity(0.8)
+                        ? Colors.white.withValues(alpha: 0.8)
                         : (isDark
                             ? AppColors.darkTextTertiary
                             : AppColors.lightTextTertiary),

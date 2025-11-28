@@ -12,7 +12,8 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? queryParameters,
   }) async {
-    final response = await _apiService.get(path, queryParameters: queryParameters);
+    final response =
+        await _apiService.get(path, queryParameters: queryParameters);
     return response.data as Map<String, dynamic>;
   }
 
@@ -26,7 +27,8 @@ class ApiClient {
     final fileName = 'export_${DateTime.now().millisecondsSinceEpoch}.tmp';
     final savePath = '${tempDir.path}/$fileName';
 
-    await _apiService.downloadFile(path, savePath, queryParameters: queryParameters);
+    await _apiService.downloadFile(path, savePath,
+        queryParameters: queryParameters);
     return File(savePath);
   }
 }

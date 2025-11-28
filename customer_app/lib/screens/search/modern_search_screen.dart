@@ -81,7 +81,7 @@ class _ModernSearchScreenState extends ConsumerState<ModernSearchScreen>
         gradient: AppColors.heroGradient,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -104,7 +104,7 @@ class _ModernSearchScreenState extends ConsumerState<ModernSearchScreen>
                     borderRadius: AppConstants.borderRadiusLarge,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -171,7 +171,7 @@ class _ModernSearchScreenState extends ConsumerState<ModernSearchScreen>
         onSelected: (selected) {
           setState(() => _selectedFilter = label);
         },
-        backgroundColor: Colors.white.withOpacity(0.2),
+        backgroundColor: Colors.white.withValues(alpha: 0.2),
         selectedColor: Colors.white,
         labelStyle: TextStyle(
           color: isSelected ? AppColors.primaryBlue : Colors.white,
@@ -208,7 +208,7 @@ class _ModernSearchScreenState extends ConsumerState<ModernSearchScreen>
           ],
 
           // Trending Searches
-          SectionHeader(
+          const SectionHeader(
             title: 'Trending Searches',
           ),
           const SizedBox(height: 12),
@@ -221,7 +221,7 @@ class _ModernSearchScreenState extends ConsumerState<ModernSearchScreen>
           const SizedBox(height: 24),
 
           // Popular Categories
-          SectionHeader(
+          const SectionHeader(
             title: 'Popular Categories',
           ),
           const SizedBox(height: 12),
@@ -258,7 +258,7 @@ class _ModernSearchScreenState extends ConsumerState<ModernSearchScreen>
                 style: theme.textTheme.bodyMedium,
               ),
             ),
-            Icon(Icons.north_west,
+            const Icon(Icons.north_west,
                 size: 16, color: AppColors.lightTextSecondary),
           ],
         ),
@@ -294,13 +294,13 @@ class _ModernSearchScreenState extends ConsumerState<ModernSearchScreen>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppColors.primaryBlue.withOpacity(0.1),
-                  AppColors.secondaryPurple.withOpacity(0.1),
+                  AppColors.primaryBlue.withValues(alpha: 0.1),
+                  AppColors.secondaryPurple.withValues(alpha: 0.1),
                 ],
               ),
               borderRadius: AppConstants.borderRadiusMedium,
               border: Border.all(
-                color: AppColors.primaryBlue.withOpacity(0.2),
+                color: AppColors.primaryBlue.withValues(alpha: 0.2),
               ),
             ),
             child: Column(

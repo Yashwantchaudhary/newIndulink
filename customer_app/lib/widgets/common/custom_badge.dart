@@ -42,7 +42,7 @@ class CustomBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     final bgColor = backgroundColor ??
         (isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant);
     final txtColor = textColor ?? AppColors.lightTextPrimary;
@@ -62,7 +62,9 @@ class CustomBadge extends StatelessWidget {
           if (icon != null) ...[
             Icon(
               icon,
-              size: small ? AppConstants.iconSizeSmall : AppConstants.iconSizeMedium,
+              size: small
+                  ? AppConstants.iconSizeSmall
+                  : AppConstants.iconSizeMedium,
               color: txtColor,
             ),
             SizedBox(width: small ? 4 : 6),

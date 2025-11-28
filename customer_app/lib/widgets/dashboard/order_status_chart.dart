@@ -142,7 +142,7 @@ class _OrderStatusChartState extends State<OrderStatusChart> {
 
   Widget _buildLegendItem(int index, OrderStatusData data, ThemeData theme) {
     final isTouched = index == touchedIndex;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -156,7 +156,8 @@ class _OrderStatusChartState extends State<OrderStatusChart> {
               boxShadow: isTouched
                   ? [
                       BoxShadow(
-                        color: _getStatusColor(data.status).withOpacity(0.5),
+                        color:
+                            _getStatusColor(data.status).withValues(alpha: 0.5),
                         blurRadius: 8,
                         spreadRadius: 2,
                       ),

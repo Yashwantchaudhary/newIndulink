@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
 import '../../models/product.dart';
 
@@ -22,7 +22,7 @@ class ProductCardModern extends StatefulWidget {
   State<ProductCardModern> createState() => _ProductCardModernState();
 }
 
-class _ProductCardModernState extends State<ProductCardModern> 
+class _ProductCardModernState extends State<ProductCardModern>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   bool _isPressed = false;
@@ -69,12 +69,14 @@ class _ProductCardModernState extends State<ProductCardModern>
             color: isDark ? AppColors.darkSurface : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark ? AppColors.darkBorder.withOpacity(0.3) : AppColors.lightBorder,
+              color: isDark
+                  ? AppColors.darkBorder.withValues(alpha: 0.3)
+                  : AppColors.lightBorder,
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -90,7 +92,9 @@ class _ProductCardModernState extends State<ProductCardModern>
                   Container(
                     height: 140,
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
+                      color: isDark
+                          ? AppColors.darkSurfaceVariant
+                          : AppColors.lightSurfaceVariant,
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(16),
                       ),
@@ -99,31 +103,35 @@ class _ProductCardModernState extends State<ProductCardModern>
                       child: Icon(
                         Icons.image_outlined,
                         size: 48,
-                        color: isDark ? AppColors.darkTextTertiary : AppColors.lightTextTertiary,
+                        color: isDark
+                            ? AppColors.darkTextTertiary
+                            : AppColors.lightTextTertiary,
                       ),
                     ),
                   ),
-                  
+
                   // Discount badge
                   if (widget.product.hasDiscount)
                     Positioned(
                       top: 8,
                       left: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           gradient: AppColors.accentGradient,
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.accentOrange.withOpacity(0.3),
+                              color:
+                                  AppColors.accentOrange.withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
                           ],
                         ),
                         child: Text(
-                          '${widget.product.discountPercentage?.toStringAsFixed(0)}% OFF',
+                          '${widget.product.discountPercentage.toStringAsFixed(0)}% OFF',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -132,7 +140,7 @@ class _ProductCardModernState extends State<ProductCardModern>
                         ),
                       ),
                     ),
-                  
+
                   // Wishlist button
                   Positioned(
                     top: 8,
@@ -146,14 +154,16 @@ class _ProductCardModernState extends State<ProductCardModern>
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
                           ],
                         ),
                         child: Icon(
-                          widget.isInWishlist ? Icons.favorite : Icons.favorite_border,
+                          widget.isInWishlist
+                              ? Icons.favorite
+                              : Icons.favorite_border,
                           size: 18,
                           color: widget.isInWishlist ? Colors.red : Colors.grey,
                         ),
@@ -162,7 +172,7 @@ class _ProductCardModernState extends State<ProductCardModern>
                   ),
                 ],
               ),
-              
+
               // Product details
               Flexible(
                 child: Padding(
@@ -177,15 +187,17 @@ class _ProductCardModernState extends State<ProductCardModern>
                           widget.product.title,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.lightTextPrimary,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      
+
                       const SizedBox(height: 8),
-                      
+
                       // Price row
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
@@ -209,7 +221,9 @@ class _ProductCardModernState extends State<ProductCardModern>
                                     'Rs ${widget.product.compareAtPrice!.toStringAsFixed(0)}',
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       decoration: TextDecoration.lineThrough,
-                                      color: isDark ? AppColors.darkTextTertiary : AppColors.lightTextTertiary,
+                                      color: isDark
+                                          ? AppColors.darkTextTertiary
+                                          : AppColors.lightTextTertiary,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -217,9 +231,9 @@ class _ProductCardModernState extends State<ProductCardModern>
                               ],
                             ),
                           ),
-                          
+
                           const SizedBox(width: 8),
-                          
+
                           // Quick add to cart button
                           GestureDetector(
                             onTap: widget.onAddToCart,
@@ -230,7 +244,8 @@ class _ProductCardModernState extends State<ProductCardModern>
                                 borderRadius: BorderRadius.circular(10),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primaryBlue.withOpacity(0.3),
+                                    color: AppColors.primaryBlue
+                                        .withValues(alpha: 0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),

@@ -28,10 +28,8 @@ class ConnectionTest {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('✅ Connection Successful'),
-        content: const Text(
-          'Backend connection is working properly!\n\n'
-          'You can now use login/signup features.'
-        ),
+        content: const Text('Backend connection is working properly!\n\n'
+            'You can now use login/signup features.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -47,14 +45,12 @@ class ConnectionTest {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('❌ Connection Failed'),
-        content: const Text(
-          'Cannot connect to backend server.\n\n'
-          'Troubleshooting steps:\n'
-          '1. Check if Render service is running\n'
-          '2. Verify internet connection\n'
-          '3. Check https://indulink-1.onrender.com/health\n'
-          '4. Contact support if issue persists'
-        ),
+        content: const Text('Cannot connect to backend server.\n\n'
+            'Troubleshooting steps:\n'
+            '1. Check if Render service is running\n'
+            '2. Verify internet connection\n'
+            '3. Check https://indulink-1.onrender.com/health\n'
+            '4. Contact support if issue persists'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

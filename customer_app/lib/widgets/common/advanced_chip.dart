@@ -131,7 +131,7 @@ class AdvancedChip extends StatelessWidget {
           borderRadius: AppConstants.borderRadiusSmall,
           boxShadow: [
             BoxShadow(
-              color: (selectedGradient!.colors.first).withOpacity(0.3),
+              color: (selectedGradient!.colors.first).withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -143,7 +143,8 @@ class AdvancedChip extends StatelessWidget {
         borderRadius: AppConstants.borderRadiusSmall,
         boxShadow: [
           BoxShadow(
-            color: (selectedColor ?? AppColors.primaryBlue).withOpacity(0.3),
+            color:
+                (selectedColor ?? AppColors.primaryBlue).withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -153,7 +154,9 @@ class AdvancedChip extends StatelessWidget {
 
     return BoxDecoration(
       color: unselectedColor ??
-          (isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant),
+          (isDark
+              ? AppColors.darkSurfaceVariant
+              : AppColors.lightSurfaceVariant),
       borderRadius: AppConstants.borderRadiusSmall,
       border: Border.all(
         color: isDark ? AppColors.darkBorder : AppColors.lightBorder,

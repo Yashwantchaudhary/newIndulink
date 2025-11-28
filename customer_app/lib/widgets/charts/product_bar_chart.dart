@@ -82,8 +82,10 @@ class ProductBarChart extends StatelessWidget {
                 showTitles: true,
                 reservedSize: 40,
                 getTitlesWidget: (value, meta) {
-                  if (value.toInt() >= 0 && value.toInt() < topProducts.length) {
-                    final productName = topProducts[value.toInt()].product.title;
+                  if (value.toInt() >= 0 &&
+                      value.toInt() < topProducts.length) {
+                    final productName =
+                        topProducts[value.toInt()].product.title;
                     final shortName = productName.length > 10
                         ? '${productName.substring(0, 10)}...'
                         : productName;

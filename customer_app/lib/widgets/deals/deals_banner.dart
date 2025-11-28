@@ -35,7 +35,7 @@ class _DealsBannerState extends State<DealsBanner> {
       } else {
         _currentPage = 0;
       }
-      
+
       if (_pageController.hasClients) {
         _pageController.animateToPage(
           _currentPage,
@@ -82,8 +82,9 @@ class _DealsBannerState extends State<DealsBanner> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: (banner.gradient?.colors.first ?? AppColors.primaryBlue)
-                              .withOpacity(0.3),
+                          color: (banner.gradient?.colors.first ??
+                                  AppColors.primaryBlue)
+                              .withValues(alpha: 0.3),
                           blurRadius: 12,
                           offset: const Offset(0, 6),
                         ),
@@ -97,7 +98,7 @@ class _DealsBannerState extends State<DealsBanner> {
                             painter: _PatternPainter(),
                           ),
                         ),
-                        
+
                         // Content
                         Padding(
                           padding: const EdgeInsets.all(20),
@@ -112,7 +113,7 @@ class _DealsBannerState extends State<DealsBanner> {
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.3),
+                                    color: Colors.white.withValues(alpha: 0.3),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
@@ -137,14 +138,14 @@ class _DealsBannerState extends State<DealsBanner> {
                               Text(
                                 banner.subtitle,
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.9),
+                                  color: Colors.white.withValues(alpha: 0.9),
                                   fontSize: 14,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        
+
                         // Icon (optional)
                         if (banner.icon != null)
                           Positioned(
@@ -153,7 +154,7 @@ class _DealsBannerState extends State<DealsBanner> {
                             child: Icon(
                               banner.icon,
                               size: 60,
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                             ),
                           ),
                       ],
@@ -164,9 +165,9 @@ class _DealsBannerState extends State<DealsBanner> {
             },
           ),
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Page indicators
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -180,7 +181,9 @@ class _DealsBannerState extends State<DealsBanner> {
               decoration: BoxDecoration(
                 color: _currentPage == index
                     ? AppColors.primaryBlue
-                    : (isDark ? AppColors.darkTextTertiary : AppColors.lightTextTertiary),
+                    : (isDark
+                        ? AppColors.darkTextTertiary
+                        : AppColors.lightTextTertiary),
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
@@ -213,7 +216,7 @@ class _PatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
+      ..color = Colors.white.withValues(alpha: 0.05)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 

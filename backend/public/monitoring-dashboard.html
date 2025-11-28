@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indulink Monitoring Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .metric-card h3 {
+            margin-bottom: 15px;
+            color: #666;
+            font-size: 1.2em;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .metric-value.healthy { color: #4caf50; }
+        .metric-value.warning { color: #ff9800; }
+        .metric-value.danger { color: #f44336; }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-healthy { background: #4caf50; }
+        .status-warning { background: #ff9800; }
+        .status-danger { background: #f44336; }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-bottom: 20px;
+            transition: background 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .last-updated {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .alerts-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .alert-item {
+            padding: 10px;
+            border-left: 4px solid #ff9800;
+            margin-bottom: 10px;
+            background: #fff3cd;
+        }
+
+        .alert-high { border-left-color: #f44336; background: #ffebee; }
+        .alert-medium { border-left-color: #ff9800; background: #fff3cd; }
+        .alert-low { border-left-color: #4caf50; background: #e8f5e8; }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Indulink Monitoring Dashboard</h1>
+        <p>Real-time performance monitoring and system health overview</p>
+    </div>
+
+    <div class="container">
+        <button class="refresh-btn" onclick="refreshData()">🔄 Refresh Data</button>
+
+        <div class="alerts-section">
+            <h3>Active Alerts</h3>
+            <div id="alerts-container">
+                <p>Loading alerts...</p>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- System Health -->
+            <div class="metric-card">
+                <h3>System Health</h3>
+                <div id="system-health">
+                    <div class="metric-value" id="health-status">Loading...</div>
+                    <p>Uptime: <span id="uptime">Loading...</span></p>
+                    <p>Last Updated: <span id="last-updated">Loading...</span></p>
+                </div>
+            </div>
+
+            <!-- API Performance -->
+            <div class="metric-card">
+                <h3>API Performance</h3>
+                <div class="metric-value" id="api-response-time">Loading...</div>
+                <p>Error Rate: <span id="api-error-rate">Loading...</span></p>
+                <p>Throughput: <span id="api-throughput">Loading...</span> req/min</p>
+            </div>
+
+            <!-- CPU Usage -->
+            <div class="metric-card">
+                <h3>CPU Usage</h3>
+                <div class="metric-value" id="cpu-usage">Loading...</div>
+                <p>Cores: <span id="cpu-cores">Loading...</span></p>
+                <div class="chart-container">
+                    <canvas id="cpuChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Memory Usage -->
+            <div class="metric-card">
+                <h3>Memory Usage</h3>
+                <div class="metric-value" id="memory-usage">Loading...</div>
+                <p>Used: <span id="memory-used">Loading...</span> GB</p>
+                <p>Total: <span id="memory-total">Loading...</span> GB</p>
+                <div class="chart-container">
+                    <canvas id="memoryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Disk Usage -->
+            <div class="metric-card">
+                <h3>Disk Usage</h3>
+                <div class="metric-value" id="disk-usage">Loading...</div>
+                <p>Used: <span id="disk-used">Loading...</span> GB</p>
+                <p>Free: <span id="disk-free">Loading...</span> GB</p>
+                <div class="chart-container">
+                    <canvas id="diskChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Database Performance -->
+            <div class="metric-card">
+                <h3>Database Performance</h3>
+                <div class="metric-value" id="db-connections">Loading...</div>
+                <p>Slow Queries: <span id="db-slow-queries">Loading...</span></p>
+                <p>Storage Used: <span id="db-storage">Loading...</span></p>
+            </div>
+        </div>
+
+        <!-- API Endpoints Chart -->
+        <div class="metric-card">
+            <h3>Top API Endpoints</h3>
+            <div class="chart-container">
+                <canvas id="endpointsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cpuChart, memoryChart, diskChart, endpointsChart;
+        let metricsData = {};
+
+        // Initialize charts
+        function initCharts() {
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            };
+
+            cpuChart = new Chart(document.getElementById('cpuChart'), {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'CPU %', data: [], borderColor: '#667eea', tension: 0.1 }] },
+                options: chartOptions
+            });
+
+            memoryChart = new Chart(document.getElementById('memoryChart'), {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'Memory %', data: [], borderColor: '#764ba2', tension: 0.1 }] },
+                options: chartOptions
+            });
+
+            diskChart = new Chart(document.getElementById('diskChart'), {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'Disk %', data: [], borderColor: '#f093fb', tension: 0.1 }] },
+                options: chartOptions
+            });
+
+            endpointsChart = new Chart(document.getElementById('endpointsChart'), {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Requests',
+                        data: [],
+                        backgroundColor: '#667eea',
+                        borderColor: '#5a6fd8',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        // Fetch metrics data
+        async function fetchMetrics() {
+            try {
+                const response = await fetch('/api/metrics');
+                const result = await response.json();
+
+                if (result.success) {
+                    metricsData = result.data;
+                    updateDashboard();
+                }
+            } catch (error) {
+                console.error('Failed to fetch metrics:', error);
+            }
+        }
+
+        // Update dashboard with new data
+        function updateDashboard() {
+            const { api, infrastructure } = metricsData;
+
+            // System Health
+            const healthStatus = infrastructure.alerts.status.status;
+            document.getElementById('health-status').textContent = healthStatus.toUpperCase();
+            document.getElementById('health-status').className = `metric-value ${healthStatus === 'healthy' ? 'healthy' : 'warning'}`;
+
+            const uptimeHours = Math.floor(infrastructure.system.uptime / 3600);
+            const uptimeMinutes = Math.floor((infrastructure.system.uptime % 3600) / 60);
+            document.getElementById('uptime').textContent = `${uptimeHours}h ${uptimeMinutes}m`;
+
+            // API Performance
+            document.getElementById('api-response-time').textContent = `${api.averageResponseTime}ms`;
+            document.getElementById('api-response-time').className = `metric-value ${api.averageResponseTime < 1000 ? 'healthy' : 'warning'}`;
+
+            document.getElementById('api-error-rate').textContent = `${api.errorRate}%`;
+            document.getElementById('api-throughput').textContent = api.throughput;
+
+            // CPU
+            document.getElementById('cpu-usage').textContent = `${infrastructure.cpu.usagePercent}%`;
+            document.getElementById('cpu-usage').className = `metric-value ${infrastructure.cpu.usagePercent < 70 ? 'healthy' : infrastructure.cpu.usagePercent < 85 ? 'warning' : 'danger'}`;
+            document.getElementById('cpu-cores').textContent = infrastructure.cpu.cores;
+
+            // Memory
+            document.getElementById('memory-usage').textContent = `${infrastructure.memory.usagePercent}%`;
+            document.getElementById('memory-usage').className = `metric-value ${infrastructure.memory.usagePercent < 75 ? 'healthy' : infrastructure.memory.usagePercent < 90 ? 'warning' : 'danger'}`;
+            document.getElementById('memory-used').textContent = infrastructure.memory.usedGB;
+            document.getElementById('memory-total').textContent = infrastructure.memory.totalGB;
+
+            // Disk
+            document.getElementById('disk-usage').textContent = `${infrastructure.disk.usagePercent}%`;
+            document.getElementById('disk-usage').className = `metric-value ${infrastructure.disk.usagePercent < 80 ? 'healthy' : infrastructure.disk.usagePercent < 95 ? 'warning' : 'danger'}`;
+            document.getElementById('disk-used').textContent = infrastructure.disk.usedGB;
+            document.getElementById('disk-free').textContent = infrastructure.disk.freeGB;
+
+            // Database (placeholder - would need actual DB metrics)
+            document.getElementById('db-connections').textContent = 'N/A';
+            document.getElementById('db-slow-queries').textContent = 'N/A';
+            document.getElementById('db-storage').textContent = 'N/A';
+
+            // Update timestamp
+            document.getElementById('last-updated').textContent = new Date().toLocaleString();
+
+            // Update charts (simplified - in real implementation, you'd store historical data)
+            updateCharts();
+        }
+
+        // Update charts with historical data
+        function updateCharts() {
+            // This is simplified - in a real implementation, you'd fetch historical data
+            const now = new Date().toLocaleTimeString();
+
+            // CPU Chart
+            if (cpuChart.data.labels.length > 10) {
+                cpuChart.data.labels.shift();
+                cpuChart.data.datasets[0].data.shift();
+            }
+            cpuChart.data.labels.push(now);
+            cpuChart.data.datasets[0].data.push(metricsData.infrastructure.cpu.usagePercent);
+            cpuChart.update();
+
+            // Memory Chart
+            if (memoryChart.data.labels.length > 10) {
+                memoryChart.data.labels.shift();
+                memoryChart.data.datasets[0].data.shift();
+            }
+            memoryChart.data.labels.push(now);
+            memoryChart.data.datasets[0].data.push(metricsData.infrastructure.memory.usagePercent);
+            memoryChart.update();
+
+            // Disk Chart
+            if (diskChart.data.labels.length > 10) {
+                diskChart.data.labels.shift();
+                diskChart.data.datasets[0].data.shift();
+            }
+            diskChart.data.labels.push(now);
+            diskChart.data.datasets[0].data.push(metricsData.infrastructure.disk.usagePercent);
+            diskChart.update();
+
+            // Endpoints Chart
+            const endpoints = metricsData.api.topEndpoints || [];
+            endpointsChart.data.labels = endpoints.map(e => e.endpoint.split(' ')[1] || e.endpoint);
+            endpointsChart.data.datasets[0].data = endpoints.map(e => e.count);
+            endpointsChart.update();
+        }
+
+        // Refresh data
+        function refreshData() {
+            fetchMetrics();
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(refreshData, 30000);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            fetchMetrics();
+        });
+    </script>
+</body>
+</html>

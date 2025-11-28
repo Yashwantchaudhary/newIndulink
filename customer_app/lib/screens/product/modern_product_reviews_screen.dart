@@ -86,8 +86,8 @@ class _ModernProductReviewsScreenState
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primaryBlue.withOpacity(0.1),
-            AppColors.secondaryPurple.withOpacity(0.05),
+            AppColors.primaryBlue.withValues(alpha: 0.1),
+            AppColors.secondaryPurple.withValues(alpha: 0.05),
           ],
         ),
         border: Border(
@@ -243,7 +243,9 @@ class _ModernProductReviewsScreenState
 
     return RefreshIndicator(
       onRefresh: () async {
-        await ref.read(reviewProvider.notifier).loadProductReviews(widget.productId);
+        await ref
+            .read(reviewProvider.notifier)
+            .loadProductReviews(widget.productId);
       },
       child: ListView.builder(
         padding: AppConstants.paddingAll16,
@@ -268,7 +270,8 @@ class _ModernProductReviewsScreenState
         borderRadius: AppConstants.borderRadiusLarge,
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.black : Colors.grey).withOpacity(0.06),
+            color:
+                (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.06),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -282,7 +285,7 @@ class _ModernProductReviewsScreenState
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: AppColors.primaryBlue.withOpacity(0.1),
+                backgroundColor: AppColors.primaryBlue.withValues(alpha: 0.1),
                 child: Text(
                   (review.user?['firstName'] ?? 'U')[0].toUpperCase(),
                   style: const TextStyle(
@@ -317,10 +320,10 @@ class _ModernProductReviewsScreenState
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.accentYellow.withOpacity(0.1),
+                  color: AppColors.accentYellow.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.accentYellow.withOpacity(0.3),
+                    color: AppColors.accentYellow.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -383,7 +386,9 @@ class _ModernProductReviewsScreenState
             children: [
               TextButton.icon(
                 onPressed: () async {
-                  await ref.read(reviewProvider.notifier).markHelpful(review.id);
+                  await ref
+                      .read(reviewProvider.notifier)
+                      .markHelpful(review.id);
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Marked as helpful')),
@@ -520,24 +525,24 @@ class _ModernProductReviewsScreenState
                       );
                       return;
                     }
-                    
+
                     Navigator.pop(context);
-                    
-                    final success = await ref.read(reviewProvider.notifier).createReview(
-                      productId: widget.productId,
-                      rating: rating,
-                      review: commentController.text.trim(),
-                    );
-                    
+
+                    final success =
+                        await ref.read(reviewProvider.notifier).createReview(
+                              productId: widget.productId,
+                              rating: rating,
+                              review: commentController.text.trim(),
+                            );
+
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(
-                            success 
-                              ? 'Thank you for your review!' 
-                              : 'Failed to submit review'
-                          ),
-                          backgroundColor: success ? AppColors.success : AppColors.error,
+                          content: Text(success
+                              ? 'Thank you for your review!'
+                              : 'Failed to submit review'),
+                          backgroundColor:
+                              success ? AppColors.success : AppColors.error,
                         ),
                       );
                     }
@@ -561,7 +566,7 @@ class _ModernProductReviewsScreenState
 
   void _showReportDialog(String reviewId) {
     final reasonController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -582,22 +587,22 @@ class _ModernProductReviewsScreenState
           ElevatedButton(
             onPressed: () async {
               if (reasonController.text.trim().isEmpty) return;
-              
-              final success = await ref.read(reviewProvider.notifier).reportReview(
-                reviewId,
-                reasonController.text.trim(),
-              );
-              
+
+              final success =
+                  await ref.read(reviewProvider.notifier).reportReview(
+                        reviewId,
+                        reasonController.text.trim(),
+                      );
+
               if (mounted) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      success 
-                        ? 'Review reported' 
-                        : 'Failed to report review'
-                    ),
-                    backgroundColor: success ? AppColors.success : AppColors.error,
+                    content: Text(success
+                        ? 'Review reported'
+                        : 'Failed to report review'),
+                    backgroundColor:
+                        success ? AppColors.success : AppColors.error,
                   ),
                 );
               }

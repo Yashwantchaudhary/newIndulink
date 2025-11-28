@@ -88,7 +88,7 @@ class _RevenueChartWidgetState extends State<RevenueChartWidget> {
         getDrawingHorizontalLine: (value) {
           return FlLine(
             color: (isDark ? AppColors.darkBorder : AppColors.lightBorder)
-                .withOpacity(0.5),
+                .withValues(alpha: 0.5),
             strokeWidth: 1,
           );
         },
@@ -113,7 +113,7 @@ class _RevenueChartWidgetState extends State<RevenueChartWidget> {
               }
               final date = DateTime.tryParse(widget.data[index].date);
               if (date == null) return const Text('');
-              
+
               return Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
@@ -176,10 +176,10 @@ class _RevenueChartWidgetState extends State<RevenueChartWidget> {
               }
               final dataPoint = widget.data[index];
               final date = DateTime.tryParse(dataPoint.date);
-              
+
               return LineTooltipItem(
                 '${date != null ? DateFormat('MMM dd').format(date) : 'N/A'}\n',
-                TextStyle(
+                const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
@@ -194,9 +194,10 @@ class _RevenueChartWidgetState extends State<RevenueChartWidget> {
                     ),
                   ),
                   TextSpan(
-                    text: '${dataPoint.orders} order${dataPoint.orders > 1 ? 's' : ''}',
+                    text:
+                        '${dataPoint.orders} order${dataPoint.orders > 1 ? 's' : ''}',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                       fontSize: 11,
                     ),
                   ),
@@ -209,7 +210,7 @@ class _RevenueChartWidgetState extends State<RevenueChartWidget> {
         getTouchedSpotIndicator: (barData, spotIndexes) {
           return spotIndexes.map((index) {
             return TouchedSpotIndicatorData(
-              FlLine(
+              const FlLine(
                 color: AppColors.primaryBlue,
                 strokeWidth: 2,
                 dashArray: [5, 5],
@@ -258,8 +259,8 @@ class _RevenueChartWidgetState extends State<RevenueChartWidget> {
             show: true,
             gradient: LinearGradient(
               colors: [
-                AppColors.primaryBlue.withOpacity(0.2),
-                AppColors.primaryBlue.withOpacity(0.0),
+                AppColors.primaryBlue.withValues(alpha: 0.2),
+                AppColors.primaryBlue.withValues(alpha: 0.0),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,

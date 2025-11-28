@@ -14,8 +14,7 @@ class CheckoutAddressScreen extends ConsumerStatefulWidget {
       _CheckoutAddressScreenState();
 }
 
-class _CheckoutAddressScreenState
-    extends ConsumerState<CheckoutAddressScreen> {
+class _CheckoutAddressScreenState extends ConsumerState<CheckoutAddressScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -60,9 +59,24 @@ class _CheckoutAddressScreenState
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your full name';
+                  return 'Full name is required';
                 }
-               return null;
+
+                if (value.trim().length < 2) {
+                  return 'Name must be at least 2 characters long';
+                }
+
+                if (value.trim().length > 50) {
+                  return 'Name must be less than 50 characters';
+                }
+
+                // Check for valid characters (letters, spaces, hyphens, apostrophes)
+                final nameRegex = RegExp(r"^[a-zA-Z\s\-']+$");
+                if (!nameRegex.hasMatch(value.trim())) {
+                  return 'Name can only contain letters, spaces, hyphens, and apostrophes';
+                }
+
+                return null;
               },
               textInputAction: TextInputAction.next,
             ),
@@ -79,11 +93,26 @@ class _CheckoutAddressScreenState
               keyboardType: TextInputType.phone,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your phone number';
+                  return 'Phone number is required';
                 }
-                if (value.length < 10) {
+
+                // Remove all non-digit characters for validation
+                final cleanPhone = value.replaceAll(RegExp(r'[^\d]'), '');
+
+                if (cleanPhone.length < 10) {
                   return 'Phone number must be at least 10 digits';
                 }
+
+                if (cleanPhone.length > 15) {
+                  return 'Phone number must be less than 15 digits';
+                }
+
+                // Check if it starts with valid country codes (optional, can be customized)
+                if (cleanPhone.length >= 10 &&
+                    !RegExp(r'^[1-9]').hasMatch(cleanPhone)) {
+                  return 'Please enter a valid phone number';
+                }
+
                 return null;
               },
               textInputAction: TextInputAction.next,
@@ -100,8 +129,17 @@ class _CheckoutAddressScreenState
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your address';
+                  return 'Address is required';
                 }
+
+                if (value.trim().length < 5) {
+                  return 'Address must be at least 5 characters long';
+                }
+
+                if (value.trim().length > 100) {
+                  return 'Address must be less than 100 characters';
+                }
+
                 return null;
               },
               textInputAction: TextInputAction.next,
@@ -130,8 +168,23 @@ class _CheckoutAddressScreenState
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your city';
+                  return 'City is required';
                 }
+
+                if (value.trim().length < 2) {
+                  return 'City name must be at least 2 characters long';
+                }
+
+                if (value.trim().length > 50) {
+                  return 'City name must be less than 50 characters';
+                }
+
+                // Check for valid characters (letters, spaces, hyphens, apostrophes)
+                final cityRegex = RegExp(r"^[a-zA-Z\s\-']+$");
+                if (!cityRegex.hasMatch(value.trim())) {
+                  return 'City name can only contain letters, spaces, hyphens, and apostrophes';
+                }
+
                 return null;
               },
               textInputAction: TextInputAction.next,
@@ -167,8 +220,19 @@ class _CheckoutAddressScreenState
               keyboardType: TextInputType.number,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your postal code';
+                  return 'Postal code is required';
                 }
+
+                final cleanPostal = value.replaceAll(RegExp(r'[^\d]'), '');
+
+                if (cleanPostal.length < 5) {
+                  return 'Postal code must be at least 5 digits';
+                }
+
+                if (cleanPostal.length > 10) {
+                  return 'Postal code must be less than 10 digits';
+                }
+
                 return null;
               },
               textInputAction: TextInputAction.done,

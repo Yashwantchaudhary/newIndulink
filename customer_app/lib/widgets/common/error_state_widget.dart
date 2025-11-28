@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_constants.dart';
 import 'premium_button.dart';
@@ -115,7 +115,7 @@ class ErrorStateWidget extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: (iconColor ?? AppColors.error).withOpacity(0.1),
+                color: (iconColor ?? AppColors.error).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -212,10 +212,10 @@ class ErrorBanner extends StatelessWidget {
     return Container(
       padding: AppConstants.paddingAll16,
       decoration: BoxDecoration(
-        color: AppColors.errorLight.withOpacity(0.2),
+        color: AppColors.errorLight.withValues(alpha: 0.2),
         borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(
-          color: AppColors.error.withOpacity(0.3),
+          color: AppColors.error.withValues(alpha: 0.3),
           width: 1,
         ),
       ),

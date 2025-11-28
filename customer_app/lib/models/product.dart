@@ -1,3 +1,5 @@
+import '../services/cdn_service.dart';
+
 class Product {
   final String id;
   final String title;
@@ -14,7 +16,7 @@ class Product {
   final String status;
   final bool isFeatured;
   final DateTime createdAt;
-  
+
   // Populated fields
   final Category? category;
   final Supplier? supplier;
@@ -40,13 +42,15 @@ class Product {
   });
 
   bool get isInStock => stock > 0;
-  
+
   bool get hasDiscount => compareAtPrice != null && compareAtPrice! > price;
-  
+
   int get discountPercentage {
     if (!hasDiscount) return 0;
     return (((compareAtPrice! - price) / compareAtPrice!) * 100).round();
   }
+
+  bool get isNew => DateTime.now().difference(createdAt).inDays <= 7;
 
   String get primaryImageUrl {
     if (images.isEmpty) return '';
@@ -56,6 +60,37 @@ class Product {
     );
     return primary.url;
   }
+
+  // CDN-optimized image URL with automatic format conversion and sizing
+  String getOptimizedImageUrl({
+    int? width,
+    int? height,
+    String quality = 'high',
+    String format = 'webp',
+    String fit = 'cover',
+  }) {
+    final baseUrl = primaryImageUrl;
+    if (baseUrl.isEmpty) return '';
+
+    // Use CDN service for optimized URL generation and fallback
+    return CdnService().getOptimizedImageUrl(
+      baseUrl,
+      width: width,
+      height: height,
+      quality: quality,
+      format: format,
+      fit: fit,
+    );
+  }
+
+  // Predefined optimized URLs for common use cases
+  String get thumbnailUrl =>
+      getOptimizedImageUrl(width: 150, height: 150, quality: 'medium');
+  String get cardImageUrl =>
+      getOptimizedImageUrl(width: 300, height: 300, quality: 'high');
+  String get detailImageUrl =>
+      getOptimizedImageUrl(width: 600, height: 600, quality: 'high');
+  String get fullImageUrl => getOptimizedImageUrl(width: 1200, quality: 'high');
 
   String get name => title;
 
@@ -82,7 +117,8 @@ class Product {
       totalReviews: json['totalReviews'] ?? 0,
       status: json['status'] ?? 'active',
       isFeatured: json['isFeatured'] ?? false,
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      createdAt:
+          DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
       category: json['category'] is Map
           ? Category.fromJson(json['category'] as Map<String, dynamic>)
           : null,

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../config/app_colors.dart';
@@ -226,7 +226,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         children: [
           CircleAvatar(
             radius: 24,
-            backgroundColor: AppColors.primaryBlue.withOpacity(0.1),
+            backgroundColor: AppColors.primaryBlue.withValues(alpha: 0.1),
             child: const Icon(Icons.store, color: AppColors.primaryBlue),
           ),
           const SizedBox(width: AppConstants.spacing12),
@@ -269,7 +269,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             vertical: 6,
           ),
           decoration: BoxDecoration(
-            color: AppColors.primaryBlue.withOpacity(0.1),
+            color: AppColors.primaryBlue.withValues(alpha: 0.1),
             borderRadius: AppConstants.borderRadiusSmall,
           ),
           child: Row(

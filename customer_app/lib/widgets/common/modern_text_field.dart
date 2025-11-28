@@ -96,7 +96,9 @@ class _ModernTextFieldState extends State<ModernTextField> {
           decoration: BoxDecoration(
             color: widget.enabled
                 ? (isDark ? AppColors.darkSurface : AppColors.lightSurface)
-                : (isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant),
+                : (isDark
+                    ? AppColors.darkSurfaceVariant
+                    : AppColors.lightSurfaceVariant),
             borderRadius: AppConstants.borderRadiusMedium,
             border: Border.all(
               color: borderColor,
@@ -105,7 +107,7 @@ class _ModernTextFieldState extends State<ModernTextField> {
             boxShadow: _isFocused && !hasError
                 ? [
                     BoxShadow(
-                      color: AppColors.primaryBlue.withOpacity(0.1),
+                      color: AppColors.primaryBlue.withValues(alpha: 0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -170,7 +172,9 @@ class _ModernTextFieldState extends State<ModernTextField> {
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: hasError
                       ? AppColors.error
-                      : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                      : (isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary),
                 ),
               ),
             ),

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
-import '../../config/app_constants.dart';
-import '../../widgets/common/custom_badge.dart';
 
 /// Stock indicator widget
 class StockIndicator extends StatelessWidget {
@@ -17,18 +15,19 @@ class StockIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     if (stock == 0) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.error.withOpacity(0.1),
+          color: AppColors.error.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.remove_circle_outline, size: 16, color: AppColors.error),
+            const Icon(Icons.remove_circle_outline,
+                size: 16, color: AppColors.error),
             const SizedBox(width: 4),
             Text(
               'Out of Stock',
@@ -46,13 +45,14 @@ class StockIndicator extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.warning.withOpacity(0.1),
+          color: AppColors.warning.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.warning),
+            const Icon(Icons.warning_amber_rounded,
+                size: 16, color: AppColors.warning),
             const SizedBox(width: 4),
             Text(
               'Only $stock left',
@@ -69,7 +69,7 @@ class StockIndicator extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
+        const Icon(
           Icons.check_circle,
           size: 16,
           color: AppColors.success,

@@ -47,7 +47,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     // Additional validation
-    if (_emailController.text.trim().isEmpty || _passwordController.text.isEmpty) {
+    if (_emailController.text.trim().isEmpty ||
+        _passwordController.text.isEmpty) {
       setState(() => _errorMessage = 'Please fill in all fields');
       return;
     }
@@ -76,17 +77,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           // Navigate to main app
           AppRoutes.navigateToAndReplace(context, AppRoutes.home);
         } else {
-          setState(() => _errorMessage = 'Authentication failed. Please try again.');
+          setState(
+              () => _errorMessage = 'Authentication failed. Please try again.');
         }
       } else if (mounted) {
         final error = ref.read(authProvider).error;
         setState(() {
-          _errorMessage = error ?? 'Login failed. Please check your credentials.';
+          _errorMessage =
+              error ?? 'Login failed. Please check your credentials.';
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _errorMessage = 'Network error. Please check your connection.');
+        setState(() =>
+            _errorMessage = 'Network error. Please check your connection.');
       }
     } finally {
       if (mounted) {
@@ -103,8 +107,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       final success = await ref.read(authProvider.notifier).signInWithGoogle(
-        role: widget.userRole,
-      );
+            role: widget.userRole,
+          );
 
       if (success && mounted) {
         // Verify authentication state
@@ -113,7 +117,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           // Navigate to main app
           AppRoutes.navigateToAndReplace(context, AppRoutes.home);
         } else {
-          setState(() => _errorMessage = 'Google authentication failed. Please try again.');
+          setState(() => _errorMessage =
+              'Google authentication failed. Please try again.');
         }
       } else if (mounted) {
         final error = ref.read(authProvider).error;
@@ -123,7 +128,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _errorMessage = 'Network error. Please check your connection.');
+        setState(() =>
+            _errorMessage = 'Network error. Please check your connection.');
       }
     } finally {
       if (mounted) {
@@ -144,7 +150,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: isDark
-              ? LinearGradient(
+              ? const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
@@ -156,8 +162,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.primaryBlue.withOpacity(0.05),
-                    AppColors.accentCoral.withOpacity(0.05),
+                    AppColors.primaryBlue.withValues(alpha: 0.05),
+                    AppColors.accentCoral.withValues(alpha: 0.05),
                   ],
                 ),
         ),
@@ -181,7 +187,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           borderRadius: AppConstants.borderRadiusXLarge,
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primaryBlue.withOpacity(0.3),
+                              color:
+                                  AppColors.primaryBlue.withValues(alpha: 0.3),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -419,7 +426,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.verified_user_rounded,
                             size: 16,
                             color: AppColors.success,

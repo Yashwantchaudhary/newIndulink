@@ -67,7 +67,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         phone: phone,
         businessName: businessName,
       );
-      
+
       state = state.copyWith(
         user: updatedUser,
         isLoading: false,
@@ -88,7 +88,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
     try {
       final imageUrl = await _profileService.uploadProfileImage(filePath);
-      
+
       if (state.user != null) {
         state = state.copyWith(
           user: User(
@@ -135,6 +135,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 }
 
 // Provider
-final profileProvider = StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
+final profileProvider =
+    StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
   return ProfileNotifier();
 });

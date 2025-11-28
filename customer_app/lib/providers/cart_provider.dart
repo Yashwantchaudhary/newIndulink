@@ -67,7 +67,8 @@ class CartNotifier extends StateNotifier<CartState> {
       : super(CartState(cart: Cart.empty())) {
     // Listen to auth state changes
     _ref.listen<AuthState>(authProvider, (previous, next) {
-      if (next.user?.role == 'customer' && (previous?.user?.role != 'customer')) {
+      if (next.user?.role == 'customer' &&
+          (previous?.user?.role != 'customer')) {
         _loadCart();
       }
     });

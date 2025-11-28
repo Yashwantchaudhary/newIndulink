@@ -76,7 +76,7 @@ class _ProductCardGridState extends State<ProductCardGrid>
               boxShadow: [
                 BoxShadow(
                   color: (isDark ? Colors.black : Colors.grey)
-                      .withOpacity(_isHovered ? 0.2 : 0.08),
+                      .withValues(alpha: _isHovered ? 0.2 : 0.08),
                   blurRadius: _isHovered ? 16 : 8,
                   offset: Offset(0, _isHovered ? 6 : 2),
                 ),
@@ -136,11 +136,11 @@ class _ProductCardGridState extends State<ProductCardGrid>
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
+                                color: Colors.white.withValues(alpha: 0.9),
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withValues(alpha: 0.1),
                                     blurRadius: 4,
                                   ),
                                 ],
@@ -250,7 +250,7 @@ class _ProductCardGridState extends State<ProductCardGrid>
                                   customBorder: const CircleBorder(),
                                   child: Container(
                                     padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
+                                    decoration: const BoxDecoration(
                                       gradient: AppColors.primaryGradient,
                                       shape: BoxShape.circle,
                                     ),
@@ -314,7 +314,8 @@ class ProductCardList extends StatelessWidget {
             borderRadius: AppConstants.borderRadiusMedium,
             boxShadow: [
               BoxShadow(
-                color: (isDark ? Colors.black : Colors.grey).withOpacity(0.08),
+                color: (isDark ? Colors.black : Colors.grey)
+                    .withValues(alpha: 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -391,7 +392,8 @@ class ProductCardList extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.accentOrange.withOpacity(0.1),
+                              color:
+                                  AppColors.accentOrange.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -454,7 +456,7 @@ class ProductCardList extends StatelessWidget {
                             customBorder: const CircleBorder(),
                             child: Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 gradient: AppColors.primaryGradient,
                                 shape: BoxShape.circle,
                               ),
@@ -507,7 +509,7 @@ class ProductCardFeatured extends StatelessWidget {
           borderRadius: AppConstants.borderRadiusLarge,
           boxShadow: [
             BoxShadow(
-              color: AppColors.accentOrange.withOpacity(0.3),
+              color: AppColors.accentOrange.withValues(alpha: 0.3),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -632,7 +634,8 @@ class ProductCardCompact extends StatelessWidget {
           borderRadius: AppConstants.borderRadiusMedium,
           boxShadow: [
             BoxShadow(
-              color: (isDark ? Colors.black : Colors.grey).withOpacity(0.08),
+              color:
+                  (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

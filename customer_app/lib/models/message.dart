@@ -2,6 +2,7 @@ class Message {
   final String id;
   final String conversationId;
   final String senderId;
+  final String receiverId;
   final String text;
   final List<Attachment>? attachments;
   final bool isRead;
@@ -12,6 +13,7 @@ class Message {
     required this.id,
     required this.conversationId,
     required this.senderId,
+    required this.receiverId,
     required this.text,
     this.attachments,
     this.isRead = false,
@@ -24,6 +26,7 @@ class Message {
       id: json['_id'] ?? '',
       conversationId: json['conversationId'] ?? '',
       senderId: json['senderId'] ?? '',
+      receiverId: json['receiverId'] ?? '',
       text: json['text'] ?? '',
       attachments: (json['attachments'] as List<dynamic>?)
           ?.map((a) => Attachment.fromJson(a))
@@ -54,6 +57,7 @@ class Message {
     String? id,
     String? conversationId,
     String? senderId,
+    String? receiverId,
     String? text,
     List<Attachment>? attachments,
     bool? isRead,
@@ -64,6 +68,7 @@ class Message {
       id: id ?? this.id,
       conversationId: conversationId ?? this.conversationId,
       senderId: senderId ?? this.senderId,
+      receiverId: receiverId ?? this.receiverId,
       text: text ?? this.text,
       attachments: attachments ?? this.attachments,
       isRead: isRead ?? this.isRead,

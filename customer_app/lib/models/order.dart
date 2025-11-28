@@ -241,10 +241,16 @@ class Order {
       paymentMethod:
           PaymentMethod.fromString(json['paymentMethod'] ?? 'cash_on_delivery'),
       paymentStatus: json['paymentStatus'],
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      confirmedAt: json['confirmedAt'] != null ? DateTime.parse(json['confirmedAt']) : null,
-      shippedAt: json['shippedAt'] != null ? DateTime.parse(json['shippedAt']) : null,
-      deliveredAt: json['deliveredAt'] != null ? DateTime.parse(json['deliveredAt']) : null,
+      createdAt:
+          DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      confirmedAt: json['confirmedAt'] != null
+          ? DateTime.parse(json['confirmedAt'])
+          : null,
+      shippedAt:
+          json['shippedAt'] != null ? DateTime.parse(json['shippedAt']) : null,
+      deliveredAt: json['deliveredAt'] != null
+          ? DateTime.parse(json['deliveredAt'])
+          : null,
     );
   }
 

@@ -5,7 +5,8 @@ class ReviewService {
   final ApiService _apiService = ApiService();
 
   // Get reviews for a product
-  Future<List<Review>> getProductReviews(String productId, {
+  Future<List<Review>> getProductReviews(
+    String productId, {
     int page = 1,
     int limit = 20,
   }) async {
@@ -17,7 +18,7 @@ class ReviewService {
           'limit': limit,
         },
       );
-      
+
       if (response.statusCode == 200 && response.data['success'] == true) {
         final reviewsData = response.data['data']['reviews'] as List;
         return reviewsData.map((json) => Review.fromJson(json)).toList();
@@ -41,7 +42,7 @@ class ReviewService {
           'limit': limit,
         },
       );
-      
+
       if (response.statusCode == 200 && response.data['success'] == true) {
         final reviewsData = response.data['data']['reviews'] as List;
         return reviewsData.map((json) => Review.fromJson(json)).toList();
@@ -69,7 +70,7 @@ class ReviewService {
           if (images != null) 'images': images,
         },
       );
-      
+
       if (response.statusCode == 201 && response.data['success'] == true) {
         return Review.fromJson(response.data['data']);
       }
@@ -80,7 +81,8 @@ class ReviewService {
   }
 
   // Update a review
-  Future<Review> updateReview(String reviewId, {
+  Future<Review> updateReview(
+    String reviewId, {
     double? rating,
     String? review,
     List<String>? images,
@@ -94,7 +96,7 @@ class ReviewService {
           if (images != null) 'images': images,
         },
       );
-      
+
       if (response.statusCode == 200 && response.data['success'] == true) {
         return Review.fromJson(response.data['data']);
       }

@@ -1,4 +1,3 @@
-import '../models/wishlist.dart'; 
 import '../models/product.dart';
 import 'api_service.dart';
 
@@ -9,10 +8,12 @@ class WishlistService {
   Future<List<Product>> getWishlist() async {
     try {
       final response = await _apiService.get('/wishlist');
-      
+
       if (response.statusCode == 200 && response.data['success'] == true) {
         final productsData = response.data['data']['items'] as List;
-        return productsData.map((json) => Product.fromJson(json['product'])).toList();
+        return productsData
+            .map((json) => Product.fromJson(json['product']))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -45,7 +46,7 @@ class WishlistService {
   Future<bool> isInWishlist(String productId) async {
     try {
       final response = await _apiService.get('/wishlist/check/$productId');
-      
+
       if (response.statusCode == 200 && response.data['success'] == true) {
         return response.data['data']['inWishlist'] as bool;
       }

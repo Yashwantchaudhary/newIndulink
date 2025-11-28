@@ -60,4 +60,27 @@ class DashboardService {
       rethrow;
     }
   }
+
+  /// Get admin/host dashboard data
+  Future<AdminDashboardData> getAdminDashboard() async {
+    try {
+      developer.log('Fetching admin dashboard data...',
+          name: 'DashboardService');
+
+      final response = await _apiService.get('/dashboard/admin');
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        developer.log('Admin dashboard data fetched successfully',
+            name: 'DashboardService');
+        return AdminDashboardData.fromJson(response.data['data']);
+      } else {
+        throw Exception(
+            response.data['message'] ?? 'Failed to load admin dashboard data');
+      }
+    } catch (e) {
+      developer.log('Exception in getAdminDashboard: $e',
+          name: 'DashboardService', error: e);
+      rethrow;
+    }
+  }
 }

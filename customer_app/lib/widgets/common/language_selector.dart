@@ -19,7 +19,7 @@ class LanguageSelector extends ConsumerWidget {
     return languageAsync.when(
       data: (languageState) {
         final currentLocale = languageState.locale;
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -28,27 +28,34 @@ class LanguageSelector extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
-                  (AppLocalizations.of(context) ?? AppLocalizations(const Locale('en'))).selectLanguage,
+                  (AppLocalizations.of(context) ??
+                          AppLocalizations(const Locale('en')))
+                      .selectLanguage,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-            
-             ...AppLocalizations.supportedLocales.map((locale) {
-                final isSelected = currentLocale.languageCode == locale.languageCode;
-                final languageNotifier = ref.read(languageNotifierProvider.notifier);
- 
-                return _LanguageTile(
-                  languageCode: locale.languageCode,
-                  languageName: languageNotifier.getLanguageName(locale.languageCode),
-                  languageFlag: languageNotifier.getLanguageFlag(locale.languageCode),
-                  isSelected: isSelected,
-                  onTap: () {
-                    ref.read(languageNotifierProvider.notifier).changeLanguage(locale);
-                  },
-                );
-              }),
+            ...AppLocalizations.supportedLocales.map((locale) {
+              final isSelected =
+                  currentLocale.languageCode == locale.languageCode;
+              final languageNotifier =
+                  ref.read(languageNotifierProvider.notifier);
+
+              return _LanguageTile(
+                languageCode: locale.languageCode,
+                languageName:
+                    languageNotifier.getLanguageName(locale.languageCode),
+                languageFlag:
+                    languageNotifier.getLanguageFlag(locale.languageCode),
+                isSelected: isSelected,
+                onTap: () {
+                  ref
+                      .read(languageNotifierProvider.notifier)
+                      .changeLanguage(locale);
+                },
+              );
+            }),
           ],
         );
       },
@@ -99,7 +106,7 @@ class _LanguageTile extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(0.1),
+                  color: theme.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.center,
@@ -108,9 +115,9 @@ class _LanguageTile extends StatelessWidget {
                   style: const TextStyle(fontSize: 24),
                 ),
               ),
-              
+
               const SizedBox(width: 16),
-              
+
               // Language name and code
               Expanded(
                 child: Column(
@@ -119,7 +126,8 @@ class _LanguageTile extends StatelessWidget {
                     Text(
                       languageName,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
                         color: isSelected ? theme.primaryColor : null,
                       ),
                     ),
@@ -133,7 +141,7 @@ class _LanguageTile extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Selected indicator
               if (isSelected)
                 Container(
@@ -192,10 +200,10 @@ class LanguageSelectorBottomSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            
+
             // Language selector
             const LanguageSelector(),
-            
+
             const SizedBox(height: 10),
           ],
         ),

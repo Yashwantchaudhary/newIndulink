@@ -188,7 +188,8 @@ class NavigationHelper {
   }
 
   /// Navigate to Profile
-  static Future navigateToProfile(BuildContext context, {bool isSupplier = false}) {
+  static Future navigateToProfile(BuildContext context,
+      {bool isSupplier = false}) {
     return navigateTo(
       context,
       isSupplier ? AppRoutes.supplierProfile : AppRoutes.customerProfile,
@@ -230,18 +231,9 @@ class NavigationHelper {
       clearStack: clearStack,
     );
   }
-
-  /// Logout and Navigate to Login
-  static Future logout(BuildContext context) {
-    // TODO: Clear user session/token
-    return navigateTo(
-      context,
-      AppRoutes.login,
-      clearStack: true,
-    );
-  }
 }
 
+/// Page transition types
 enum PageTransitionType {
   fade,
   slide,
@@ -400,8 +392,8 @@ class DialogHelper {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => WillPopScope(
-        onWillPop: () async => false,
+      builder: (context) => PopScope(
+        canPop: false,
         child: AlertDialog(
           content: Column(
             mainAxisSize: MainAxisSize.min,

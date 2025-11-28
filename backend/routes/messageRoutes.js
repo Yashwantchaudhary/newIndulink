@@ -6,6 +6,8 @@ const {
     sendMessage,
     markAsRead,
     getUnreadCount,
+    searchConversations,
+    deleteMessage,
 } = require('../controllers/messageController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -13,9 +15,11 @@ const { protect } = require('../middleware/authMiddleware');
 router.use(protect);
 
 router.get('/conversations', getConversations);
+router.get('/conversations/search', searchConversations);
 router.get('/conversation/:userId', getMessages);
 router.post('/', sendMessage);
 router.put('/read/:conversationId', markAsRead);
+router.delete('/:messageId', deleteMessage);
 router.get('/unread/count', getUnreadCount);
 
 module.exports = router;

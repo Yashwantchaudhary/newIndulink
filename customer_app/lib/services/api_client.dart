@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
+import '../utils/error_handler.dart';
 
 class ApiClient {
   static String get baseUrl => AppConfig.apiBaseUrl;
@@ -31,32 +32,35 @@ class ApiClient {
           // Add request ID for tracking
           _requestIdCounter++;
           options.headers['X-Request-ID'] = 'req_$_requestIdCounter';
-          
+
           // Add auth token to requests
           if (_authToken != null) {
             options.headers['Authorization'] = 'Bearer $_authToken';
           }
-          
+
           if (kDebugMode) {
-            print('🚀 REQUEST[${options.method}] #${options.headers['X-Request-ID']} => ${options.uri}');
+            print(
+                '🚀 REQUEST[${options.method}] #${options.headers['X-Request-ID']} => ${options.uri}');
             print('Headers: ${options.headers}');
             if (options.data != null) print('Data: ${options.data}');
           }
-          
+
           return handler.next(options);
         },
         onResponse: (response, handler) {
           if (kDebugMode) {
             final requestId = response.requestOptions.headers['X-Request-ID'];
-            print('✅ RESPONSE[${response.statusCode}] #$requestId => ${response.requestOptions.uri}');
+            print(
+                '✅ RESPONSE[${response.statusCode}] #$requestId => ${response.requestOptions.uri}');
           }
           return handler.next(response);
         },
         onError: (error, handler) async {
           final requestId = error.requestOptions.headers['X-Request-ID'];
-          
+
           if (kDebugMode) {
-            print('❌ ERROR[${error.response?.statusCode}] #$requestId => ${error.requestOptions.uri}');
+            print(
+                '❌ ERROR[${error.response?.statusCode}] #$requestId => ${error.requestOptions.uri}');
             print('Message: ${error.message}');
             if (error.response != null) {
               print('Response: ${error.response?.data}');
@@ -65,7 +69,8 @@ class ApiClient {
 
           // Retry logic for specific error types
           if (_shouldRetry(error)) {
-            final retryCount = (error.requestOptions.extra['retryCount'] ?? 0) as int;
+            final retryCount =
+                (error.requestOptions.extra['retryCount'] ?? 0) as int;
 
             if (retryCount < 3) {
               if (kDebugMode) {
@@ -75,7 +80,8 @@ class ApiClient {
               error.requestOptions.extra['retryCount'] = retryCount + 1;
 
               // Wait before retrying (exponential backoff)
-              await Future.delayed(Duration(milliseconds: 500 * (retryCount + 1)));
+              await Future.delayed(
+                  Duration(milliseconds: 500 * (retryCount + 1)));
 
               try {
                 final response = await _dio.fetch(error.requestOptions);
@@ -85,7 +91,7 @@ class ApiClient {
               }
             }
           }
-          
+
           return handler.next(error);
         },
       ),
@@ -96,9 +102,9 @@ class ApiClient {
   bool _shouldRetry(DioException error) {
     // Retry on connection timeout, send timeout, or network errors
     return error.type == DioExceptionType.connectionTimeout ||
-           error.type == DioExceptionType.sendTimeout ||
-           error.type == DioExceptionType.receiveTimeout ||
-           (error.type == DioExceptionType.unknown &&
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout ||
+        (error.type == DioExceptionType.unknown &&
             error.error?.toString().contains('SocketException') == true);
   }
 
@@ -138,7 +144,7 @@ class ApiClient {
       );
       return response;
     } on DioException catch (e) {
-      throw _handleError(e);
+      throw _handleError(e, endpoint: path);
     }
   }
 
@@ -158,7 +164,7 @@ class ApiClient {
       );
       return response;
     } on DioException catch (e) {
-      throw _handleError(e);
+      throw _handleError(e, endpoint: path);
     }
   }
 
@@ -178,7 +184,7 @@ class ApiClient {
       );
       return response;
     } on DioException catch (e) {
-      throw _handleError(e);
+      throw _handleError(e, endpoint: path);
     }
   }
 
@@ -198,7 +204,7 @@ class ApiClient {
       );
       return response;
     } on DioException catch (e) {
-      throw _handleError(e);
+      throw _handleError(e, endpoint: path);
     }
   }
 
@@ -224,50 +230,17 @@ class ApiClient {
       );
       return response;
     } on DioException catch (e) {
-      throw _handleError(e);
+      throw _handleError(e, endpoint: path);
     }
   }
 
-  // Error handling
-  Exception _handleError(DioException error) {
-    switch (error.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        return Exception('Connection timeout. Please check your internet connection.');
-      
-      case DioExceptionType.badResponse:
-        final statusCode = error.response?.statusCode;
-        final message = error.response?.data?['message'] ?? 
-                        error.response?.data?['error'] ??
-                        'Request failed with status code $statusCode';
-        
-        switch (statusCode) {
-          case 400:
-            return Exception('Bad request: $message');
-          case 401:
-            return Exception('Unauthorized. Please login again.');
-          case 403:
-            return Exception('Forbidden: $message');
-          case 404:
-            return Exception('Not found: $message');
-          case 500:
-            return Exception('Server error. Please try again later.');
-          default:
-            return Exception(message);
-        }
-      
-      case DioExceptionType.cancel:
-        return Exception('Request cancelled');
-      
-      case DioExceptionType.unknown:
-        if (error.error?.toString().contains('SocketException') ?? false) {
-          return Exception('No internet connection');
-        }
-        return Exception('An error occurred: ${error.message}');
-      
-      default:
-        return Exception('An unexpected error occurred');
-    }
+  // Enhanced error handling with AppError
+  AppError _handleError(DioException error, {String? endpoint}) {
+    final appError = ErrorHandler.convertToAppError(error, endpoint: endpoint);
+
+    // Report error to global error handler
+    ErrorHandler().reportError(appError);
+
+    return appError;
   }
 }

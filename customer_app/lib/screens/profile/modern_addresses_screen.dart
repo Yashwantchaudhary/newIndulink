@@ -16,7 +16,7 @@ class ModernAddressesScreen extends ConsumerStatefulWidget {
 }
 
 class _ModernAddressesScreenState extends ConsumerState<ModernAddressesScreen> {
-  String _defaultAddressId = '1';
+  final String _defaultAddressId = '1';
 
   @override
   void initState() {
@@ -49,20 +49,20 @@ class _ModernAddressesScreenState extends ConsumerState<ModernAddressesScreen> {
       body: addressState.isLoading && addresses.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : addresses.isEmpty
-          ? EmptyStateWidget(
-              icon: Icons.location_off,
-              title: 'No Addresses Saved',
-              message: 'Add a delivery address to continue',
-              actionText: 'Add Address',
-              onAction: _showAddAddressDialog,
-            )
-          : ListView.builder(
-              padding: AppConstants.paddingAll16,
-              itemCount: addresses.length,
-              itemBuilder: (context, index) {
-                return _buildAddressCard(addresses[index], isDark, theme);
-              },
-            ),
+              ? EmptyStateWidget(
+                  icon: Icons.location_off,
+                  title: 'No Addresses Saved',
+                  message: 'Add a delivery address to continue',
+                  actionText: 'Add Address',
+                  onAction: _showAddAddressDialog,
+                )
+              : ListView.builder(
+                  padding: AppConstants.paddingAll16,
+                  itemCount: addresses.length,
+                  itemBuilder: (context, index) {
+                    return _buildAddressCard(addresses[index], isDark, theme);
+                  },
+                ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddAddressDialog,
         icon: const Icon(Icons.add),
@@ -81,8 +81,8 @@ class _ModernAddressesScreenState extends ConsumerState<ModernAddressesScreen> {
         gradient: isDefault
             ? LinearGradient(
                 colors: [
-                  AppColors.primaryBlue.withOpacity(0.1),
-                  AppColors.secondaryPurple.withOpacity(0.05),
+                  AppColors.primaryBlue.withValues(alpha: 0.1),
+                  AppColors.secondaryPurple.withValues(alpha: 0.05),
                 ],
               )
             : null,
@@ -98,7 +98,8 @@ class _ModernAddressesScreenState extends ConsumerState<ModernAddressesScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.black : Colors.grey).withOpacity(0.08),
+            color:
+                (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -120,7 +121,7 @@ class _ModernAddressesScreenState extends ConsumerState<ModernAddressesScreen> {
                     boxShadow: [
                       BoxShadow(
                         color: _getAddressTypeColor(address.label)
-                            .withOpacity(0.3),
+                            .withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -394,7 +395,9 @@ class _ModernAddressesScreenState extends ConsumerState<ModernAddressesScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        isEdit ? 'Address updated' : 'Address added successfully',
+                        isEdit
+                            ? 'Address updated'
+                            : 'Address added successfully',
                       ),
                     ),
                   );
@@ -444,7 +447,4 @@ class _ModernAddressesScreenState extends ConsumerState<ModernAddressesScreen> {
       ),
     );
   }
-
-
 }
-

@@ -129,8 +129,8 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
       actions: [
         // Notifications
         IconButton(
-          icon: badges.Badge(
-            badgeContent: const Text(
+          icon: const badges.Badge(
+            badgeContent: Text(
               '3',
               style: TextStyle(
                 color: Colors.white,
@@ -138,7 +138,7 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
                 fontWeight: FontWeight.bold,
               ),
             ),
-            child: const Icon(Icons.notifications_outlined),
+            child: Icon(Icons.notifications_outlined),
           ),
           onPressed: () {
             Navigator.push(
@@ -178,7 +178,7 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
   Widget _buildSearchSection(BuildContext context) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: EdgeInsets.symmetric(
+        padding: const EdgeInsets.symmetric(
           horizontal: AppConstants.spacing20,
           vertical: AppConstants.spacing16,
         ),
@@ -314,7 +314,7 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: gradient.colors.first.withOpacity(0.3),
+                  color: gradient.colors.first.withValues(alpha: 0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -486,11 +486,12 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
         gradient: LinearGradient(
           begin: gradient.begin,
           end: gradient.end,
-          colors: gradient.colors.map((c) => c.withOpacity(0.15)).toList(),
+          colors:
+              gradient.colors.map((c) => c.withValues(alpha: 0.15)).toList(),
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: gradient.colors.first.withOpacity(0.3),
+          color: gradient.colors.first.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -517,7 +518,7 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: gradient.colors.first.withOpacity(0.3),
+                        color: gradient.colors.first.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -567,7 +568,7 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: AppConstants.spacing20,
               vertical: AppConstants.spacing16,
             ),
@@ -614,7 +615,8 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
           // Products Grid
           else
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing20),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.spacing20),
               child: GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -696,7 +698,7 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
                 },
               ),
             ),
-          SizedBox(height: AppConstants.spacing24),
+          const SizedBox(height: AppConstants.spacing24),
         ],
       ),
     );

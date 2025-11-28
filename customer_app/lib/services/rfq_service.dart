@@ -42,7 +42,8 @@ class RFQService {
         if (status != null) 'status': status,
       };
 
-      final response = await _apiClient.get('/rfq', queryParameters: queryParams);
+      final response =
+          await _apiClient.get('/rfq', queryParameters: queryParams);
 
       final rfqs = (response.data['data'] as List)
           .map((json) => RFQ.fromJson(json))

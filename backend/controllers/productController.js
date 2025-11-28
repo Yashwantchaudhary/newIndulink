@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const cdnConfig = require('../config/cdn');
 
 // @desc    Get all products with filters and pagination
 // @route   GET /api/products
@@ -118,6 +119,15 @@ exports.createProduct = async (req, res, next) => {
             $inc: { productCount: 1 },
         });
 
+        // Send new product notification to all customers
+        try {
+            const { sendNewProductNotification } = require('../services/notificationService');
+            await sendNewProductNotification(req.user.id, product._id, product.title);
+        } catch (notificationError) {
+            console.error('Error sending new product notification:', notificationError);
+            // Don't fail the product creation if notification fails
+        }
+
         res.status(201).json({
             success: true,
             message: 'Product created successfully',
@@ -165,6 +175,18 @@ exports.updateProduct = async (req, res, next) => {
             runValidators: true,
         });
 
+        // Purge CDN cache for product images
+        if (product.images && product.images.length > 0) {
+            const imageUrls = product.images.map(img => img.url);
+            try {
+                await cdnConfig.purgeCache(imageUrls);
+                console.log('CDN cache purged for updated product images');
+            } catch (cacheError) {
+                console.error('Failed to purge CDN cache:', cacheError);
+                // Don't fail the update if cache purging fails
+            }
+        }
+
         res.status(200).json({
             success: true,
             message: 'Product updated successfully',
@@ -201,6 +223,18 @@ exports.deleteProduct = async (req, res, next) => {
         await Category.findByIdAndUpdate(product.category, {
             $inc: { productCount: -1 },
         });
+
+        // Purge CDN cache for product images before deletion
+        if (product.images && product.images.length > 0) {
+            const imageUrls = product.images.map(img => img.url);
+            try {
+                await cdnConfig.purgeCache(imageUrls);
+                console.log('CDN cache purged for deleted product images');
+            } catch (cacheError) {
+                console.error('Failed to purge CDN cache:', cacheError);
+                // Don't fail the deletion if cache purging fails
+            }
+        }
 
         await product.remove();
 

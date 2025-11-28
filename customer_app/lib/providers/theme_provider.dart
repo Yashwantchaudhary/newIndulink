@@ -36,7 +36,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final themeModeString = prefs.getString(_themeKey);
-      
+
       if (themeModeString != null) {
         final themeMode = ThemeMode.values.firstWhere(
           (mode) => mode.toString() == themeModeString,
@@ -53,7 +53,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   /// Set theme mode
   Future<void> setThemeMode(ThemeMode mode) async {
     state = state.copyWith(isLoading: true);
-    
+
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_themeKey, mode.toString());
@@ -65,9 +65,8 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
 
   /// Toggle between light and dark
   Future<void> toggleTheme() async {
-    final newMode = state.themeMode == ThemeMode.light 
-        ? ThemeMode.dark 
-        : ThemeMode.light;
+    final newMode =
+        state.themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
     await setThemeMode(newMode);
   }
 

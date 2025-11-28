@@ -7,7 +7,7 @@ import '../l10n/app_localizations.dart';
 import '../routes.dart';
 import 'home/enhanced_home_screen.dart';
 import 'dashboard/customer_dashboard_screen.dart';
-import 'dashboard/supplier_dashboard_screen.dart' as supplier_dashboard;
+import 'dashboard/adaptive_dashboard_screen.dart';
 import 'cart/cart_screen.dart';
 import 'category/categories_screen.dart';
 import 'orders/supplier_orders_screen.dart';
@@ -32,7 +32,8 @@ class _BottomNavScreenState extends ConsumerState<BottomNavScreen> {
       final userRole = authState.user?.role;
       final isSupplier = userRole == 'supplier';
 
-      print('BottomNavScreen: User role detected: $userRole, isSupplier: $isSupplier');
+      print(
+          'BottomNavScreen: User role detected: $userRole, isSupplier: $isSupplier');
 
       // Customers start at Home (index 1), Suppliers start at Dashboard (index 0)
       if (!isSupplier && mounted) {
@@ -46,10 +47,14 @@ class _BottomNavScreenState extends ConsumerState<BottomNavScreen> {
     final authState = ref.watch(authProvider);
     final userRole = authState.user?.role;
     final isSupplier = userRole == 'supplier';
+    final isAdmin = userRole == 'admin' ||
+        userRole == 'supplier'; // Suppliers have admin access
     final cartItemCount = ref.watch(cartItemCountProvider);
-    final l10n = AppLocalizations.of(context) ?? AppLocalizations(const Locale('en'));
+    final l10n =
+        AppLocalizations.of(context) ?? AppLocalizations(const Locale('en'));
 
-    print('BottomNavScreen: Build - User: ${authState.user?.email}, Role: $userRole, isSupplier: $isSupplier');
+    print(
+        'BottomNavScreen: Build - User: ${authState.user?.email}, Role: $userRole, isSupplier: $isSupplier');
 
     // Handle loading or error states
     if (authState.isLoading) {
@@ -105,7 +110,8 @@ class _BottomNavScreenState extends ConsumerState<BottomNavScreen> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.splash),
+                onPressed: () =>
+                    Navigator.pushReplacementNamed(context, AppRoutes.splash),
                 child: Text(l10n.retry),
               ),
             ],
@@ -117,8 +123,8 @@ class _BottomNavScreenState extends ConsumerState<BottomNavScreen> {
     final screens = [
       // Dashboard (role-based)
       _buildScreenWithErrorBoundary(
-        isSupplier
-            ? const supplier_dashboard.SupplierDashboardScreenNew()
+        isSupplier || isAdmin
+            ? const AdaptiveDashboardScreen()
             : const CustomerDashboardScreen(),
       ),
       // Enhanced Home/Products
@@ -127,12 +133,10 @@ class _BottomNavScreenState extends ConsumerState<BottomNavScreen> {
       _buildScreenWithErrorBoundary(const CategoriesScreen()),
       // Cart/Orders (role-based)
       _buildScreenWithErrorBoundary(
-        isSupplier
-            ? const SupplierOrdersScreen()
-            : const CartScreen(),
+        isSupplier ? const SupplierOrdersScreen() : const CartScreen(),
       ),
       // Profile
-      _buildScreenWithErrorBoundary(const ProfileScreen()),
+      _buildScreenWithErrorBoundary(const ProfileScreenNew()),
     ];
 
     return Scaffold(
@@ -177,9 +181,13 @@ class _BottomNavScreenState extends ConsumerState<BottomNavScreen> {
                   cartItemCount.toString(),
                   style: const TextStyle(color: Colors.white, fontSize: 10),
                 ),
-                child: Icon(isSupplier ? Icons.receipt_long_outlined : Icons.shopping_cart_outlined),
+                child: Icon(isSupplier
+                    ? Icons.receipt_long_outlined
+                    : Icons.shopping_cart_outlined),
               )
-            : Icon(isSupplier ? Icons.receipt_long_outlined : Icons.shopping_cart_outlined),
+            : Icon(isSupplier
+                ? Icons.receipt_long_outlined
+                : Icons.shopping_cart_outlined),
         activeIcon: Icon(isSupplier ? Icons.receipt_long : Icons.shopping_cart),
         label: isSupplier ? 'Orders' : l10n.cart,
       ),
@@ -197,7 +205,8 @@ class _BottomNavScreenState extends ConsumerState<BottomNavScreen> {
         try {
           return child;
         } catch (e) {
-          final l10n = AppLocalizations.of(context) ?? AppLocalizations(const Locale('en'));
+          final l10n = AppLocalizations.of(context) ??
+              AppLocalizations(const Locale('en'));
           return Scaffold(
             body: Center(
               child: Padding(

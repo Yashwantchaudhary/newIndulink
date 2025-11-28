@@ -167,8 +167,9 @@ class CartItemCard extends ConsumerWidget {
 
     if (confirmed == true && context.mounted) {
       if (item.id != null) {
-        final success = await ref.read(cartProvider.notifier).removeFromCart(item.id!);
-        
+        final success =
+            await ref.read(cartProvider.notifier).removeFromCart(item.id!);
+
         if (success && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

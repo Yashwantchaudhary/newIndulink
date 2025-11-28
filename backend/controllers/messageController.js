@@ -1,62 +1,40 @@
-const Message = require('../models/Message');
 const User = require('../models/User');
+const FirebaseMessageService = require('../services/firebaseMessageService');
 
 // @desc    Get conversations
 // @route   GET /api/messages/conversations
 // @access  Private
 exports.getConversations = async (req, res, next) => {
     try {
-        // Get all unique conversations for the user
-        const conversations = await Message.aggregate([
-            {
-                $match: {
-                    $or: [{ sender: req.user._id }, { receiver: req.user._id }],
-                },
-            },
-            {
-                $sort: { createdAt: -1 },
-            },
-            {
-                $group: {
-                    _id: '$conversationId',
-                    lastMessage: { $first: '$$ROOT' },
-                    unreadCount: {
-                        $sum: {
-                            $cond: [
-                                {
-                                    $and: [
-                                        { $eq: ['$receiver', req.user._id] },
-                                        { $eq: ['$isRead', false] },
-                                    ],
-                                },
-                                1,
-                                0,
-                            ],
-                        },
-                    },
-                },
-            },
-            {
-                $sort: { 'lastMessage.createdAt': -1 },
-            },
-        ]);
+        const firebaseService = new FirebaseMessageService();
+        const conversations = await firebaseService.getConversations(req.user.id);
 
-        // Populate user details
-        const populated = await Message.populate(conversations, [
-            {
-                path: 'lastMessage.sender',
-                select: 'firstName lastName profileImage businessName role',
-            },
-            {
-                path: 'lastMessage.receiver',
-                select: 'firstName lastName profileImage businessName role',
-            },
-        ]);
+        // Populate user details for each conversation
+        const populatedConversations = await Promise.all(
+            conversations.map(async (conversation) => {
+                if (conversation.lastMessage) {
+                    const [sender, receiver] = await Promise.all([
+                        User.findById(conversation.lastMessage.senderId).select('firstName lastName profileImage businessName role'),
+                        User.findById(conversation.participants.find(p => p !== conversation.lastMessage.senderId)).select('firstName lastName profileImage businessName role'),
+                    ]);
+
+                    return {
+                        ...conversation,
+                        lastMessage: {
+                            ...conversation.lastMessage,
+                            sender,
+                            receiver,
+                        },
+                    };
+                }
+                return conversation;
+            })
+        );
 
         res.status(200).json({
             success: true,
-            count: populated.length,
-            data: populated,
+            count: populatedConversations.length,
+            data: populatedConversations,
         });
     } catch (error) {
         next(error);
@@ -71,41 +49,40 @@ exports.getMessages = async (req, res, next) => {
         const otherUserId = req.params.userId;
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 50;
-        const skip = (page - 1) * limit;
 
         // Generate conversation ID
+        const firebaseService = new FirebaseMessageService();
         const ids = [req.user.id, otherUserId].sort();
         const conversationId = `${ids[0]}_${ids[1]}`;
 
-        const messages = await Message.find({ conversationId })
-            .populate('sender', 'firstName lastName profileImage businessName role')
-            .populate('receiver', 'firstName lastName profileImage businessName role')
-            .sort({ createdAt: 1 })
-            .skip(skip)
-            .limit(limit);
+        const result = await firebaseService.getMessages(conversationId, page, limit);
 
-        const total = await Message.countDocuments({ conversationId });
+        // Populate user details
+        const populatedMessages = await Promise.all(
+            result.messages.map(async (message) => {
+                const [sender, receiver] = await Promise.all([
+                    User.findById(message.senderId).select('firstName lastName profileImage businessName role'),
+                    User.findById(message.receiverId).select('firstName lastName profileImage businessName role'),
+                ]);
+
+                return {
+                    ...message,
+                    sender,
+                    receiver,
+                };
+            })
+        );
 
         // Mark messages as read
-        await Message.updateMany(
-            {
-                conversationId,
-                receiver: req.user.id,
-                isRead: false,
-            },
-            {
-                isRead: true,
-                readAt: new Date(),
-            }
-        );
+        await firebaseService.markAsRead(conversationId, req.user.id);
 
         res.status(200).json({
             success: true,
-            count: messages.length,
-            total,
-            page,
-            pages: Math.ceil(total / limit),
-            data: messages,
+            count: populatedMessages.length,
+            total: result.pagination.total,
+            page: result.pagination.page,
+            pages: result.pagination.pages,
+            data: populatedMessages,
         });
     } catch (error) {
         next(error);
@@ -118,49 +95,29 @@ exports.getMessages = async (req, res, next) => {
 exports.sendMessage = async (req, res, next) => {
     try {
         const { receiver, content } = req.body;
+        const firebaseService = new FirebaseMessageService();
 
-        // Validate receiver exists
-        const receiverUser = await User.findById(receiver);
+        // Validate message recipients
+        await firebaseService.validateMessage(req.user.id, receiver);
 
-        if (!receiverUser) {
-            return res.status(404).json({
-                success: false,
-                message: 'Receiver not found',
-            });
-        }
+        const message = await firebaseService.sendMessage(req.user.id, receiver, content);
 
-        // Check roles - customers can only message suppliers and vice versa
-        if (
-            (req.user.role === 'customer' && receiverUser.role !== 'supplier') ||
-            (req.user.role === 'supplier' && receiverUser.role !== 'customer')
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid recipient',
-            });
-        }
-
-        const message = await Message.create({
-            sender: req.user.id,
-            receiver,
-            content,
-        });
-
-        await message.populate([
-            {
-                path: 'sender',
-                select: 'firstName lastName profileImage businessName role',
-            },
-            {
-                path: 'receiver',
-                select: 'firstName lastName profileImage businessName role',
-            },
+        // Populate user details
+        const [sender, receiverUser] = await Promise.all([
+            User.findById(message.senderId).select('firstName lastName profileImage businessName role'),
+            User.findById(message.receiverId).select('firstName lastName profileImage businessName role'),
         ]);
+
+        const populatedMessage = {
+            ...message,
+            sender,
+            receiver: receiverUser,
+        };
 
         res.status(201).json({
             success: true,
             message: 'Message sent',
-            data: message,
+            data: populatedMessage,
         });
     } catch (error) {
         next(error);
@@ -172,21 +129,96 @@ exports.sendMessage = async (req, res, next) => {
 // @access  Private
 exports.markAsRead = async (req, res, next) => {
     try {
-        await Message.updateMany(
-            {
-                conversationId: req.params.conversationId,
-                receiver: req.user.id,
-                isRead: false,
-            },
-            {
-                isRead: true,
-                readAt: new Date(),
-            }
-        );
+        const firebaseService = new FirebaseMessageService();
+        await firebaseService.markAsRead(req.params.conversationId, req.user.id);
 
         res.status(200).json({
             success: true,
             message: 'Messages marked as read',
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Search conversations
+// @route   GET /api/messages/conversations/search
+// @access  Private
+exports.searchConversations = async (req, res, next) => {
+    try {
+        const { query } = req.query;
+        if (!query) {
+            return res.status(400).json({
+                success: false,
+                message: 'Search query is required',
+            });
+        }
+
+        const firebaseService = new FirebaseMessageService();
+        const conversations = await firebaseService.getConversations(req.user.id);
+
+        // Filter conversations based on search query
+        // For now, we'll search in user names from MongoDB
+        const filteredConversations = await Promise.all(
+            conversations.map(async (conversation) => {
+                // Get other participant
+                const otherParticipantId = conversation.participants.find(p => p !== req.user.id);
+                if (!otherParticipantId) return null;
+
+                const otherUser = await User.findById(otherParticipantId)
+                    .select('firstName lastName businessName')
+                    .lean();
+
+                if (!otherUser) return null;
+
+                const searchString = `${otherUser.firstName} ${otherUser.lastName} ${otherUser.businessName || ''}`.toLowerCase();
+                if (searchString.includes(query.toLowerCase())) {
+                    return {
+                        ...conversation,
+                        otherUser,
+                    };
+                }
+                return null;
+            })
+        );
+
+        const validConversations = filteredConversations.filter(conv => conv !== null);
+
+        res.status(200).json({
+            success: true,
+            count: validConversations.length,
+            data: validConversations,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Delete message
+// @route   DELETE /api/messages/:messageId
+// @access  Private
+exports.deleteMessage = async (req, res, next) => {
+    try {
+        const { messageId } = req.params;
+        const firebaseService = new FirebaseMessageService();
+
+        // For now, we'll need to find the conversation ID from the message
+        // This is a limitation of Firebase Realtime Database - we might need to store message metadata
+        // For simplicity, we'll implement a basic delete that requires conversationId in query
+        const conversationId = req.query.conversationId;
+
+        if (!conversationId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Conversation ID required for message deletion',
+            });
+        }
+
+        await firebaseService.deleteMessage(conversationId, messageId);
+
+        res.status(200).json({
+            success: true,
+            message: 'Message deleted',
         });
     } catch (error) {
         next(error);
@@ -198,14 +230,16 @@ exports.markAsRead = async (req, res, next) => {
 // @access  Private
 exports.getUnreadCount = async (req, res, next) => {
     try {
-        const count = await Message.countDocuments({
-            receiver: req.user.id,
-            isRead: false,
-        });
+        const firebaseService = new FirebaseMessageService();
+        const conversations = await firebaseService.getConversations(req.user.id);
+
+        const totalUnread = conversations.reduce((sum, conv) => {
+            return sum + (conv.unreadCount?.count ?? 0);
+        }, 0);
 
         res.status(200).json({
             success: true,
-            data: { unreadCount: count },
+            data: { unreadCount: totalUnread },
         });
     } catch (error) {
         next(error);

@@ -134,8 +134,8 @@ class BeautifulCard extends StatelessWidget {
           borderRadius: borderRadius ?? AppConstants.borderRadiusMedium,
           border: Border.all(
             color: isDark
-                ? AppColors.darkBorder.withOpacity(0.5)
-                : AppColors.lightBorder.withOpacity(0.5),
+                ? AppColors.darkBorder.withValues(alpha: 0.5)
+                : AppColors.lightBorder.withValues(alpha: 0.5),
             width: 1,
           ),
         );
@@ -147,14 +147,14 @@ class BeautifulCard extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: (gradient?.colors.first ?? AppColors.primaryBlue)
-                  .withOpacity(0.3),
+                  .withValues(alpha: 0.3),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),
           ],
         );
 
-      case BeautifulCardVariant gradient:
+      case BeautifulCardVariant.elevated:
         return BoxDecoration(
           color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
           borderRadius: borderRadius ?? AppConstants.borderRadiusMedium,
@@ -179,9 +179,7 @@ class BeautifulCard extends StatelessWidget {
       child: Container(
         padding: padding ?? AppConstants.paddingAll16,
         decoration: BoxDecoration(
-          color: isDark
-              ? AppColors.glassDark
-              : AppColors.glassLight,
+          color: isDark ? AppColors.glassDark : AppColors.glassLight,
           borderRadius: borderRadius ?? AppConstants.borderRadiusMedium,
         ),
         child: child,

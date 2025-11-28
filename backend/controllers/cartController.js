@@ -89,6 +89,33 @@ exports.addToCart = async (req, res, next) => {
 
         await cart.save();
 
+        // Send notification to supplier
+        try {
+            const { createAndSendNotification } = require('../services/notificationService');
+
+            // Create notification for supplier
+            const notificationResult = await createAndSendNotification({
+                userId: product.supplier.toString(),
+                type: 'system',
+                title: 'Product Added to Cart',
+                message: `Your product "${product.title}" was added to a customer's cart (Quantity: ${quantity})`,
+                data: {
+                    cartItem: true,
+                    productId: productId,
+                    customerId: req.user.id,
+                    quantity: quantity,
+                    productName: product.title,
+                },
+            });
+
+            if (notificationResult.success) {
+                console.log(`Cart notification sent to supplier ${product.supplier}`);
+            }
+        } catch (notificationError) {
+            console.error('Error sending cart notification:', notificationError);
+            // Don't fail the cart operation if notification fails
+        }
+
         // Populate and return
         cart = await Cart.findById(cart._id).populate({
             path: 'items.product',

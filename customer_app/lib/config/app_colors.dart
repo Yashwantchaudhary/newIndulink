@@ -11,13 +11,14 @@ class AppColors {
   static const Color primaryBlue = Color(0xFF0052CC); // Deep blue
   static const Color primaryBlueLight = Color(0xFF0065FF); // Bright blue
   static const Color primaryBlueDark = Color(0xFF003D99); // Dark blue
-  static const Color primaryBlueVeryLight = Color(0xFF4C9AFF); // Very light blue
-  
+  static const Color primaryBlueVeryLight =
+      Color(0xFF4C9AFF); // Very light blue
+
   // ===== SECONDARY COLORS - Purple (Creativity & Innovation) =====
   static const Color secondaryPurple = Color(0xFF7C3AED); // Vibrant purple
   static const Color secondaryPurpleLight = Color(0xFFA78BFA); // Light purple
   static const Color secondaryPurpleDark = Color(0xFF6D28D9); // Dark purple
-  
+
   // ===== ACCENT COLORS - Energy & Action =====
   static const Color accentCoral = Color(0xFFFF3B5C); // Vibrant coral (NEW)
   static const Color accentCoralLight = Color(0xFFFF6B8A); // Light coral (NEW)
@@ -27,7 +28,7 @@ class AppColors {
   static const Color accentYellow = Color(0xFFFBBF24); // Gold yellow
   static const Color accentPink = Color(0xFFEC4899); // Hot pink
   static const Color accentCyan = Color(0xFF00B0FF); // Bright cyan (updated)
-  
+
   // ===== NEUTRAL SCALE - 12 Shades for Perfect Hierarchy =====
   static const Color neutral100 = Color(0xFFFFFFFF); // Pure white
   static const Color neutral200 = Color(0xFFF7F9FC); // Off-white backgrounds
@@ -39,46 +40,48 @@ class AppColors {
   static const Color neutral800 = Color(0xFF4A5568); // Headings
   static const Color neutral900 = Color(0xFF2D3748); // Almost black
   static const Color neutral1000 = Color(0xFF1A202C); // Black text
-  
+
   // ===== LIGHT THEME COLORS =====
   static const Color lightBackground = Color(0xFFF7F9FC); // neutral200
   static const Color lightSurface = Color(0xFFFFFFFF); // neutral100
   static const Color lightSurfaceVariant = Color(0xFFF1F5F9); // Lighter variant
   static const Color lightBorder = Color(0xFFE8ECF2); // neutral300
-  
+
   // Text colors - Light theme
   static const Color lightTextPrimary = Color(0xFF1A202C); // neutral1000
   static const Color lightTextSecondary = Color(0xFF4A5568); // neutral800
   static const Color lightTextTertiary = Color(0xFF8892A6); // neutral600
-  
+
   // ===== DARK THEME COLORS =====
-  static const Color darkBackground = Color(0xFF0A0E1A); // Deep navy (not pure black)
+  static const Color darkBackground =
+      Color(0xFF0A0E1A); // Deep navy (not pure black)
   static const Color darkSurface = Color(0xFF141824); // Elevated surface
-  static const Color darkSurfaceVariant = Color(0xFF1E2532); // Cards, containers
+  static const Color darkSurfaceVariant =
+      Color(0xFF1E2532); // Cards, containers
   static const Color darkBorder = Color(0xFF2A3244); // Subtle borders
-  
+
   // Text colors - Dark theme
   static const Color darkTextPrimary = Color(0xFFF7F9FC); // neutral200
   static const Color darkTextSecondary = Color(0xFFD0D7E2); // neutral400
   static const Color darkTextTertiary = Color(0xFFACB5C3); // neutral500
-  
+
   // ===== SEMANTIC COLORS =====
   static const Color success = Color(0xFF00C853); // Bright green
   static const Color successLight = Color(0xFFB9F6CA); // Light green bg
   static const Color successDark = Color(0xFF00A344); // Dark green
-  
+
   static const Color error = Color(0xFFFF1744); // Bright red
   static const Color errorLight = Color(0xFFFF8A80); // Light red bg
   static const Color errorDark = Color(0xFFD50000); // Dark red
-  
+
   static const Color warning = Color(0xFFFF9800); // Orange
   static const Color warningLight = Color(0xFFFFE0B2); // Light orange bg
   static const Color warningDark = Color(0xFFF57C00); // Dark orange
-  
+
   static const Color info = Color(0xFF00B0FF); // Cyan
   static const Color infoLight = Color(0xFFB3E5FC); // Light cyan bg
   static const Color infoDark = Color(0xFF0091EA); // Dark cyan
-  
+
   // ===== ORDER STATUS COLORS =====
   static const Color statusPending = Color(0xFFFF9800); // Orange
   static const Color statusConfirmed = Color(0xFF00B0FF); // Cyan
@@ -87,50 +90,50 @@ class AppColors {
   static const Color statusDelivered = Color(0xFF00C853); // Green
   static const Color statusCancelled = Color(0xFF8892A6); // Gray
   static const Color statusRefunded = Color(0xFFFF1744); // Red
-  
+
   // ===== GRADIENTS - Modern & Vibrant =====
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [Color(0xFF0052CC), Color(0xFF0084FF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient secondaryGradient = LinearGradient(
     colors: [Color(0xFF7C3AED), Color(0xFFA78BFA)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient accentGradient = LinearGradient(
     colors: [Color(0xFFFF3B5C), Color(0xFFFF6B8A)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient successGradient = LinearGradient(
     colors: [Color(0xFF00C853), Color(0xFF00E676)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient heroGradient = LinearGradient(
     colors: [Color(0xFF0052CC), Color(0xFF3B82F6), Color(0xFF7C3AED)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient orangePinkGradient = LinearGradient(
     colors: [Color(0xFFF97316), Color(0xFFEC4899)],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
-  
+
   static const LinearGradient cyanBlueGradient = LinearGradient(
     colors: [Color(0xFF00B0FF), Color(0xFF0084FF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient purpleGradient = LinearGradient(
     colors: [Color(0xFF7C3AED), Color(0xFF9333EA)],
     begin: Alignment.topLeft,
@@ -148,7 +151,7 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   // Shimmer gradients
   static const LinearGradient shimmerGradient = LinearGradient(
     colors: [
@@ -185,18 +188,18 @@ class AppColors {
   ];
 
   // ===== GLASSMORPHISM COLORS =====
-  static Color glassLight = const Color(0xFFFFFFFF).withOpacity(0.7);
-  static Color glassDark = const Color(0xFF141824).withOpacity(0.7);
-  static Color glassBlur = const Color(0xFFFFFFFF).withOpacity(0.3);
-  static Color glassBlurDark = const Color(0xFF141824).withOpacity(0.3);
+  static Color glassLight = const Color(0xFFFFFFFF).withValues(alpha: 0.7);
+  static Color glassDark = const Color(0xFF141824).withValues(alpha: 0.7);
+  static Color glassBlur = const Color(0xFFFFFFFF).withValues(alpha: 0.3);
+  static Color glassBlurDark = const Color(0xFF141824).withValues(alpha: 0.3);
 
   // ===== OVERLAY COLORS =====
-  static Color overlay = const Color(0xFF000000).withOpacity(0.5);
-  static Color overlayLight = const Color(0xFF000000).withOpacity(0.3);
-  static Color overlayDark = const Color(0xFF000000).withOpacity(0.7);
+  static Color overlay = const Color(0xFF000000).withValues(alpha: 0.5);
+  static Color overlayLight = const Color(0xFF000000).withValues(alpha: 0.3);
+  static Color overlayDark = const Color(0xFF000000).withValues(alpha: 0.7);
 
   // ===== HELPER METHODS =====
-  
+
   /// Get color for order status
   static Color getStatusColor(String status) {
     switch (status.toLowerCase()) {
@@ -219,24 +222,24 @@ class AppColors {
         return neutral600;
     }
   }
-  
+
   /// Get background color for status badge
   static Color getStatusBackgroundColor(String status) {
-    return getStatusColor(status).withOpacity(0.1);
+    return getStatusColor(status).withValues(alpha: 0.1);
   }
-  
+
   /// Get category color based on index
   static Color getCategoryColor(int index) {
     return chartColors[index % chartColors.length];
   }
-  
+
   /// Get gradient for category based on index
   static LinearGradient getCategoryGradient(int index) {
     final gradients = [
       primaryGradient,
       secondaryGradient,
       accentGradient,
-     orangePinkGradient,
+      orangePinkGradient,
       cyanBlueGradient,
       purpleGradient,
       successGradient,

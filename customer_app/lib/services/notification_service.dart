@@ -10,7 +10,8 @@ class NotificationService {
   NotificationService._internal();
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
     // Request permission for notifications
@@ -22,9 +23,39 @@ class NotificationService {
     // Configure FCM
     await _configureFCM();
 
-    // Get FCM token
-    final token = await _firebaseMessaging.getToken();
-    print('FCM Token: $token');
+    // Get FCM token and register with backend
+    await _registerFCMToken();
+  }
+
+  Future<void> _registerFCMToken() async {
+    try {
+      final token = await _firebaseMessaging.getToken();
+      if (token != null) {
+        print('FCM Token: $token');
+
+        // Register token with backend
+        await _apiClient.post('/users/fcm-token', data: {
+          'token': token,
+          'deviceId': 'flutter_app_${DateTime.now().millisecondsSinceEpoch}',
+        });
+
+        // Listen for token refresh
+        _firebaseMessaging.onTokenRefresh.listen((newToken) async {
+          print('FCM Token refreshed: $newToken');
+          try {
+            await _apiClient.post('/users/fcm-token', data: {
+              'token': newToken,
+              'deviceId':
+                  'flutter_app_${DateTime.now().millisecondsSinceEpoch}',
+            });
+          } catch (e) {
+            print('Failed to register refreshed FCM token: $e');
+          }
+        });
+      }
+    } catch (e) {
+      print('Failed to register FCM token: $e');
+    }
   }
 
   Future<void> _requestPermission() async {
@@ -42,7 +73,8 @@ class NotificationService {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
+    const DarwinInitializationSettings iosSettings =
+        DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
@@ -75,6 +107,24 @@ class NotificationService {
 
     // Show local notification
     await _showLocalNotification(message);
+
+    // Update notification provider for real-time UI updates
+    _updateNotificationProvider(message);
+  }
+
+  void _updateNotificationProvider(RemoteMessage message) {
+    try {
+      final notificationData = message.data;
+      if (notificationData.containsKey('notificationId')) {
+        // This is a notification from our backend
+        // The notification provider will be updated when the app fetches notifications
+        // For now, we can trigger a refresh or add the notification locally
+        print(
+            'Real-time notification received: ${notificationData['notificationId']}');
+      }
+    } catch (e) {
+      print('Error updating notification provider: $e');
+    }
   }
 
   Future<void> _handleMessageOpenedApp(RemoteMessage message) async {
@@ -86,7 +136,7 @@ class NotificationService {
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
     final notification = message.notification;
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'default_channel',
       'Default Channel',
       channelDescription: 'Default notification channel',
@@ -101,7 +151,7 @@ class NotificationService {
       presentSound: true,
     );
 
-    final details = NotificationDetails(
+    const details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );

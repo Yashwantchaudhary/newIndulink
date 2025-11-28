@@ -1,291 +1,457 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/auth_provider.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_constants.dart';
-import './edit_profile_screen.dart';
-import '../order/orders_list_screen.dart';
-import '../auth/login_screen.dart';
-import '../../widgets/profile/profile_menu_item.dart';
+import '../../widgets/common/premium_widgets.dart';
+import '../../widgets/common/language_selector.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../l10n/app_localizations.dart';
 
-class ProfileScreen extends ConsumerWidget {
-  const ProfileScreen({super.key});
+/// Production-level Profile Screen with organized sections
+class ProfileScreenNew extends ConsumerWidget {
+  const ProfileScreenNew({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
     final authState = ref.watch(authProvider);
+    final languageState = ref.watch(languageNotifierProvider);
+    final themeState = ref.watch(themeProvider);
     final user = authState.user;
 
-    if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text('Not logged in')),
-      );
-    }
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-      ),
-      body: ListView(
-        padding: AppConstants.paddingPage,
-        children: [
-          // Profile Header
-          Container(
-            padding: AppConstants.paddingAll16,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primaryBlue,
-                  AppColors.primaryBlue.withOpacity(0.8),
+      backgroundColor:
+          isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      body: CustomScrollView(
+        slivers: [
+          // Profile Header with Gradient
+          SliverAppBar(
+            expandedHeight: 200,
+            floating: false,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: AppColors.heroGradient,
+                ),
+                child: SafeArea(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 20),
+                      // Profile Picture
+                      Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.white,
+                            child: Text(
+                              user?.name.substring(0, 1).toUpperCase() ?? 'U',
+                              style: theme.textTheme.displaySmall?.copyWith(
+                                color: AppColors.primaryBlue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryBlue,
+                                shape: BoxShape.circle,
+                                border:
+                                    Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: const Icon(
+                                Icons.edit,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        user?.name ?? 'User Name',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        user?.email ?? 'user@example.com',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Menu Sections
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: AppConstants.paddingAll16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+
+                  // Account Section
+                  _buildSectionHeader(context, 'Account', Icons.person),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.person_outline,
+                    title: 'Personal Information',
+                    subtitle: 'Update your details',
+                    iconColor: AppColors.primaryBlue,
+                    onTap: () {},
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.location_on_outlined,
+                    title: 'Saved Addresses',
+                    subtitle: 'Manage delivery addresses',
+                    iconColor: AppColors.accentOrange,
+                    onTap: () {},
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.payment_outlined,
+                    title: 'Payment Methods',
+                    subtitle: 'Cards, UPI, and more',
+                    iconColor: AppColors.accentGreen,
+                    onTap: () {},
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // My Activity Section
+                  _buildSectionHeader(context, 'My Activity', Icons.history),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.shopping_bag_outlined,
+                    title: 'My Orders',
+                    subtitle: 'View order history',
+                    iconColor: AppColors.primaryBlue,
+                    onTap: () {},
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.favorite_outline,
+                    title: 'Wishlist',
+                    subtitle: '12 items',
+                    iconColor: AppColors.error,
+                    onTap: () {},
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.star_outline,
+                    title: 'My Reviews',
+                    subtitle: 'Products you reviewed',
+                    iconColor: AppColors.accentYellow,
+                    onTap: () {},
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.visibility_outlined,
+                    title: 'Recently Viewed',
+                    subtitle: 'Your browsing history',
+                    iconColor: AppColors.secondaryPurple,
+                    onTap: () {},
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Preferences Section
+                  _buildSectionHeader(context, 'Preferences', Icons.settings),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.notifications_outlined,
+                    title: 'Notifications',
+                    subtitle: 'Manage notification settings',
+                    iconColor: AppColors.accentCyan,
+                    onTap: () {},
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.language_outlined,
+                    title: l10n.language,
+                    subtitle: languageState.value?.locale.languageCode == 'en'
+                        ? l10n.english
+                        : languageState.value?.locale.languageCode == 'hi'
+                            ? l10n.hindi
+                            : languageState.value?.locale.languageCode == 'ne'
+                                ? l10n.nepali
+                                : l10n.spanish,
+                    iconColor: AppColors.primaryBlue,
+                    onTap: () => LanguageSelectorBottomSheet.show(context),
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: themeState.themeMode == ThemeMode.dark
+                        ? Icons.light_mode_outlined
+                        : themeState.themeMode == ThemeMode.light
+                            ? Icons.dark_mode_outlined
+                            : Icons.brightness_auto_outlined,
+                    title: 'Theme',
+                    subtitle: themeState.themeMode == ThemeMode.dark
+                        ? 'Dark Mode'
+                        : themeState.themeMode == ThemeMode.light
+                            ? 'Light Mode'
+                            : 'System Default',
+                    iconColor: themeState.themeMode == ThemeMode.dark
+                        ? AppColors.accentYellow
+                        : themeState.themeMode == ThemeMode.light
+                            ? AppColors.secondaryPurple
+                            : AppColors.primaryBlue,
+                    onTap: () => _showThemeDialog(context, ref),
+                    trailing: Switch(
+                      value: themeState.themeMode == ThemeMode.dark,
+                      onChanged: (value) {
+                        ref.read(themeProvider.notifier).setThemeMode(
+                              value ? ThemeMode.dark : ThemeMode.light,
+                            );
+                      },
+                      activeThumbColor: AppColors.primaryBlue,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Support Section
+                  _buildSectionHeader(context, 'Support', Icons.support_agent),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.help_outline,
+                    title: 'Help Center',
+                    subtitle: 'FAQs and support',
+                    iconColor: AppColors.accentGreen,
+                    onTap: () {},
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.chat_bubble_outline,
+                    title: 'Contact Us',
+                    subtitle: 'Get in touch',
+                    iconColor: AppColors.primaryBlue,
+                    onTap: () {},
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.rate_review_outlined,
+                    title: 'Rate Us',
+                    subtitle: 'Share your feedback',
+                    iconColor: AppColors.accentYellow,
+                    onTap: () {},
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Legal Section
+                  _buildSectionHeader(context, 'Legal', Icons.gavel),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.description_outlined,
+                    title: 'Terms & Conditions',
+                    subtitle: 'Read our terms',
+                    iconColor: AppColors.lightTextTertiary,
+                    onTap: () {},
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.privacy_tip_outlined,
+                    title: 'Privacy Policy',
+                    subtitle: 'How we protect your data',
+                    iconColor: AppColors.lightTextTertiary,
+                    onTap: () {},
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.info_outline,
+                    title: 'About Us',
+                    subtitle: 'Version 1.0.0',
+                    iconColor: AppColors.lightTextTertiary,
+                    onTap: () {},
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Logout Button
+                  AnimatedButton(
+                    text: 'Logout',
+                    icon: Icons.logout,
+                    onPressed: () {
+                      _showLogoutConfirmation(context, ref);
+                    },
+                    backgroundColor: AppColors.error,
+                    width: double.infinity,
+                  ),
+
+                  const SizedBox(height: 32),
                 ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: AppConstants.borderRadiusMedium,
-            ),
-            child: Column(
-              children: [
-                // Avatar
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Colors.white,
-                  child: Text(
-                    user.fullName[0].toUpperCase(),
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      color: AppColors.primaryBlue,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Name
-                Text(
-                  user.fullName,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-
-                // Email
-                Text(
-                  user.email,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-                const SizedBox(height: 4),
-
-                // Role Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: AppConstants.borderRadiusSmall,
-                  ),
-                  child: Text(
-                    user.role.toUpperCase(),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: AppConstants.spacing24),
-
-          // Account Section
-          Text(
-            'Account',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: AppConstants.spacing12),
-
-          Card(
-            child: Column(
-              children: [
-                ProfileMenuItem(
-                  icon: Icons.person_outline,
-                  title: 'Edit Profile',
-                  subtitle: 'Update your personal information',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const EditProfileScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const Divider(height: 1),
-                ProfileMenuItem(
-                  icon: Icons.receipt_long_outlined,
-                  title: 'My Orders',
-                  subtitle: 'View your order history',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const OrdersListScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: AppConstants.spacing24),
-
-          // Settings Section
-          Text(
-            'Preferences',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: AppConstants.spacing12),
-
-          Card(
-            child: Column(
-              children: [
-                ProfileMenuItem(
-                  icon: Icons.notifications_outlined,
-                  title: 'Notifications',
-                  subtitle: 'Manage notification preferences',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Coming soon!')),
-                    );
-                  },
-                ),
-                const Divider(height: 1),
-                ProfileMenuItem(
-                  icon: Icons.language,
-                  title: 'Language',
-                  subtitle: 'English',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Coming soon!')),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: AppConstants.spacing24),
-
-          // Help Section
-          Text(
-            'Support',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: AppConstants.spacing12),
-
-          Card(
-            child: Column(
-              children: [
-                ProfileMenuItem(
-                  icon: Icons.help_outline,
-                  title: 'Help & Support',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Coming soon!')),
-                    );
-                  },
-                ),
-                const Divider(height: 1),
-                ProfileMenuItem(
-                  icon: Icons.info_outline,
-                  title: 'About',
-                  onTap: () {
-                    _showAboutDialog(context);
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: AppConstants.spacing24),
-
-          // Logout Button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _handleLogout(context, ref),
-              icon: const Icon(Icons.logout),
-              label: const Text('Logout'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.error,
-                side: const BorderSide(color: AppColors.error),
-                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
           ),
-
-          const SizedBox(height: AppConstants.spacing24),
         ],
       ),
     );
   }
 
-  void _showAboutDialog(BuildContext context) {
-    showAboutDialog(
-      context: context,
-      applicationName: 'Indulink',
-      applicationVersion: '1.0.0',
-      applicationLegalese: '© 2025 Indulink. All rights reserved.',
-      children: [
-        const SizedBox(height: 16),
-        const Text('Your trusted B2B e-commerce platform.'),
-      ],
+  Widget _buildSectionHeader(
+      BuildContext context, String title, IconData icon) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: AppColors.primaryBlue),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryBlue,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
+  Widget _buildMenuItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color iconColor,
+    required VoidCallback onTap,
+    Widget? trailing,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        borderRadius: AppConstants.borderRadiusMedium,
+      ),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.1),
+            borderRadius: AppConstants.borderRadiusSmall,
+          ),
+          child: Icon(icon, color: iconColor, size: 22),
+        ),
+        title: Text(
+          title,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Text(subtitle, style: theme.textTheme.bodySmall),
+        trailing: trailing ??
+            Icon(
+              Icons.chevron_right,
+              color: isDark
+                  ? AppColors.darkTextTertiary
+                  : AppColors.lightTextTertiary,
+            ),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  void _showThemeDialog(BuildContext context, WidgetRef ref) {
+    final currentMode = ref.read(themeProvider).themeMode;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Select Theme'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<ThemeMode>(
+              title: const Text('Light'),
+              subtitle: const Text('Always use light theme'),
+              value: ThemeMode.light,
+              groupValue: currentMode,
+              onChanged: (value) {
+                if (value != null) {
+                  ref.read(themeProvider.notifier).setThemeMode(value);
+                  Navigator.pop(ctx);
+                }
+              },
+            ),
+            RadioListTile<ThemeMode>(
+              title: const Text('Dark'),
+              subtitle: const Text('Always use dark theme'),
+              value: ThemeMode.dark,
+              groupValue: currentMode,
+              onChanged: (value) {
+                if (value != null) {
+                  ref.read(themeProvider.notifier).setThemeMode(value);
+                  Navigator.pop(ctx);
+                }
+              },
+            ),
+            RadioListTile<ThemeMode>(
+              title: const Text('System'),
+              subtitle: const Text('Follow system settings'),
+              value: ThemeMode.system,
+              groupValue: currentMode,
+              onChanged: (value) {
+                if (value != null) {
+                  ref.read(themeProvider.notifier).setThemeMode(value);
+                  Navigator.pop(ctx);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLogoutConfirmation(BuildContext context, WidgetRef ref) {
+    showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Logout'),
+            onPressed: () {
+              ref.read(authProvider.notifier).logout();
+              Navigator.pop(context);
+              // Navigate to login screen
+            },
+            child: const Text(
+              'Logout',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
     );
-
-    if (confirmed == true && context.mounted) {
-      await ref.read(authProvider.notifier).logout();
-      
-      if (context.mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-          (route) => false,
-        );
-      }
-    }
   }
 }

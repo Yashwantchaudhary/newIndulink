@@ -30,7 +30,8 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
         title: 'Building Material Product ${index + 1}',
         description: 'High quality construction material for your projects',
         price: 500.0 + (index * 100),
-        categoryId: index % 3 == 0 ? 'cement' : (index % 3 == 1 ? 'steel' : 'bricks'),
+        categoryId:
+            index % 3 == 0 ? 'cement' : (index % 3 == 1 ? 'steel' : 'bricks'),
         supplierId: 'supplier_$index',
         images: [],
         stock: 50 + index,
@@ -85,7 +86,8 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                       Expanded(
                         child: StatsCard(
                           title: 'Total Value',
-                          value: 'Rs ${_calculateTotal(mockProducts).toStringAsFixed(0)}',
+                          value:
+                              'Rs ${_calculateTotal(mockProducts).toStringAsFixed(0)}',
                           icon: Icons.account_balance_wallet,
                           iconColor: AppColors.accentGreen,
                         ),
@@ -105,10 +107,11 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                 Container(
                   padding: AppConstants.paddingAll16,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                    color:
+                        isDark ? AppColors.darkSurface : AppColors.lightSurface,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, -2),
                       ),
@@ -222,7 +225,8 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                 const SnackBar(content: Text('Removed from wishlist')),
               );
             },
-            child: const Text('Remove', style: TextStyle(color: AppColors.error)),
+            child:
+                const Text('Remove', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -247,7 +251,8 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                 const SnackBar(content: Text('Wishlist cleared')),
               );
             },
-            child: const Text('Clear All', style: TextStyle(color: AppColors.error)),
+            child: const Text('Clear All',
+                style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),

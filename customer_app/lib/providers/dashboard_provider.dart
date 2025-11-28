@@ -4,6 +4,77 @@ import '../models/dashboard_models.dart';
 import '../services/dashboard_service.dart';
 import 'auth_provider.dart';
 
+// ===== ADMIN DASHBOARD STATE =====
+
+/// Admin dashboard state
+class AdminDashboardState {
+  final AdminDashboardData? data;
+  final bool isLoading;
+  final String? error;
+
+  AdminDashboardState({
+    this.data,
+    this.isLoading = false,
+    this.error,
+  });
+
+  AdminDashboardState copyWith({
+    AdminDashboardData? data,
+    bool? isLoading,
+    String? error,
+  }) {
+    return AdminDashboardState(
+      data: data ?? this.data,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
+  }
+}
+
+/// Admin dashboard provider
+class AdminDashboardNotifier extends StateNotifier<AdminDashboardState> {
+  final DashboardService _service;
+
+  AdminDashboardNotifier(this._service) : super(AdminDashboardState());
+
+  /// Fetch admin dashboard data
+  Future<void> fetchDashboard() async {
+    developer.log('Fetching admin dashboard data',
+        name: 'AdminDashboardProvider');
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final data = await _service.getAdminDashboard();
+      developer.log('Admin dashboard data fetched successfully',
+          name: 'AdminDashboardProvider');
+      state = state.copyWith(
+        data: data,
+        isLoading: false,
+      );
+    } catch (e) {
+      developer.log('Error fetching admin dashboard: $e',
+          name: 'AdminDashboardProvider', error: e);
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  /// Refresh admin dashboard data
+  Future<void> refresh() async {
+    await fetchDashboard();
+  }
+}
+
+final adminDashboardProvider =
+    StateNotifierProvider<AdminDashboardNotifier, AdminDashboardState>(
+  (ref) {
+    final service = ref.watch(dashboardServiceProvider);
+    return AdminDashboardNotifier(service);
+  },
+);
+
 /// Provider for dashboard service
 final dashboardServiceProvider = Provider<DashboardService>((ref) {
   final service = DashboardService();

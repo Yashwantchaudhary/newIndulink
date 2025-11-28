@@ -289,7 +289,8 @@ class _AllProductsScreenState extends ConsumerState<AllProductsScreen>
         borderRadius: AppConstants.borderRadiusMedium,
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.black : Colors.grey).withOpacity(0.06),
+            color:
+                (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.06),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -368,7 +369,7 @@ class _AllProductsScreenState extends ConsumerState<AllProductsScreen>
                       ),
                       const Spacer(),
                       Material(
-                        color: AppColors.primaryBlue.withOpacity(0.1),
+                        color: AppColors.primaryBlue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         child: InkWell(
                           onTap: () async {

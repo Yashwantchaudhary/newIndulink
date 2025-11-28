@@ -89,9 +89,11 @@ class LoyaltyNotifier extends StateNotifier<LoyaltyState> {
         isLoading: false,
       );
 
-      developer.log('Loyalty data loaded successfully', name: 'LoyaltyProvider');
+      developer.log('Loyalty data loaded successfully',
+          name: 'LoyaltyProvider');
     } catch (e) {
-      developer.log('Error loading loyalty data: $e', name: 'LoyaltyProvider', error: e);
+      developer.log('Error loading loyalty data: $e',
+          name: 'LoyaltyProvider', error: e);
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -109,7 +111,8 @@ class LoyaltyNotifier extends StateNotifier<LoyaltyState> {
         lifetimePoints: pointsData['lifetimePoints'] ?? 0,
       );
     } catch (e) {
-      developer.log('Error refreshing points: $e', name: 'LoyaltyProvider', error: e);
+      developer.log('Error refreshing points: $e',
+          name: 'LoyaltyProvider', error: e);
     }
   }
 
@@ -138,7 +141,8 @@ class LoyaltyNotifier extends StateNotifier<LoyaltyState> {
 
       return success;
     } catch (e) {
-      developer.log('Error redeeming points: $e', name: 'LoyaltyProvider', error: e);
+      developer.log('Error redeeming points: $e',
+          name: 'LoyaltyProvider', error: e);
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -149,6 +153,7 @@ class LoyaltyNotifier extends StateNotifier<LoyaltyState> {
 }
 
 /// Loyalty provider
-final loyaltyProvider = StateNotifierProvider<LoyaltyNotifier, LoyaltyState>((ref) {
+final loyaltyProvider =
+    StateNotifierProvider<LoyaltyNotifier, LoyaltyState>((ref) {
   return LoyaltyNotifier();
 });

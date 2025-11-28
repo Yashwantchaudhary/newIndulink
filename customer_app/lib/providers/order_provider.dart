@@ -109,7 +109,7 @@ class OrderNotifier extends StateNotifier<OrderState> {
   Future<bool> cancelOrder(String orderId, String reason) async {
     try {
       final updatedOrder = await _orderService.cancelOrder(orderId, reason);
-      
+
       // Update in list
       final updatedOrders = state.orders.map((order) {
         return order.id == orderId ? updatedOrder : order;
@@ -136,7 +136,8 @@ final orderProvider = StateNotifierProvider<OrderNotifier, OrderState>((ref) {
 });
 
 /// Single order provider
-final orderDetailProvider = FutureProvider.family<Order?, String>((ref, orderId) async {
+final orderDetailProvider =
+    FutureProvider.family<Order?, String>((ref, orderId) async {
   try {
     final orderService = ref.watch(orderServiceProvider);
     return await orderService.getOrder(orderId);

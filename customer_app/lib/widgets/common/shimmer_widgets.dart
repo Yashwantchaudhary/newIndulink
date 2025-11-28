@@ -13,14 +13,11 @@ class ShimmerWidgets {
     required BuildContext context,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Shimmer.fromColors(
-      baseColor: isDark
-          ? AppColors.darkSurfaceVariant
-          : AppColors.lightSurfaceVariant,
-      highlightColor: isDark
-          ? AppColors.darkSurface
-          : AppColors.lightSurface,
+      baseColor:
+          isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
+      highlightColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
       child: child,
     );
   }
@@ -43,7 +40,7 @@ class ShimmerWidgets {
                     Container(
                       width: 48,
                       height: 48,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: Colors.white,
                         borderRadius: AppConstants.borderRadiusSmall,
                       ),
@@ -51,7 +48,7 @@ class ShimmerWidgets {
                     Container(
                       width: 50,
                       height: 24,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: Colors.white,
                         borderRadius: AppConstants.borderRadiusSmall,
                       ),
@@ -98,7 +95,7 @@ class ShimmerWidgets {
                   Container(
                     width: 60,
                     height: 60,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius: AppConstants.borderRadiusSmall,
                     ),
@@ -130,7 +127,8 @@ class ShimmerWidgets {
                 height: 24,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppConstants.radiusCircle),
+                  borderRadius:
+                      BorderRadius.circular(AppConstants.radiusCircle),
                 ),
               ),
             ],
@@ -146,7 +144,7 @@ class ShimmerWidgets {
       context: context,
       child: Container(
         height: height ?? AppConstants.chartHeight,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: AppConstants.borderRadiusMedium,
         ),

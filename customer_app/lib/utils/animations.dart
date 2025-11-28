@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 /// Advanced Page Transition Animations
 class PageTransitions {
@@ -147,7 +147,6 @@ class PageTransitions {
             );
 
           case SharedAxisTransitionType.scaled:
-          default:
             var scaleTween = Tween(begin: 0.8, end: 1.0).chain(
               CurveTween(curve: curve),
             );
@@ -279,7 +278,7 @@ class _CardHoverEffectsState extends State<CardHoverEffects>
               decoration: BoxDecoration(
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: _elevationAnimation.value,
                     offset: Offset(0, _elevationAnimation.value / 2),
                   ),

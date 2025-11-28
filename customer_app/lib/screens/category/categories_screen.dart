@@ -54,15 +54,15 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                       return CategoryCard(
                         category: category,
                         onTap: () {
-                         Navigator.push(
-                           context,
-                           MaterialPageRoute(
-                             builder: (context) => CategoryProductsScreen(
-                               categoryName: category.name,
-                             ),
-                           ),
-                         );
-                       },
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CategoryProductsScreen(
+                                categoryName: category.name,
+                              ),
+                            ),
+                          );
+                        },
                       )
                           .animate()
                           .fadeIn(duration: AppConstants.durationNormal)

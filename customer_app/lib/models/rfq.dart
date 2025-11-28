@@ -83,7 +83,8 @@ class Quote {
       price: json['price'] != null ? (json['price'] as num).toDouble() : null,
       supplier: json['supplier'],
       description: json['description'],
-      deliveryTime: json['deliveryTime'] != null ? json['deliveryTime'] as int : null,
+      deliveryTime:
+          json['deliveryTime'] != null ? json['deliveryTime'] as int : null,
     );
   }
 
@@ -153,8 +154,12 @@ class RFQ {
       notes: json['notes'],
       description: json['description'],
       quantity: json['quantity'] != null ? json['quantity'] as int : null,
-      idealPrice: json['idealPrice'] != null ? (json['idealPrice'] as num).toDouble() : null,
-      deliveryDate: json['deliveryDate'] != null ? DateTime.parse(json['deliveryDate']) : null,
+      idealPrice: json['idealPrice'] != null
+          ? (json['idealPrice'] as num).toDouble()
+          : null,
+      deliveryDate: json['deliveryDate'] != null
+          ? DateTime.parse(json['deliveryDate'])
+          : null,
       expiresAt: json['expiresAt'] != null
           ? DateTime.parse(json['expiresAt'])
           : DateTime.now().add(const Duration(days: 7)),

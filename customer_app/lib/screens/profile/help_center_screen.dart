@@ -54,7 +54,7 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SectionHeader(
+                  const SectionHeader(
                     title: 'Quick Actions',
                     icon: Icons.bolt,
                   ),
@@ -111,14 +111,14 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
             ),
           ),
 
-          SliverToBoxAdapter(
+          const SliverToBoxAdapter(
             child: SizedBox(height: 24),
           ),
 
           // FAQ Sections
-          SliverToBoxAdapter(
+          const SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: 16),
               child: SectionHeader(
                 title: 'Frequently Asked Questions',
                 icon: Icons.help_outline,
@@ -133,8 +133,7 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
           SliverList(
             delegate: SliverChildListDelegate([
               ...getFaqsByCategory(_selectedCategory)
-                  .map((faq) => _buildFaqItem(context, faq))
-                  .toList(),
+                  .map((faq) => _buildFaqItem(context, faq)),
               const SizedBox(height: 32),
             ]),
           ),

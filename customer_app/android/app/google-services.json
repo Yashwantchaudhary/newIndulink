@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "244885905510",
+    "firebase_url": "https://indulink-b0306-default-rtdb.firebaseio.com",
+    "project_id": "indulink-b0306",
+    "storage_bucket": "indulink-b0306.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:244885905510:android:ce7afa402f2705154a0da7",
+        "android_client_info": {
+          "package_name": "com.indulink.customer_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "244885905510-hl61eq5v3mt0mh9mb8c1hiqsctaicjut.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbK-jEAup1qKGQgltq0d-EDqVwSElKEKc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "244885905510-hl61eq5v3mt0mh9mb8c1hiqsctaicjut.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

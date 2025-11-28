@@ -86,8 +86,9 @@ class AddressNotifier extends StateNotifier<AddressState> {
 
     try {
       // Service now returns updated addresses array
-      final updatedAddresses = await _addressService.updateAddress(addressId, address);
-      
+      final updatedAddresses =
+          await _addressService.updateAddress(addressId, address);
+
       state = state.copyWith(
         addresses: updatedAddresses,
         isLoading: false,
@@ -109,7 +110,7 @@ class AddressNotifier extends StateNotifier<AddressState> {
     try {
       // Service now returns updated addresses array
       final updatedAddresses = await _addressService.deleteAddress(addressId);
-      
+
       state = state.copyWith(
         addresses: updatedAddresses,
         isLoading: false,
@@ -130,8 +131,9 @@ class AddressNotifier extends StateNotifier<AddressState> {
 
     try {
       // Service now returns updated addresses array
-      final updatedAddresses = await _addressService.setDefaultAddress(addressId);
-      
+      final updatedAddresses =
+          await _addressService.setDefaultAddress(addressId);
+
       state = state.copyWith(
         addresses: updatedAddresses,
         isLoading: false,
@@ -148,6 +150,7 @@ class AddressNotifier extends StateNotifier<AddressState> {
 }
 
 // Provider
-final addressProvider = StateNotifierProvider<AddressNotifier, AddressState>((ref) {
+final addressProvider =
+    StateNotifierProvider<AddressNotifier, AddressState>((ref) {
   return AddressNotifier();
 });

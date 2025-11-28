@@ -90,7 +90,7 @@ class _VoiceSearchDialogState extends State<VoiceSearchDialog>
     final isDark = theme.brightness == Brightness.dark;
 
     return Dialog(
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: AppConstants.borderRadiusLarge,
       ),
       child: Padding(
@@ -110,8 +110,8 @@ class _VoiceSearchDialogState extends State<VoiceSearchDialog>
                     gradient: AppColors.primaryGradient,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primaryBlue.withOpacity(
-                          0.3 + (_animationController.value * 0.3),
+                        color: AppColors.primaryBlue.withValues(
+                          alpha: 0.3 + (_animationController.value * 0.3),
                         ),
                         blurRadius: 20 + (_animationController.value * 10),
                         spreadRadius: 5,

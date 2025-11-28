@@ -24,12 +24,12 @@ class MetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cardColor = color ?? theme.primaryColor;
-    
-    final bool hasPositiveChange = changePercentage != null && changePercentage! >= 0;
+
+    final bool hasPositiveChange =
+        changePercentage != null && changePercentage! >= 0;
     final Color trendColor = hasPositiveChange ? Colors.green : Colors.red;
-    final IconData trendIcon = hasPositiveChange 
-        ? Icons.trending_up 
-        : Icons.trending_down;
+    final IconData trendIcon =
+        hasPositiveChange ? Icons.trending_up : Icons.trending_down;
 
     return Card(
       elevation: 2,
@@ -60,7 +60,7 @@ class MetricCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: cardColor.withOpacity(0.1),
+                        color: cardColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -72,7 +72,7 @@ class MetricCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              
+
               // Main value
               Text(
                 value,
@@ -81,9 +81,9 @@ class MetricCard extends StatelessWidget {
                   color: theme.colorScheme.onSurface,
                 ),
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               // Subtitle and trend
               Row(
                 children: [
@@ -104,7 +104,7 @@ class MetricCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: trendColor.withOpacity(0.1),
+                        color: trendColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(

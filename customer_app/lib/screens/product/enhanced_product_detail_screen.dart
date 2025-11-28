@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:carousel_slider/carousel_slider.dart' if (dart.library.html) 'package:carousel_slider_web/carousel_slider_web.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_constants.dart';
 import '../../widgets/common/premium_widgets.dart';
@@ -63,8 +62,9 @@ class _EnhancedProductDetailScreenState
           SliverToBoxAdapter(
             child: Container(
               decoration: BoxDecoration(
-                color:
-                    isDark ? AppColors.darkBackground : AppColors.lightBackground,
+                color: isDark
+                    ? AppColors.darkBackground
+                    : AppColors.lightBackground,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(24),
                 ),
@@ -105,7 +105,8 @@ class _EnhancedProductDetailScreenState
                         ],
                         const Spacer(),
                         StatusBadge(
-                          status: product.isInStock ? 'in_stock' : 'out_of_stock',
+                          status:
+                              product.isInStock ? 'in_stock' : 'out_of_stock',
                           isSmall: false,
                         ),
                       ],
@@ -156,7 +157,7 @@ class _EnhancedProductDetailScreenState
                     const SizedBox(height: 24),
 
                     // Description
-                    SectionHeader(title: 'Description'),
+                    const SectionHeader(title: 'Description'),
                     const SizedBox(height: 12),
                     Text(
                       product.description,
@@ -165,17 +166,18 @@ class _EnhancedProductDetailScreenState
                     const SizedBox(height: 24),
 
                     // Specifications
-                    SectionHeader(title: 'Specifications'),
+                    const SectionHeader(title: 'Specifications'),
                     const SizedBox(height: 12),
                     _buildSpecRow('SKU', product.sku ?? 'N/A', theme),
                     _buildSpecRow('Stock', '${product.stock} units', theme),
-                    _buildSpecRow('Category', product.category?.name ?? 'N/A', theme),
                     _buildSpecRow(
-                        'Supplier', product.supplier?.displayName ?? 'N/A', theme),
+                        'Category', product.category?.name ?? 'N/A', theme),
+                    _buildSpecRow('Supplier',
+                        product.supplier?.displayName ?? 'N/A', theme),
                     const SizedBox(height: 24),
 
                     // Quantity Selector
-                    SectionHeader(title: 'Quantity'),
+                    const SectionHeader(title: 'Quantity'),
                     const SizedBox(height: 12),
                     Container(
                       padding: AppConstants.paddingAll12,
@@ -309,7 +311,7 @@ class _EnhancedProductDetailScreenState
                     shape: BoxShape.circle,
                     color: _currentImageIndex == index
                         ? Colors.white
-                        : Colors.white.withOpacity(0.5),
+                        : Colors.white.withValues(alpha: 0.5),
                   ),
                 ),
               ),
@@ -354,7 +356,7 @@ class _EnhancedProductDetailScreenState
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -378,14 +380,16 @@ class _EnhancedProductDetailScreenState
                 text: 'Add to Cart',
                 icon: Icons.shopping_cart,
                 onPressed: () async {
-                  final success = await ref.read(cartProvider.notifier).addToCart(
-                        productId: product.id,
-                        quantity: _quantity,
-                      );
+                  final success =
+                      await ref.read(cartProvider.notifier).addToCart(
+                            productId: product.id,
+                            quantity: _quantity,
+                          );
                   if (success && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Added $_quantity ${product.title} to cart'),
+                        content:
+                            Text('Added $_quantity ${product.title} to cart'),
                         action: SnackBarAction(
                           label: 'View Cart',
                           onPressed: () {

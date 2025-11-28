@@ -155,7 +155,8 @@ class ValidationUtils {
   }
 
   /// Validate minimum length
-  static String? validateMinLength(String? value, int minLength, String fieldName) {
+  static String? validateMinLength(
+      String? value, int minLength, String fieldName) {
     if (value == null || value.length < minLength) {
       return '$fieldName must be at least $minLength characters';
     }
@@ -256,18 +257,21 @@ class StorageKeys {
 class PlatformUtils {
   /// Check if running on mobile
   static bool get isMobile {
-    return Theme.of(navigatorKey.currentContext!).platform == TargetPlatform.android ||
+    return Theme.of(navigatorKey.currentContext!).platform ==
+            TargetPlatform.android ||
         Theme.of(navigatorKey.currentContext!).platform == TargetPlatform.iOS;
   }
 
   /// Check if running on Android
   static bool get isAndroid {
-    return Theme.of(navigatorKey.currentContext!).platform == TargetPlatform.android;
+    return Theme.of(navigatorKey.currentContext!).platform ==
+        TargetPlatform.android;
   }
 
   /// Check if running on iOS
   static bool get isIOS {
-    return Theme.of(navigatorKey.currentContext!).platform == TargetPlatform.iOS;
+    return Theme.of(navigatorKey.currentContext!).platform ==
+        TargetPlatform.iOS;
   }
 }
 

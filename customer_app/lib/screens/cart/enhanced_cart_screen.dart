@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:badges/badges.dart' as badges;
 import '../../config/app_colors.dart';
 import '../../config/app_constants.dart';
 import '../../widgets/common/premium_widgets.dart';
 import '../../providers/cart_provider.dart';
 import '../../routes.dart';
-import 'package:intl/intl.dart';
 import '../../widgets/common/shimmer_loading.dart';
 import '../../widgets/common/enhanced_states.dart';
 
@@ -40,7 +38,8 @@ class EnhancedCartScreen extends ConsumerWidget {
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppColors.primaryBlue,
                     borderRadius: BorderRadius.circular(12),
@@ -77,7 +76,8 @@ class EnhancedCartScreen extends ConsumerWidget {
                   title: 'Your Cart is Empty',
                   message: 'Add products to your cart to see them here',
                   actionText: 'Browse Products',
-                  onAction: () => AppRoutes.navigateToAndReplace(context, AppRoutes.home),
+                  onAction: () =>
+                      AppRoutes.navigateToAndReplace(context, AppRoutes.home),
                   iconColor: AppColors.primaryBlue,
                 )
               : Column(
@@ -91,7 +91,8 @@ class EnhancedCartScreen extends ConsumerWidget {
                           final item = cartState.items[index];
                           return TweenAnimationBuilder<double>(
                             tween: Tween(begin: 0.0, end: 1.0),
-                            duration: Duration(milliseconds: 300 + (index * 100)),
+                            duration:
+                                Duration(milliseconds: 300 + (index * 100)),
                             curve: Curves.easeOut,
                             builder: (context, value, child) {
                               return Opacity(
@@ -108,7 +109,7 @@ class EnhancedCartScreen extends ConsumerWidget {
                               background: Container(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 padding: const EdgeInsets.only(right: 20),
-                                decoration: BoxDecoration(
+                                decoration: const BoxDecoration(
                                   color: AppColors.error,
                                   borderRadius: AppConstants.borderRadiusMedium,
                                 ),
@@ -139,8 +140,8 @@ class EnhancedCartScreen extends ConsumerWidget {
                                               Navigator.pop(context, true),
                                           child: const Text(
                                             'Remove',
-                                            style:
-                                                TextStyle(color: AppColors.error),
+                                            style: TextStyle(
+                                                color: AppColors.error),
                                           ),
                                         ),
                                       ],
@@ -196,7 +197,8 @@ class EnhancedCartScreen extends ConsumerWidget {
         borderRadius: AppConstants.borderRadiusMedium,
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.black : Colors.grey).withOpacity(0.06),
+            color:
+                (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.06),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -213,16 +215,16 @@ class EnhancedCartScreen extends ConsumerWidget {
               color: isDark
                   ? AppColors.darkSurfaceVariant
                   : AppColors.lightSurfaceVariant,
-              child: item.product?.image != null &&
-                      item.product!.image!.isNotEmpty
-                  ? Image.network(
-                      item.product!.image!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.image_outlined);
-                      },
-                    )
-                  : const Icon(Icons.inventory_2_outlined),
+              child:
+                  item.product?.image != null && item.product!.image!.isNotEmpty
+                      ? Image.network(
+                          item.product!.image!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.image_outlined);
+                          },
+                        )
+                      : const Icon(Icons.inventory_2_outlined),
             ),
           ),
           const SizedBox(width: 12),
@@ -252,9 +254,8 @@ class EnhancedCartScreen extends ConsumerWidget {
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: isDark
-                          ? AppColors.darkBorder
-                          : AppColors.lightBorder,
+                      color:
+                          isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     ),
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -334,7 +335,7 @@ class EnhancedCartScreen extends ConsumerWidget {
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -346,7 +347,7 @@ class EnhancedCartScreen extends ConsumerWidget {
           // Promo Code Section
           Row(
             children: [
-              Expanded(
+              const Expanded(
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Enter promo code',

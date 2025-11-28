@@ -52,9 +52,8 @@ class User {
               ?.map((e) => e.toString())
               .toList() ??
           [],
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : null,
+      createdAt:
+          json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
       isActive: json['isActive'] ?? true,
     );
   }

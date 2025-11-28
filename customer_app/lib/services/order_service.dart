@@ -9,11 +9,12 @@ class OrderService {
   final Dio _dio;
   final Ref _ref;
 
-  OrderService(this._ref) : _dio = Dio(BaseOptions(
-    baseUrl: AppConfig.apiBaseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-  ));
+  OrderService(this._ref)
+      : _dio = Dio(BaseOptions(
+          baseUrl: AppConfig.apiBaseUrl,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ));
 
   /// Get authentication token
   String? _getToken() {
@@ -29,7 +30,7 @@ class OrderService {
   }) async {
     try {
       final token = _getToken();
-      
+
       final response = await _dio.post(
         '/orders',
         data: {
@@ -62,7 +63,7 @@ class OrderService {
   }) async {
     try {
       final token = _getToken();
-      
+
       final response = await _dio.get(
         '/orders',
         queryParameters: {
@@ -94,7 +95,7 @@ class OrderService {
   Future<Order> getOrder(String orderId) async {
     try {
       final token = _getToken();
-      
+
       final response = await _dio.get(
         '/orders/$orderId',
         options: Options(
@@ -118,7 +119,7 @@ class OrderService {
   Future<Order> cancelOrder(String orderId, String reason) async {
     try {
       final token = _getToken();
-      
+
       final response = await _dio.patch(
         '/orders/$orderId/cancel',
         data: {'cancellationReason': reason},
@@ -133,6 +134,76 @@ class OrderService {
         return Order.fromJson(response.data['data']);
       } else {
         throw Exception('Failed to cancel order');
+      }
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Get supplier orders
+  Future<List<Order>> getSupplierOrders({
+    int page = 1,
+    int limit = 20,
+    String? status,
+  }) async {
+    try {
+      final token = _getToken();
+
+      final response = await _dio.get(
+        '/orders/supplier',
+        queryParameters: {
+          'page': page,
+          'limit': limit,
+          if (status != null) 'status': status,
+        },
+        options: Options(
+          headers: {
+            if (token != null) 'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final orders = (response.data['data'] as List)
+            .map((json) => Order.fromJson(json))
+            .toList();
+        return orders;
+      } else {
+        throw Exception('Failed to load supplier orders');
+      }
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Update order status (supplier)
+  Future<Order> updateOrderStatus(
+    String orderId,
+    String status, {
+    String? trackingNumber,
+    String? supplierNote,
+  }) async {
+    try {
+      final token = _getToken();
+
+      final response = await _dio.put(
+        '/orders/$orderId/status',
+        data: {
+          'status': status,
+          if (trackingNumber != null) 'trackingNumber': trackingNumber,
+          if (supplierNote != null) 'supplierNote': supplierNote,
+        },
+        options: Options(
+          headers: {
+            if (token != null) 'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return Order.fromJson(response.data['data']);
+      } else {
+        throw Exception('Failed to update order status');
       }
     } on DioException catch (e) {
       throw _handleError(e);

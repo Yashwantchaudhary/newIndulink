@@ -159,6 +159,37 @@ backend/
 - `npm run dev` - Start development server with nodemon
 - `npm test` - Run tests
 
+## Database Seeding
+
+The project includes comprehensive database seeding scripts for populating test data.
+
+### Quick Start
+```bash
+# Full database seeding
+node scripts/seedDatabase.js
+
+# Individual data types
+node scripts/seedDatabase.js users
+node scripts/seedDatabase.js categories
+node scripts/seedDatabase.js products
+```
+
+### API Endpoints (Admin Only)
+```http
+GET  /api/seed/status      # Check current data counts
+POST /api/seed/all         # Seed all data
+POST /api/seed/users       # Seed users only
+POST /api/seed/categories  # Seed categories only
+POST /api/seed/products    # Seed products only
+DELETE /api/seed/clear     # Clear all data
+```
+
+### Sample Admin Credentials
+- **Email:** `admin@indulink.com`
+- **Password:** `password123`
+
+For detailed documentation, see `scripts/README.md`.
+
 ## Environment Variables
 
 | Variable | Description | Default |

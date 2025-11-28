@@ -23,7 +23,8 @@ class CustomerDashboardScreen extends ConsumerStatefulWidget {
       _CustomerDashboardScreenState();
 }
 
-class _CustomerDashboardScreenState extends ConsumerState<CustomerDashboardScreen> {
+class _CustomerDashboardScreenState
+    extends ConsumerState<CustomerDashboardScreen> {
   @override
   void initState() {
     super.initState();
@@ -33,7 +34,7 @@ class _CustomerDashboardScreenState extends ConsumerState<CustomerDashboardScree
     });
   }
 
-  Future <void> _onRefresh() async {
+  Future<void> _onRefresh() async {
     await ref.read(customerDashboardProvider.notifier).refresh();
   }
 
@@ -92,7 +93,8 @@ class _CustomerDashboardScreenState extends ConsumerState<CustomerDashboardScree
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Notifications feature coming soon')),
+                const SnackBar(
+                    content: Text('Notifications feature coming soon')),
               );
             },
           ),
@@ -234,7 +236,8 @@ class _CustomerDashboardScreenState extends ConsumerState<CustomerDashboardScree
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               TextButton(
-                onPressed: () => AppRoutes.navigateTo(context, AppRoutes.ordersList),
+                onPressed: () =>
+                    AppRoutes.navigateTo(context, AppRoutes.ordersList),
                 child: Text(l10n.seeAll),
               ),
             ],
@@ -262,7 +265,8 @@ class _CustomerDashboardScreenState extends ConsumerState<CustomerDashboardScree
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             TextButton(
-              onPressed: () => AppRoutes.navigateTo(context, AppRoutes.ordersList),
+              onPressed: () =>
+                  AppRoutes.navigateTo(context, AppRoutes.ordersList),
               child: Text(l10n.viewAll),
             ),
           ],
@@ -276,10 +280,11 @@ class _CustomerDashboardScreenState extends ConsumerState<CustomerDashboardScree
             title: l10n.noData,
             subtitle: l10n.noResults,
             buttonText: l10n.browseProducts,
-            onButtonPressed: () => AppRoutes.navigateTo(context, AppRoutes.enhancedHome),
+            onButtonPressed: () =>
+                AppRoutes.navigateTo(context, AppRoutes.enhancedHome),
           )
         else
-          ...data.recentOrders.map((order) => _buildOrderCard(order)).toList(),
+          ...data.recentOrders.map((order) => _buildOrderCard(order)),
 
         const SizedBox(height: AppConstants.spacing32),
       ],
@@ -339,7 +344,9 @@ class _CustomerDashboardScreenState extends ConsumerState<CustomerDashboardScree
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => AppRoutes.navigateTo(context, AppRoutes.orderDetail, arguments: order.id),
+                      onPressed: () => AppRoutes.navigateTo(
+                          context, AppRoutes.orderDetail,
+                          arguments: order.id),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           vertical: AppConstants.spacing8,
@@ -364,7 +371,8 @@ class _CustomerDashboardScreenState extends ConsumerState<CustomerDashboardScree
 
     return Card(
       child: InkWell(
-        onTap: () => AppRoutes.navigateTo(context, AppRoutes.orderDetail, arguments: order.id),
+        onTap: () => AppRoutes.navigateTo(context, AppRoutes.orderDetail,
+            arguments: order.id),
         borderRadius: AppConstants.borderRadiusMedium,
         child: Padding(
           padding: AppConstants.paddingAll16,
@@ -376,7 +384,7 @@ class _CustomerDashboardScreenState extends ConsumerState<CustomerDashboardScree
                 children: [
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.receipt_long_rounded,
                         size: 20,
                         color: AppColors.primaryBlue,

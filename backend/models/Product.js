@@ -116,15 +116,27 @@ const productSchema = new mongoose.Schema(
     }
 );
 
-// Indexes for performance
-productSchema.index({ title: 'text', description: 'text', tags: 'text' });
-productSchema.index({ category: 1, status: 1 });
-productSchema.index({ supplier: 1, status: 1 });
-productSchema.index({ price: 1 });
-productSchema.index({ averageRating: -1 });
-productSchema.index({ createdAt: -1 });
+// ===== PERFORMANCE INDEXES =====
+// Compound index for category filtering with featured/active products
+productSchema.index({ category: 1, isFeatured: 1, status: 1, createdAt: -1 });
 
-// Virtual for discount percentage
+// Compound index for supplier's products listing
+productSchema.index({ supplier: 1, status: 1, createdAt: -1 });
+
+// Text index for product search (title, description, tags)
+productSchema.index({ title: 'text', description: 'text', tags: 'text' });
+
+// Index for price range queries
+productSchema.index({ price: 1, status: 1 });
+
+// Index for stock availability
+productSchema.index({ stock: 1, status: 1 });
+
+// Index for featured products
+productSchema.index({ isFeatured: 1, status: 1, createdAt: -1 });
+
+// ===== VIRTUALS =====
+// Discount percentage
 productSchema.virtual('discountPercentage').get(function () {
     if (this.compareAtPrice && this.compareAtPrice > this.price) {
         return Math.round(((this.compareAtPrice - this.price) / this.compareAtPrice) * 100);
@@ -132,11 +144,9 @@ productSchema.virtual('discountPercentage').get(function () {
     return 0;
 });
 
-// Virtual for stock status
-productSchema.virtual('stockStatus').get(function () {
-    if (this.stock === 0) return 'out_of_stock';
-    if (this.stock <= 10) return 'low_stock';
-    return 'in_stock';
+// In stock status
+productSchema.virtual('inStock').get(function () {
+    return this.stock > 0;
 });
 
 // Update stock status when stock changes

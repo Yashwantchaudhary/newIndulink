@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_constants.dart';
-import '../../widgets/common/premium_widgets.dart';
 import '../../providers/message_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/message.dart';
@@ -61,7 +60,7 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: AppColors.primaryGradient,
                 shape: BoxShape.circle,
               ),
@@ -111,7 +110,8 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
     );
   }
 
-  Widget _buildMessagesList(bool isDark, ThemeData theme, String? currentUserId) {
+  Widget _buildMessagesList(
+      bool isDark, ThemeData theme, String? currentUserId) {
     final messageState = ref.watch(messageProvider);
     final messages = messageState.messages;
 
@@ -120,7 +120,7 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.chat_bubble_outline,
               size: 64,
               color: AppColors.lightTextTertiary,
@@ -169,8 +169,7 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
 
           return Column(
             children: [
-              if (showDateDivider)
-                _buildDateDivider(message.createdAt, theme),
+              if (showDateDivider) _buildDateDivider(message.createdAt, theme),
               _buildMessageBubble(message, isMe, isDark, theme),
             ],
           );
@@ -184,7 +183,7 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         children: [
-          Expanded(child: Divider(thickness: 1)),
+          const Expanded(child: Divider(thickness: 1)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
@@ -195,7 +194,7 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
               ),
             ),
           ),
-          Expanded(child: Divider(thickness: 1)),
+          const Expanded(child: Divider(thickness: 1)),
         ],
       ),
     );
@@ -219,7 +218,7 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
             Container(
               width: 32,
               height: 32,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: AppColors.secondaryGradient,
                 shape: BoxShape.circle,
               ),
@@ -236,9 +235,7 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
               ),
               padding: AppConstants.paddingAll12,
               decoration: BoxDecoration(
-                gradient: isMe
-                    ? AppColors.primaryGradient
-                    : null,
+                gradient: isMe ? AppColors.primaryGradient : null,
                 color: isMe
                     ? null
                     : (isDark
@@ -253,7 +250,7 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
                 boxShadow: [
                   BoxShadow(
                     color: (isMe ? AppColors.primaryBlue : Colors.grey)
-                        .withOpacity(0.2),
+                        .withValues(alpha: 0.2),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -276,7 +273,7 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
                         timeFormat.format(message.createdAt),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: isMe
-                              ? Colors.white.withOpacity(0.8)
+                              ? Colors.white.withValues(alpha: 0.8)
                               : AppColors.lightTextSecondary,
                           fontSize: 11,
                         ),
@@ -284,13 +281,11 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
                       if (isMe) ...[
                         const SizedBox(width: 4),
                         Icon(
-                          message.isRead
-                              ? Icons.done_all
-                              : Icons.done,
+                          message.isRead ? Icons.done_all : Icons.done,
                           size: 14,
                           color: message.isRead
                               ? AppColors.success
-                              : Colors.white.withOpacity(0.8),
+                              : Colors.white.withValues(alpha: 0.8),
                         ),
                       ],
                     ],
@@ -304,7 +299,7 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
             Container(
               width: 32,
               height: 32,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: AppColors.primaryGradient,
                 shape: BoxShape.circle,
               ),
@@ -330,7 +325,7 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -372,7 +367,7 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primaryBlue.withOpacity(0.3),
+                  color: AppColors.primaryBlue.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -459,7 +454,8 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.description, color: AppColors.accentOrange),
+              leading:
+                  const Icon(Icons.description, color: AppColors.accentOrange),
               title: const Text('Document'),
               onTap: () {
                 Navigator.pop(context);

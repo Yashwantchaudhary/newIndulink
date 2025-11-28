@@ -15,9 +15,8 @@ class SalesTrends {
 
   factory SalesTrends.fromJson(Map<String, dynamic> json) {
     return SalesTrends(
-      trends: (json['trends'] as List)
-          .map((e) => TrendData.fromJson(e))
-          .toList(),
+      trends:
+          (json['trends'] as List).map((e) => TrendData.fromJson(e)).toList(),
       totals: SalesTotals.fromJson(json['totals']),
       comparison: SalesComparison.fromJson(json['comparison']),
       period: Period.fromJson(json['period']),
@@ -510,4 +509,241 @@ class MetricComparison {
 
   bool get isPositive => trend == 'up';
   bool get isNegative => trend == 'down';
+}
+
+// Predictive Insights Models
+
+class PredictiveInsights {
+  final TrendAnalysis trendAnalysis;
+  final ForecastData forecasts;
+  final PredictionData predictions;
+  final List<Recommendation> recommendations;
+
+  PredictiveInsights({
+    required this.trendAnalysis,
+    required this.forecasts,
+    required this.predictions,
+    required this.recommendations,
+  });
+
+  factory PredictiveInsights.fromJson(Map<String, dynamic> json) {
+    return PredictiveInsights(
+      trendAnalysis: TrendAnalysis.fromJson(json['trendAnalysis']),
+      forecasts: ForecastData.fromJson(json['forecasts']),
+      predictions: PredictionData.fromJson(json['predictions']),
+      recommendations: (json['recommendations'] as List? ?? [])
+          .map((e) => Recommendation.fromJson(e))
+          .toList(),
+    );
+  }
+}
+
+class TrendAnalysis {
+  final String direction;
+  final double growthRate;
+  final double slope;
+  final double volatility;
+  final double trendStrength;
+  final int dataPoints;
+
+  TrendAnalysis({
+    required this.direction,
+    required this.growthRate,
+    required this.slope,
+    required this.volatility,
+    required this.trendStrength,
+    required this.dataPoints,
+  });
+
+  factory TrendAnalysis.fromJson(Map<String, dynamic> json) {
+    return TrendAnalysis(
+      direction: json['direction'] ?? 'stable',
+      growthRate: (json['growthRate'] ?? 0).toDouble(),
+      slope: (json['slope'] ?? 0).toDouble(),
+      volatility: (json['volatility'] ?? 0).toDouble(),
+      trendStrength: (json['trendStrength'] ?? 0).toDouble(),
+      dataPoints: json['dataPoints'] ?? 0,
+    );
+  }
+
+  bool get isIncreasing => direction == 'increasing';
+  bool get isDecreasing => direction == 'decreasing';
+  bool get isStable => direction == 'stable';
+}
+
+class ForecastData {
+  final List<ForecastPoint> revenue;
+  final List<ForecastPoint> orders;
+
+  ForecastData({
+    required this.revenue,
+    required this.orders,
+  });
+
+  factory ForecastData.fromJson(Map<String, dynamic> json) {
+    return ForecastData(
+      revenue: (json['revenue'] as List? ?? [])
+          .map((e) => ForecastPoint.fromJson(e))
+          .toList(),
+      orders: (json['orders'] as List? ?? [])
+          .map((e) => ForecastPoint.fromJson(e))
+          .toList(),
+    );
+  }
+}
+
+class ForecastPoint {
+  final String date;
+  final double predicted;
+
+  ForecastPoint({
+    required this.date,
+    required this.predicted,
+  });
+
+  factory ForecastPoint.fromJson(Map<String, dynamic> json) {
+    return ForecastPoint(
+      date: json['date'] ?? '',
+      predicted: (json['predicted'] ?? 0).toDouble(),
+    );
+  }
+}
+
+class PredictionData {
+  final double nextWeekRevenue;
+  final double nextWeekOrders;
+  final double growthRate;
+  final String confidence;
+
+  PredictionData({
+    required this.nextWeekRevenue,
+    required this.nextWeekOrders,
+    required this.growthRate,
+    required this.confidence,
+  });
+
+  factory PredictionData.fromJson(Map<String, dynamic> json) {
+    return PredictionData(
+      nextWeekRevenue: (json['nextWeekRevenue'] ?? 0).toDouble(),
+      nextWeekOrders: (json['nextWeekOrders'] ?? 0).toDouble(),
+      growthRate: (json['growthRate'] ?? 0).toDouble(),
+      confidence: json['confidence'] ?? 'low',
+    );
+  }
+
+  bool get isHighConfidence => confidence == 'high';
+  bool get isMediumConfidence => confidence == 'medium';
+  bool get isLowConfidence => confidence == 'low';
+}
+
+class Recommendation {
+  final String type;
+  final String message;
+  final String priority;
+
+  Recommendation({
+    required this.type,
+    required this.message,
+    required this.priority,
+  });
+
+  factory Recommendation.fromJson(Map<String, dynamic> json) {
+    return Recommendation(
+      type: json['type'] ?? 'info',
+      message: json['message'] ?? '',
+      priority: json['priority'] ?? 'low',
+    );
+  }
+
+  bool get isHighPriority => priority == 'high';
+  bool get isMediumPriority => priority == 'medium';
+  bool get isLowPriority => priority == 'low';
+}
+
+// User Segmentation Models
+
+class UserSegmentation {
+  final Map<String, List<CustomerSegment>> segments;
+  final Map<String, SegmentStatistics> statistics;
+  final int totalCustomers;
+
+  UserSegmentation({
+    required this.segments,
+    required this.statistics,
+    required this.totalCustomers,
+  });
+
+  factory UserSegmentation.fromJson(Map<String, dynamic> json) {
+    final segmentsJson = json['segments'] as Map<String, dynamic>? ?? {};
+    final segments = <String, List<CustomerSegment>>{};
+    segmentsJson.forEach((key, value) {
+      segments[key] = (value as List? ?? [])
+          .map((e) => CustomerSegment.fromJson(e))
+          .toList();
+    });
+
+    final statisticsJson = json['statistics'] as Map<String, dynamic>? ?? {};
+    final statistics = <String, SegmentStatistics>{};
+    statisticsJson.forEach((key, value) {
+      statistics[key] = SegmentStatistics.fromJson(value);
+    });
+
+    return UserSegmentation(
+      segments: segments,
+      statistics: statistics,
+      totalCustomers: json['totalCustomers'] ?? 0,
+    );
+  }
+}
+
+class CustomerSegment {
+  final CustomerInfo customer;
+  final int orderCount;
+  final double totalSpent;
+  final double avgOrderValue;
+  final String firstOrder;
+  final String lastOrder;
+
+  CustomerSegment({
+    required this.customer,
+    required this.orderCount,
+    required this.totalSpent,
+    required this.avgOrderValue,
+    required this.firstOrder,
+    required this.lastOrder,
+  });
+
+  factory CustomerSegment.fromJson(Map<String, dynamic> json) {
+    return CustomerSegment(
+      customer: CustomerInfo.fromJson(json['_id']),
+      orderCount: json['orderCount'] ?? 0,
+      totalSpent: (json['totalSpent'] ?? 0).toDouble(),
+      avgOrderValue: (json['avgOrderValue'] ?? 0).toDouble(),
+      firstOrder: json['firstOrder'] ?? '',
+      lastOrder: json['lastOrder'] ?? '',
+    );
+  }
+}
+
+class SegmentStatistics {
+  final int count;
+  final double totalRevenue;
+  final double avgOrderValue;
+  final double avgOrdersPerCustomer;
+
+  SegmentStatistics({
+    required this.count,
+    required this.totalRevenue,
+    required this.avgOrderValue,
+    required this.avgOrdersPerCustomer,
+  });
+
+  factory SegmentStatistics.fromJson(Map<String, dynamic> json) {
+    return SegmentStatistics(
+      count: json['count'] ?? 0,
+      totalRevenue: (json['totalRevenue'] ?? 0).toDouble(),
+      avgOrderValue: (json['avgOrderValue'] ?? 0).toDouble(),
+      avgOrdersPerCustomer: (json['avgOrdersPerCustomer'] ?? 0).toDouble(),
+    );
+  }
 }

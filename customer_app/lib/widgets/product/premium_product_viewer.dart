@@ -129,15 +129,15 @@ class _Premium360ProductViewerState extends State<Premium360ProductViewer>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
+                color: Colors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.threesixty, color: Colors.white, size: 16),
-                  const SizedBox(width: 6),
-                  const Text(
+                  Icon(Icons.threesixty, color: Colors.white, size: 16),
+                  SizedBox(width: 6),
+                  Text(
                     '360° View',
                     style: TextStyle(
                       color: Colors.white,
@@ -163,19 +163,19 @@ class _Premium360ProductViewerState extends State<Premium360ProductViewer>
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryBlue.withOpacity(0.9),
+                    color: AppColors.primaryBlue.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.swipe,
                         color: Colors.white,
                         size: 20,
                       ),
-                      const SizedBox(width: 8),
-                      const Text(
+                      SizedBox(width: 8),
+                      Text(
                         'Swipe to rotate',
                         style: TextStyle(
                           color: Colors.white,
@@ -205,7 +205,7 @@ class _Premium360ProductViewerState extends State<Premium360ProductViewer>
                   decoration: BoxDecoration(
                     color: _currentIndex == index
                         ? AppColors.primaryBlue
-                        : Colors.grey.withOpacity(0.5),
+                        : Colors.grey.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -269,13 +269,13 @@ class _PremiumVideoPlayerState extends State<PremiumVideoPlayer> {
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.primaryBlue.withOpacity(0.9),
-                    AppColors.secondaryPurple.withOpacity(0.9),
+                    AppColors.primaryBlue.withValues(alpha: 0.9),
+                    AppColors.secondaryPurple.withValues(alpha: 0.9),
                   ],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primaryBlue.withOpacity(0.4),
+                    color: AppColors.primaryBlue.withValues(alpha: 0.4),
                     blurRadius: 20,
                     spreadRadius: 5,
                   ),

@@ -119,20 +119,39 @@ const userSchema = new mongoose.Schema(
             type: String,
             select: false,
         },
-    },
-    {
-        timestamps: true,
-    }
-);
-
-// Hash password before saving
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
-
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-});
+        // FCM tokens for push notifications
+        fcmTokens: [{
+            type: String,
+            trim: true,
+        }],
+        // Notification preferences
+        notificationPreferences: {
+            orderUpdates: {
+                type: Boolean,
+                default: true,
+            },
+            promotions: {
+                type: Boolean,
+                default: true,
+            },
+            messages: {
+                type: Boolean,
+                default: true,
+            },
+            system: {
+                type: Boolean,
+                default: true,
+            },
+            emailNotifications: {
+                type: Boolean,
+                default: true,
+            },
+            pushNotifications: {
+                type: Boolean,
+                default: true,
+            },
+        },
+    });
 
 // Compare password method
 userSchema.methods.comparePassword = async function (candidatePassword) {

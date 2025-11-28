@@ -11,13 +11,13 @@ class SkeletonLoaders {
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
         borderRadius: AppConstants.borderRadiusLarge,
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Image skeleton
           _SkeletonBox(
             height: 180,
-            borderRadius: const BorderRadius.vertical(
+            borderRadius: BorderRadius.vertical(
               top: Radius.circular(16),
             ),
           ),
@@ -27,13 +27,13 @@ class SkeletonLoaders {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SkeletonBox(width: double.infinity, height: 16),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _SkeletonBox(width: 120, height: 14),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Row(
                   children: [
                     _SkeletonBox(width: 80, height: 20),
-                    const Spacer(),
+                    Spacer(),
                     _SkeletonBox(width: 32, height: 32, isCircle: true),
                   ],
                 ),
@@ -53,24 +53,24 @@ class SkeletonLoaders {
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
         borderRadius: AppConstants.borderRadiusMedium,
       ),
-      child: Row(
+      child: const Row(
         children: [
           _SkeletonBox(width: 100, height: 100),
-          const SizedBox(width: 16),
+          SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SkeletonBox(width: double.infinity, height: 16),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _SkeletonBox(width: 150, height: 14),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _SkeletonBox(width: 100, height: 14),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Row(
                   children: [
                     _SkeletonBox(width: 80, height: 24),
-                    const Spacer(),
+                    Spacer(),
                     _SkeletonBox(width: 100, height: 32),
                   ],
                 ),
@@ -90,19 +90,19 @@ class SkeletonLoaders {
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
         borderRadius: AppConstants.borderRadiusLarge,
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               _SkeletonBox(width: 40, height: 40),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _SkeletonBox(width: 150, height: 16),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     _SkeletonBox(width: 100, height: 14),
                   ],
                 ),
@@ -110,13 +110,13 @@ class SkeletonLoaders {
               _SkeletonBox(width: 80, height: 24),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _SkeletonBox(width: double.infinity, height: 60),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(
             children: [
               Expanded(child: _SkeletonBox(width: double.infinity, height: 40)),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(child: _SkeletonBox(width: double.infinity, height: 40)),
             ],
           ),
@@ -137,7 +137,7 @@ class SkeletonLoaders {
             isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
           if (!isMe) ...[
-            _SkeletonBox(width: 32, height: 32, isCircle: true),
+            const _SkeletonBox(width: 32, height: 32, isCircle: true),
             const SizedBox(width: 8),
           ],
           Flexible(
@@ -149,11 +149,11 @@ class SkeletonLoaders {
                     : AppColors.lightSurfaceVariant,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Column(
+              child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _SkeletonBox(width: 200, height: 14),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   _SkeletonBox(width: 150, height: 14),
                 ],
               ),
@@ -173,19 +173,19 @@ class SkeletonLoaders {
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
         borderRadius: AppConstants.borderRadiusLarge,
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               _SkeletonBox(width: 40, height: 40, isCircle: true),
-              const Spacer(),
+              Spacer(),
               _SkeletonBox(width: 60, height: 24),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _SkeletonBox(width: 100, height: 32),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           _SkeletonBox(width: 80, height: 14),
         ],
       ),
@@ -201,18 +201,18 @@ class SkeletonLoaders {
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
         borderRadius: AppConstants.borderRadiusMedium,
       ),
-      child: Row(
+      child: const Row(
         children: [
           _SkeletonBox(width: 48, height: 48),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SkeletonBox(width: double.infinity, height: 16),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 _SkeletonBox(width: 200, height: 14),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 _SkeletonBox(width: 80, height: 12),
               ],
             ),
@@ -299,12 +299,11 @@ class _SkeletonBoxState extends State<_SkeletonBox>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark
-        ? AppColors.darkSurfaceVariant
-        : AppColors.lightSurfaceVariant;
+    final baseColor =
+        isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant;
     final highlightColor = isDark
-        ? AppColors.darkSurfaceVariant.withOpacity(0.5)
-        : Colors.white.withOpacity(0.3);
+        ? AppColors.darkSurfaceVariant.withValues(alpha: 0.5)
+        : Colors.white.withValues(alpha: 0.3);
 
     return AnimatedBuilder(
       animation: _animation,
@@ -322,9 +321,9 @@ class _SkeletonBoxState extends State<_SkeletonBox>
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
               colors: [
-                highlightColor.withOpacity(0.0),
+                highlightColor.withValues(alpha: 0.0),
                 highlightColor,
-                highlightColor.withOpacity(0.0),
+                highlightColor.withValues(alpha: 0.0),
               ],
               stops: [
                 _animation.value - 0.3,
@@ -361,7 +360,8 @@ class SkeletonLoadingScreens {
       appBar: AppBar(title: const Text('Orders')),
       body: SkeletonLoaders.listSkeleton(
         itemCount: 5,
-        itemBuilder: (isDark) => SkeletonLoaders.orderCardSkeleton(isDark: isDark),
+        itemBuilder: (isDark) =>
+            SkeletonLoaders.orderCardSkeleton(isDark: isDark),
         isDark: isDark,
       ),
     );
@@ -376,7 +376,8 @@ class SkeletonLoadingScreens {
       appBar: AppBar(title: const Text('Notifications')),
       body: SkeletonLoaders.listSkeleton(
         itemCount: 8,
-        itemBuilder: (isDark) => SkeletonLoaders.notificationSkeleton(isDark: isDark),
+        itemBuilder: (isDark) =>
+            SkeletonLoaders.notificationSkeleton(isDark: isDark),
         isDark: isDark,
       ),
     );

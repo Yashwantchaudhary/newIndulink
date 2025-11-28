@@ -42,15 +42,17 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
   ReviewNotifier() : super(ReviewState());
 
   // Load product reviews
-  Future<void> loadProductReviews(String productId, {bool loadMore = false}) async {
+  Future<void> loadProductReviews(String productId,
+      {bool loadMore = false}) async {
     if (state.isLoading) return;
 
     state = state.copyWith(isLoading: true, error: null);
 
     try {
       final page = loadMore ? state.currentPage + 1 : 1;
-      final newReviews = await _reviewService.getProductReviews(productId, page: page);
-      
+      final newReviews =
+          await _reviewService.getProductReviews(productId, page: page);
+
       state = state.copyWith(
         reviews: loadMore ? [...state.reviews, ...newReviews] : newReviews,
         isLoading: false,
@@ -74,7 +76,7 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
     try {
       final page = loadMore ? state.currentPage + 1 : 1;
       final newReviews = await _reviewService.getMyReviews(page: page);
-      
+
       state = state.copyWith(
         reviews: loadMore ? [...state.reviews, ...newReviews] : newReviews,
         isLoading: false,
@@ -105,7 +107,7 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
         review: review,
         images: images,
       );
-      
+
       state = state.copyWith(
         reviews: [newReview, ...state.reviews],
         isLoading: false,
@@ -121,7 +123,8 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
   }
 
   // Update review
-  Future<bool> updateReview(String reviewId, {
+  Future<bool> updateReview(
+    String reviewId, {
     double? rating,
     String? review,
     List<String>? images,
@@ -135,11 +138,11 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
         review: review,
         images: images,
       );
-      
+
       final updatedReviews = state.reviews.map((r) {
         return r.id == reviewId ? updatedReview : r;
       }).toList();
-      
+
       state = state.copyWith(
         reviews: updatedReviews,
         isLoading: false,
@@ -160,7 +163,7 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
 
     try {
       await _reviewService.deleteReview(reviewId);
-      
+
       state = state.copyWith(
         reviews: state.reviews.where((r) => r.id != reviewId).toList(),
         isLoading: false,
@@ -202,6 +205,7 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
 }
 
 // Provider
-final reviewProvider = StateNotifierProvider<ReviewNotifier, ReviewState>((ref) {
+final reviewProvider =
+    StateNotifierProvider<ReviewNotifier, ReviewState>((ref) {
   return ReviewNotifier();
 });

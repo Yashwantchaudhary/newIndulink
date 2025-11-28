@@ -1,8 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../config/firebase_config.dart';
+import '../utils/error_handler.dart';
+import '../widgets/common/error_dialogs.dart';
 
 // Auth State
 class AuthState {
@@ -75,7 +78,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     try {
       // Try Firebase login first
-      final firebaseResult = await _firebaseAuthService.signInWithEmail(email, password);
+      final firebaseResult =
+          await _firebaseAuthService.signInWithEmail(email, password);
 
       if (firebaseResult['success']) {
         state = state.copyWith(
@@ -191,7 +195,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
             isLoading: false,
             isAuthenticated: true,
           );
-    
+
           // Subscribe to messaging topics
           try {
             await FirebaseConfig.messagingService.subscribeToUserTopics(
@@ -201,7 +205,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           } catch (e) {
             print('Failed to subscribe to messaging topics: $e');
           }
-    
+
           return true;
         } else {
           state = state.copyWith(
@@ -271,14 +275,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
   // Forgot Password
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     final result = await _authService.forgotPassword(email);
-    
+
     state = state.copyWith(
       isLoading: false,
       error: result['success'] ? null : result['message'],
     );
-    
+
     return result;
   }
 
@@ -288,17 +292,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String newPassword,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     final result = await _authService.resetPassword(
       token: token,
       newPassword: newPassword,
     );
-    
+
     state = state.copyWith(
       isLoading: false,
       error: result['success'] ? null : result['message'],
     );
-    
+
     return result;
   }
 
@@ -308,27 +312,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String newPassword,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     final result = await _authService.updatePassword(
       currentPassword: currentPassword,
       newPassword: newPassword,
     );
-    
+
     state = state.copyWith(
       isLoading: false,
       error: result['success'] ? null : result['message'],
     );
-    
+
     return result;
   }
 
   // Upload Profile Image
   Future<void> uploadProfileImage(dynamic imageFile) async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     try {
       final result = await _authService.uploadProfileImage(imageFile);
-      
+
       if (result['success'] && result['user'] != null) {
         state = state.copyWith(
           user: result['user'],
@@ -357,14 +361,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String phone,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     try {
       final result = await _authService.updateProfile(
         name: name,
         email: email,
         phone: phone,
       );
-      
+
       if (result['success'] && result['user'] != null) {
         state = state.copyWith(
           user: result['user'],
@@ -389,6 +393,126 @@ class AuthNotifier extends StateNotifier<AuthState> {
   // Update user
   void updateUser(User user) {
     state = state.copyWith(user: user);
+  }
+
+  // Handle authentication errors with recovery options
+  Future<bool> handleAuthError(BuildContext context, dynamic error) async {
+    final appError = ErrorHandler.convertToAppError(error);
+
+    if (appError.category == ErrorCategory.authentication) {
+      // Show authentication error dialog with recovery options
+      await ErrorDialogs.showAuthErrorDialog(
+        context,
+        appError,
+        onLogin: () {
+          // Navigate to login screen
+          Navigator.of(context).pushReplacementNamed('/login');
+        },
+        onRetry: () async {
+          // Try to refresh token
+          final refreshed = await _trySilentRefresh();
+          if (!refreshed) {
+            // If refresh failed, show login screen
+            Navigator.of(context).pushReplacementNamed('/login');
+          }
+        },
+      );
+      return false;
+    }
+
+    // For other errors, show generic error dialog
+    await ErrorDialogs.showErrorDialog(
+      context,
+      appError,
+      onRetry: () {
+        // Generic retry - could be implemented based on the operation
+      },
+    );
+    return false;
+  }
+
+  // Try silent token refresh
+  Future<bool> _trySilentRefresh() async {
+    try {
+      final result = await _authService.refreshToken();
+      return result['success'] == true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Check if token needs refresh and handle it
+  Future<bool> ensureValidToken(BuildContext context) async {
+    try {
+      // Try to get current user to check if token is valid
+      final user = await _authService.getCurrentUser();
+      if (user != null) {
+        return true;
+      }
+
+      // If no user, try silent refresh
+      final refreshed = await _trySilentRefresh();
+      if (refreshed) {
+        final user = await _authService.getCurrentUser();
+        if (user != null) {
+          state = state.copyWith(
+            user: user,
+            isAuthenticated: true,
+          );
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      final appError = ErrorHandler.convertToAppError(e);
+      if (appError.statusCode == 401) {
+        // Token expired, show auth error
+        await handleAuthError(context, e);
+        return false;
+      }
+      return false;
+    }
+  }
+
+  // Enhanced login with better error handling
+  Future<bool> loginWithErrorHandling(
+    BuildContext context, {
+    required String email,
+    required String password,
+    String? role,
+  }) async {
+    try {
+      return await login(email, password, role: role);
+    } catch (e) {
+      await handleAuthError(context, e);
+      return false;
+    }
+  }
+
+  // Enhanced register with better error handling
+  Future<bool> registerWithErrorHandling(
+    BuildContext context, {
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String password,
+    required String phone,
+    String role = 'customer',
+  }) async {
+    try {
+      return await register(
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        password: password,
+        phone: phone,
+        role: role,
+      );
+    } catch (e) {
+      await handleAuthError(context, e);
+      return false;
+    }
   }
 }
 

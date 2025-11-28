@@ -85,6 +85,21 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     }
   }
 
+  // Load more notifications
+  Future<void> loadMoreNotifications() async {
+    if (state.isLoading || state.pagination == null) return;
+
+    final currentPage = state.pagination!['page'] ?? 1;
+    final totalPages = state.pagination!['pages'] ?? 1;
+
+    if (currentPage >= totalPages) return;
+
+    await getNotifications(
+      page: currentPage + 1,
+      loadMore: true,
+    );
+  }
+
   // Get unread count
   Future<void> getUnreadCount() async {
     try {
@@ -156,9 +171,8 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         (n) => n.id == notificationId,
       );
 
-      final updatedNotifications = state.notifications
-          .where((n) => n.id != notificationId)
-          .toList();
+      final updatedNotifications =
+          state.notifications.where((n) => n.id != notificationId).toList();
 
       final newUnreadCount = !notification.isRead && state.unreadCount > 0
           ? state.unreadCount - 1

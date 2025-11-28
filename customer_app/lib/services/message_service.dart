@@ -55,14 +55,13 @@ class MessageService {
     List<String>? attachments,
   }) async {
     try {
-      final response = await _apiService.post('/messages',
-        data: {
-          'receiver': receiverId,
-          'content': content,
-          if (conversationId != null) 'conversation': conversationId,
-          if (attachments != null && attachments.isNotEmpty)
-            'attachments': attachments,
-        });
+      final response = await _apiService.post('/messages', data: {
+        'receiver': receiverId,
+        'content': content,
+        if (conversationId != null) 'conversation': conversationId,
+        if (attachments != null && attachments.isNotEmpty)
+          'attachments': attachments,
+      });
 
       return Message.fromJson(response.data['data']);
     } catch (e) {

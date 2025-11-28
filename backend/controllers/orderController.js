@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+const { sendOrderStatusNotification } = require('../services/notificationService');
 
 // @desc    Create order from cart
 // @route   POST /api/orders
@@ -85,6 +86,13 @@ exports.createOrder = async (req, res, next) => {
             }
 
             createdOrders.push(order);
+
+            // Send notification to supplier about new order pending approval
+            try {
+                await sendOrderStatusNotification(supplierId, order._id.toString(), 'pending_approval');
+            } catch (notificationError) {
+                console.error('Failed to send new order notification to supplier:', notificationError);
+            }
         }
 
         // Clear cart
@@ -258,9 +266,143 @@ exports.updateOrderStatus = async (req, res, next) => {
 
         await order.save();
 
+        // Send push notification to customer about status update
+        try {
+            await sendOrderStatusNotification(order.customer.toString(), order._id.toString(), status, {
+                trackingNumber: trackingNumber,
+                supplierNote: supplierNote,
+            });
+        } catch (notificationError) {
+            console.error('Failed to send order status notification:', notificationError);
+            // Don't fail the request if notification fails
+        }
+
         res.status(200).json({
             success: true,
             message: 'Order status updated',
+            data: order,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Approve order
+// @route   PUT /api/orders/:id/approve
+// @access  Private (Supplier)
+exports.approveOrder = async (req, res, next) => {
+    try {
+        const { supplierNote } = req.body;
+
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found',
+            });
+        }
+
+        // Check authorization
+        if (order.supplier.toString() !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to approve this order',
+            });
+        }
+
+        // Can only approve pending_approval orders
+        if (order.status !== 'pending_approval') {
+            return res.status(400).json({
+                success: false,
+                message: 'Order is not pending approval',
+            });
+        }
+
+        order.status = 'pending';
+        if (supplierNote) order.supplierNote = supplierNote;
+        await order.save();
+
+        // Send notification to customer
+        try {
+            await sendOrderStatusNotification(order.customer.toString(), order._id.toString(), 'approved', {
+                supplierNote: supplierNote,
+            });
+        } catch (notificationError) {
+            console.error('Failed to send order approval notification:', notificationError);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Order approved successfully',
+            data: order,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Reject order
+// @route   PUT /api/orders/:id/reject
+// @access  Private (Supplier)
+exports.rejectOrder = async (req, res, next) => {
+    try {
+        const { supplierNote, rejectionReason } = req.body;
+
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found',
+            });
+        }
+
+        // Check authorization
+        if (order.supplier.toString() !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to reject this order',
+            });
+        }
+
+        // Can only reject pending_approval orders
+        if (order.status !== 'pending_approval') {
+            return res.status(400).json({
+                success: false,
+                message: 'Order is not pending approval',
+            });
+        }
+
+        // Restore product stock
+        for (const item of order.items) {
+            await Product.findByIdAndUpdate(item.product, {
+                $inc: {
+                    stock: item.quantity,
+                    purchaseCount: -item.quantity,
+                },
+            });
+        }
+
+        order.status = 'cancelled';
+        order.rejectedAt = new Date();
+        if (supplierNote) order.supplierNote = supplierNote;
+        if (rejectionReason) order.cancellationReason = rejectionReason;
+        await order.save();
+
+        // Send notification to customer
+        try {
+            await sendOrderStatusNotification(order.customer.toString(), order._id.toString(), 'rejected', {
+                supplierNote: supplierNote,
+                rejectionReason: rejectionReason,
+            });
+        } catch (notificationError) {
+            console.error('Failed to send order rejection notification:', notificationError);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Order rejected successfully',
             data: order,
         });
     } catch (error) {
@@ -292,8 +434,8 @@ exports.cancelOrder = async (req, res, next) => {
             });
         }
 
-        // Can only cancel pending or confirmed orders
-        if (!['pending', 'confirmed'].includes(order.status)) {
+        // Can only cancel pending_approval, pending or confirmed orders
+        if (!['pending_approval', 'pending', 'confirmed'].includes(order.status)) {
             return res.status(400).json({
                 success: false,
                 message: 'Cannot cancel order at this stage',

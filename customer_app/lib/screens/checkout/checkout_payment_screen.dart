@@ -22,8 +22,7 @@ class CheckoutPaymentScreen extends ConsumerStatefulWidget {
       _CheckoutPaymentScreenState();
 }
 
-class _CheckoutPaymentScreenState
-    extends ConsumerState<CheckoutPaymentScreen> {
+class _CheckoutPaymentScreenState extends ConsumerState<CheckoutPaymentScreen> {
   PaymentMethod _selectedPaymentMethod = PaymentMethod.cashOnDelivery;
   bool _isPlacingOrder = false;
 
@@ -71,9 +70,7 @@ class _CheckoutPaymentScreenState
                         const SizedBox(height: 8),
                         _buildRow(
                           'Shipping',
-                          cartState.cart.subtotal >= 1000
-                              ? 'FREE'
-                              : 'Rs 100',
+                          cartState.cart.subtotal >= 1000 ? 'FREE' : 'Rs 100',
                           theme,
                         ),
                         const Divider(height: 24),
@@ -178,7 +175,7 @@ class _CheckoutPaymentScreenState
               color: theme.scaffoldBackgroundColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),

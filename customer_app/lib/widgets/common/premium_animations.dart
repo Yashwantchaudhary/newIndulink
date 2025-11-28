@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../config/app_colors.dart';
 
@@ -94,7 +94,7 @@ class _PremiumSuccessAnimationState extends State<PremiumSuccessAnimation>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.success.withOpacity(0.5),
+                      color: AppColors.success.withValues(alpha: 0.5),
                       blurRadius: 30,
                       spreadRadius: 10,
                     ),
@@ -301,7 +301,7 @@ class _ParticlePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color.withOpacity(0.6);
+    final paint = Paint()..color = color.withValues(alpha: 0.6);
 
     for (int i = 0; i < particleCount; i++) {
       final angle = (i / particleCount) * 2 * math.pi;

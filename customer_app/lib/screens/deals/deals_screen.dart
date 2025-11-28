@@ -23,7 +23,8 @@ class _DealsScreenState extends ConsumerState<DealsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    Future.microtask(() => ref.read(productProvider.notifier).refreshProducts());
+    Future.microtask(
+        () => ref.read(productProvider.notifier).refreshProducts());
   }
 
   @override
@@ -39,7 +40,8 @@ class _DealsScreenState extends ConsumerState<DealsScreen>
     final productState = ref.watch(productProvider);
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor:
+          isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
         title: const Text('Deals & Offers'),
         elevation: 0,
@@ -77,7 +79,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen>
             child: Container(
               margin: AppConstants.paddingAll16,
               padding: AppConstants.paddingAll20,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: AppColors.primaryGradient,
                 borderRadius: AppConstants.borderRadiusMedium,
               ),
@@ -96,7 +98,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen>
                   Text(
                     'Up to 60% OFF - Limited Time Only!',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -134,7 +136,9 @@ class _DealsScreenState extends ConsumerState<DealsScreen>
                   Text(
                     'Handpicked deals updated daily',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
                     ),
                   ),
                 ],
@@ -157,13 +161,14 @@ class _DealsScreenState extends ConsumerState<DealsScreen>
             child: Container(
               margin: AppConstants.paddingAll16,
               padding: AppConstants.paddingAll20,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: AppColors.accentGradient,
                 borderRadius: AppConstants.borderRadiusMedium,
               ),
               child: Column(
                 children: [
-                  const Icon(Icons.local_offer_rounded, color: Colors.white, size: 48),
+                  const Icon(Icons.local_offer_rounded,
+                      color: Colors.white, size: 48),
                   const SizedBox(height: 8),
                   Text(
                     'Clearance Sale',
@@ -176,7 +181,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen>
                   Text(
                     'Massive discounts on selected items',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                 ],
@@ -203,7 +208,8 @@ class _DealsScreenState extends ConsumerState<DealsScreen>
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.new_releases_rounded, color: AppColors.accentOrange),
+                      const Icon(Icons.new_releases_rounded,
+                          color: AppColors.accentOrange),
                       const SizedBox(width: 8),
                       Text(
                         'New Arrivals',
@@ -217,7 +223,9 @@ class _DealsScreenState extends ConsumerState<DealsScreen>
                   Text(
                     'Fresh products just added',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
                     ),
                   ),
                 ],
@@ -248,7 +256,8 @@ class _DealsScreenState extends ConsumerState<DealsScreen>
               Text('Error: ${productState.error}'),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => ref.read(productProvider.notifier).refreshProducts(),
+                onPressed: () =>
+                    ref.read(productProvider.notifier).refreshProducts(),
                 child: const Text('Retry'),
               ),
             ],
@@ -281,7 +290,8 @@ class _DealsScreenState extends ConsumerState<DealsScreen>
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ProductDetailScreen(productId: product.id),
+                    builder: (context) =>
+                        ProductDetailScreen(productId: product.id),
                   ),
                 );
               },
@@ -302,7 +312,8 @@ class _DealsScreenState extends ConsumerState<DealsScreen>
               },
               onToggleWishlist: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Wishlist feature coming soon!')),
+                  const SnackBar(
+                      content: Text('Wishlist feature coming soon!')),
                 );
               },
             );
@@ -318,7 +329,7 @@ class _DealsScreenState extends ConsumerState<DealsScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_constants.dart';
 import '../../widgets/common/premium_widgets.dart';
-import '../../widgets/product/product_cards.dart';
 
 /// Premium AI-Powered Recommendations Screen
 class PremiumRecommendationsScreen extends ConsumerStatefulWidget {
@@ -70,7 +69,7 @@ class _PremiumRecommendationsScreenState
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(
@@ -102,7 +101,7 @@ class _PremiumRecommendationsScreenState
                           Text(
                             'Curated just for you',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                             ),
                           ),
                         ],
@@ -149,13 +148,13 @@ class _PremiumRecommendationsScreenState
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppColors.primaryBlue.withOpacity(0.1),
-                  AppColors.accentOrange.withOpacity(0.05),
+                  AppColors.primaryBlue.withValues(alpha: 0.1),
+                  AppColors.accentOrange.withValues(alpha: 0.05),
                 ],
               ),
               borderRadius: AppConstants.borderRadiusLarge,
               border: Border.all(
-                color: AppColors.primaryBlue.withOpacity(0.2),
+                color: AppColors.primaryBlue.withValues(alpha: 0.2),
               ),
             ),
             child: Row(
@@ -210,7 +209,7 @@ class _PremiumRecommendationsScreenState
           const SizedBox(height: 24),
 
           // Because You Viewed
-          SectionHeader(
+          const SectionHeader(
             title: 'Because You Viewed Cement',
             icon: Icons.remove_red_eye_outlined,
           ),
@@ -219,7 +218,7 @@ class _PremiumRecommendationsScreenState
           const SizedBox(height: 24),
 
           // Frequently Bought Together
-          SectionHeader(
+          const SectionHeader(
             title: 'Frequently Bought Together',
             icon: Icons.shopping_basket,
           ),
@@ -245,13 +244,13 @@ class _PremiumRecommendationsScreenState
               ),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.local_fire_department,
+                Icon(Icons.local_fire_department,
                     color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                const Text(
+                SizedBox(width: 8),
+                Text(
                   'Hot Right Now',
                   style: TextStyle(
                     color: Colors.white,
@@ -273,7 +272,7 @@ class _PremiumRecommendationsScreenState
       padding: AppConstants.paddingAll16,
       child: Column(
         children: [
-          SectionHeader(title: 'Similar to Your Favorites'),
+          const SectionHeader(title: 'Similar to Your Favorites'),
           const SizedBox(height: 12),
           _buildProductGrid(),
         ],
@@ -286,7 +285,7 @@ class _PremiumRecommendationsScreenState
       padding: AppConstants.paddingAll16,
       child: Column(
         children: [
-          SectionHeader(title: 'Complete the Look'),
+          const SectionHeader(title: 'Complete the Look'),
           const SizedBox(height: 12),
           _buildBundleCard(isDark, theme),
           const SizedBox(height: 16),
@@ -351,13 +350,13 @@ class _PremiumRecommendationsScreenState
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.secondaryPurple.withOpacity(0.1),
-            AppColors.primaryBlue.withOpacity(0.05),
+            AppColors.secondaryPurple.withValues(alpha: 0.1),
+            AppColors.primaryBlue.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: AppConstants.borderRadiusLarge,
         border: Border.all(
-          color: AppColors.secondaryPurple.withOpacity(0.2),
+          color: AppColors.secondaryPurple.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
