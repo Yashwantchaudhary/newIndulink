@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../l10n/app_localizations.dart';
+import '../../config/firebase_config.dart';
 
 /// Production-level Profile Screen with organized sections
 class ProfileScreenNew extends ConsumerWidget {
@@ -255,6 +256,14 @@ class ProfileScreenNew extends ConsumerWidget {
                     iconColor: AppColors.accentYellow,
                     onTap: () {},
                   ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.developer_mode_outlined,
+                    title: 'Debug Info',
+                    subtitle: 'FCM Token & Device Info',
+                    iconColor: AppColors.secondaryPurple,
+                    onTap: () => _showDebugInfo(context),
+                  ),
 
                   const SizedBox(height: 24),
 
@@ -449,6 +458,50 @@ class ProfileScreenNew extends ConsumerWidget {
               'Logout',
               style: TextStyle(color: AppColors.error),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDebugInfo(BuildContext context) async {
+    final fcmToken = await FirebaseConfig.fcmService.getFCMToken();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Debug Information'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'FCM Token:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                fcmToken ?? 'Not available',
+                style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Device Info:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Platform: ${Theme.of(context).platform}',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
           ),
         ],
       ),

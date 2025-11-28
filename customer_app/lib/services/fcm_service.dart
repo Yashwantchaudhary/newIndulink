@@ -242,4 +242,16 @@ class FCMService {
   }
 
   String? get fcmToken => _fcmToken;
+
+  // Method to manually get FCM token (useful for debugging)
+  Future<String?> getFCMToken() async {
+    try {
+      _fcmToken = await _firebaseMessaging.getToken();
+      print('FCM Token retrieved: $_fcmToken');
+      return _fcmToken;
+    } catch (e) {
+      print('Error getting FCM token: $e');
+      return null;
+    }
+  }
 }

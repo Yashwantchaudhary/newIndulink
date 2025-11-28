@@ -157,10 +157,10 @@ app.use('/api/loyalty', require('./routes/loyaltyRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes')); // Admin routes
 
 // Seeding Routes (Admin only - for development/testing)
-app.use('/api/seed', require('./routes/seedingRoutes'));
+// app.use('/api/seed', require('./routes/seedingRoutes'));
 
 // CDN Routes for image optimization and cache management
-app.use('/cdn', require('./routes/cdnRoutes'));
+// app.use('/cdn', require('./routes/cdnRoutes'));
 
 // Health Check Route
 app.get('/health', (req, res) => {
