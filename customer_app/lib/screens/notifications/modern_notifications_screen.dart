@@ -25,7 +25,7 @@ class _ModernNotificationsScreenState
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-
+    
     // Load notifications on init
     Future.microtask(() {
       ref.read(notificationProvider.notifier).getNotifications();
@@ -89,26 +89,27 @@ class _ModernNotificationsScreenState
           ],
         ),
       ),
-      body:
-          notificationState.isLoading && notificationState.notifications.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildNotificationsList(null),
-                    _buildNotificationsList('order'),
-                    _buildNotificationsList('rfq'),
-                  ],
-                ),
+      body: notificationState.isLoading && notificationState.notifications.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildNotificationsList(null),
+                _buildNotificationsList('order'),
+                _buildNotificationsList('rfq'),
+              ],
+            ),
     );
   }
 
   Widget _buildNotificationsList(String? type) {
     final notificationState = ref.watch(notificationProvider);
-
+    
     final filteredNotifications = type == null
         ? notificationState.notifications
-        : notificationState.notifications.where((n) => n.type == type).toList();
+        : notificationState.notifications
+            .where((n) => n.type == type)
+            .toList();
 
     if (filteredNotifications.isEmpty) {
       return const EmptyStateWidget(
@@ -124,8 +125,15 @@ class _ModernNotificationsScreenState
       },
       child: ListView.builder(
         padding: AppConstants.paddingAll16,
-        itemCount: filteredNotifications.length,
+        itemCount: filteredNotifications.length + (notificationState.isLoading ? 1 : 0),
         itemBuilder: (context, index) {
+          if (index == filteredNotifications.length) {
+            // Loading indicator at the end
+            return const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
           return _buildNotificationCard(filteredNotifications[index]);
         },
       ),
@@ -155,7 +163,7 @@ class _ModernNotificationsScreenState
           await ref
               .read(notificationProvider.notifier)
               .deleteNotification(notification.id);
-
+          
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -198,8 +206,7 @@ class _ModernNotificationsScreenState
           ),
           boxShadow: [
             BoxShadow(
-              color:
-                  (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.06),
+              color: (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.06),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -397,7 +404,7 @@ class _ModernNotificationsScreenState
     // Handle navigation based on notification type and data
     if (notification.data != null) {
       final data = notification.data!;
-
+      
       if (data.containsKey('orderId')) {
         // Navigate to order details
         if (mounted) {
@@ -426,7 +433,7 @@ class _ModernNotificationsScreenState
   void _markAllAsRead() async {
     try {
       await ref.read(notificationProvider.notifier).markAllAsRead();
-
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

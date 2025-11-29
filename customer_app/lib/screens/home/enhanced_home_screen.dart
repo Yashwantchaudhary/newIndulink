@@ -7,7 +7,6 @@ import '../../config/app_constants.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
-import '../../providers/wishlist_provider.dart';
 import '../../widgets/common/search_bar_widget.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/empty_state.dart';
@@ -20,8 +19,6 @@ import '../notifications/modern_notifications_screen.dart';
 import '../search/modern_search_screen.dart';
 import '../category/categories_screen.dart';
 import '../order/orders_list_screen.dart';
-import '../../widgets/search/voice_search_dialog.dart';
-import '../scanner/barcode_scanner_screen.dart';
 
 class EnhancedHomeScreen extends ConsumerStatefulWidget {
   const EnhancedHomeScreen({super.key});
@@ -192,26 +189,14 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
             );
           },
           onVoiceSearch: () {
-            showDialog(
-              context: context,
-              builder: (context) => VoiceSearchDialog(
-                onSearchQuery: (query) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ModernSearchScreen(),
-                    ),
-                  );
-                },
-              ),
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Voice search feature coming soon!')),
             );
           },
           onScan: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const BarcodeScannerScreen(),
-              ),
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Barcode scanner coming soon!')),
             );
           },
         ),
@@ -314,7 +299,7 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: gradient.colors.first.withValues(alpha: 0.3),
+                  color: gradient.colors.first.withOpacity(0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -486,12 +471,11 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
         gradient: LinearGradient(
           begin: gradient.begin,
           end: gradient.end,
-          colors:
-              gradient.colors.map((c) => c.withValues(alpha: 0.15)).toList(),
+          colors: gradient.colors.map((c) => c.withOpacity(0.15)).toList(),
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: gradient.colors.first.withValues(alpha: 0.3),
+          color: gradient.colors.first.withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -518,7 +502,7 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: gradient.colors.first.withValues(alpha: 0.3),
+                        color: gradient.colors.first.withOpacity(0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -615,8 +599,7 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
           // Products Grid
           else
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppConstants.spacing20),
+              padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacing20),
               child: GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -658,31 +641,11 @@ class _EnhancedHomeScreenState extends ConsumerState<EnhancedHomeScreen>
                         );
                       }
                     },
-                    onToggleWishlist: () async {
-                      final wishlistNotifier =
-                          ref.read(wishlistProvider.notifier);
-                      final wishlistState = ref.read(wishlistProvider);
-                      final isInWishlist =
-                          wishlistState.isInWishlist(product.id);
-
-                      final success = await wishlistNotifier.toggleWishlist(
-                        product.id,
-                        product,
+                    onToggleWishlist: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Wishlist feature coming soon!')),
                       );
-
-                      if (success && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              isInWishlist
-                                  ? '${product.title} removed from wishlist'
-                                  : '${product.title} added to wishlist',
-                            ),
-                            duration: const Duration(seconds: 2),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      }
                     },
                   )
                       .animate()

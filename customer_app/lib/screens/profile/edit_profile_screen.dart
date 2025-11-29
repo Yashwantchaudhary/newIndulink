@@ -45,7 +45,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   /// Show image source selection bottom sheet
   Future<void> _showImageSourceSheet() async {
     final l10n = AppLocalizations.of(context);
-
+    
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -63,8 +63,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
               const SizedBox(height: 20),
               ListTile(
-                leading: const Icon(Icons.photo_library,
-                    color: AppColors.primaryBlue),
+                leading: const Icon(Icons.photo_library, color: AppColors.primaryBlue),
                 title: const Text('Gallery'),
                 onTap: () {
                   Navigator.pop(context);
@@ -72,16 +71,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 },
               ),
               ListTile(
-                leading:
-                    const Icon(Icons.camera_alt, color: AppColors.primaryBlue),
+                leading: const Icon(Icons.camera_alt, color: AppColors.primaryBlue),
                 title: const Text('Camera'),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
                 },
               ),
-              if (_selectedImage != null ||
-                  null != null) // Show remove option if image exists
+              if (_selectedImage != null || null != null) // Show remove option if image exists
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
                   title: const Text('Remove Photo'),
@@ -143,7 +140,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     try {
       // TODO: Replace with actual API call to upload image
       await ref.read(authProvider.notifier).uploadProfileImage(_selectedImage!);
-
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -190,8 +187,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   // Avatar
                   CircleAvatar(
                     radius: 60,
-                    backgroundColor:
-                        AppColors.primaryBlue.withValues(alpha: 0.1),
+                    backgroundColor: AppColors.primaryBlue.withValues(alpha: 0.1),
                     backgroundImage: _selectedImage != null
                         ? FileImage(_selectedImage!)
                         : (user?.profileImage != null
@@ -209,7 +205,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           )
                         : null,
                   ),
-
+                  
                   // Loading indicator overlay
                   if (_isUploadingImage)
                     const Positioned.fill(
@@ -221,7 +217,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         ),
                       ),
                     ),
-
+                  
                   // Camera button
                   Positioned(
                     bottom: 0,
@@ -232,8 +228,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       child: IconButton(
                         icon: const Icon(Icons.camera_alt,
                             size: 18, color: Colors.white),
-                        onPressed:
-                            _isUploadingImage ? null : _showImageSourceSheet,
+                        onPressed: _isUploadingImage ? null : _showImageSourceSheet,
                         padding: EdgeInsets.zero,
                       ),
                     ),
@@ -295,11 +290,25 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               keyboardType: TextInputType.phone,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your phone number';
+                  return 'Phone number is required';
                 }
-                if (value.length < 10) {
+
+                // Remove all non-digit characters for validation
+                final cleanPhone = value.replaceAll(RegExp(r'[^\d]'), '');
+
+                if (cleanPhone.length < 10) {
                   return 'Phone number must be at least 10 digits';
                 }
+
+                if (cleanPhone.length > 15) {
+                  return 'Phone number must be less than 15 digits';
+                }
+
+                // Check if it starts with valid country codes (optional, can be customized)
+                if (cleanPhone.length >= 10 && !RegExp(r'^[1-9]').hasMatch(cleanPhone)) {
+                  return 'Please enter a valid phone number';
+                }
+
                 return null;
               },
               textInputAction: TextInputAction.done,
@@ -357,7 +366,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             backgroundColor: AppColors.success,
           ),
         );
-
+        
         Navigator.pop(context);
       }
     } catch (e) {

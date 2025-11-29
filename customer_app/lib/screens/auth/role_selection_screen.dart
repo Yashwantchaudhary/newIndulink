@@ -70,7 +70,7 @@ class RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: isDark
                             ? AppColors.darkTextSecondary
-                            : Colors.white.withValues(alpha: 0.9),
+                            : Colors.white.withOpacity(0.9),
                       ),
                     ),
                   ),
@@ -99,7 +99,7 @@ class RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: isDark
                             ? AppColors.darkTextSecondary
-                            : Colors.white.withValues(alpha: 0.9),
+                            : Colors.white.withOpacity(0.9),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -212,7 +212,7 @@ class RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: isDark
                         ? AppColors.darkTextTertiary
-                        : Colors.white.withValues(alpha: 0.7),
+                        : Colors.white.withOpacity(0.7),
                   ),
                   textAlign: TextAlign.center,
                 ).animate().fadeIn(delay: const Duration(milliseconds: 600)),
@@ -260,7 +260,7 @@ class RoleSelectionScreenState extends State<RoleSelectionScreen> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: gradient.colors.first.withValues(alpha: 0.4),
+                    color: gradient.colors.first.withOpacity(0.4),
                     blurRadius: 24,
                     offset: const Offset(0, 12),
                   ),
@@ -276,8 +276,8 @@ class RoleSelectionScreenState extends State<RoleSelectionScreen> {
               height: 80,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? Colors.white.withValues(alpha: 0.2)
-                    : gradient.colors.first.withValues(alpha: 0.1),
+                    ? Colors.white.withOpacity(0.2)
+                    : gradient.colors.first.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -310,7 +310,7 @@ class RoleSelectionScreenState extends State<RoleSelectionScreen> {
               description,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: isSelected
-                    ? Colors.white.withValues(alpha: 0.9)
+                    ? Colors.white.withOpacity(0.9)
                     : (isDark
                         ? AppColors.darkTextSecondary
                         : AppColors.lightTextSecondary),
@@ -341,7 +341,7 @@ class RoleSelectionScreenState extends State<RoleSelectionScreen> {
                         feature,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: isSelected
-                              ? Colors.white.withValues(alpha: 0.9)
+                              ? Colors.white.withOpacity(0.9)
                               : (isDark
                                   ? AppColors.darkTextSecondary
                                   : AppColors.lightTextSecondary),

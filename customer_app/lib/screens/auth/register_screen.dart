@@ -301,9 +301,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           if (value == null || value.isEmpty) {
                             return 'Please confirm your password';
                           }
+
                           if (value != _passwordController.text) {
                             return 'Passwords do not match';
                           }
+
                           return null;
                         },
                       )

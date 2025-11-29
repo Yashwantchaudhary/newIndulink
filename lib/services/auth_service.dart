@@ -1,0 +1,390 @@
+import 'package:google_sign_in/google_sign_in.dart';
+import '../core/constants/app_config.dart';
+import '../models/user.dart';
+import 'api_service.dart';
+import 'storage_service.dart';
+
+/// 🔐 Authentication Service
+/// Handles user authentication, registration, and session management
+class AuthService {
+  static final AuthService _instance = AuthService._internal();
+  factory AuthService() => _instance;
+  AuthService._internal();
+
+  final ApiService _api = ApiService();
+  final StorageService _storage = StorageService();
+  late final GoogleSignIn _googleSignIn;
+
+  // Initialize GoogleSignIn instance (v7.x)
+  Future<void> _initializeGoogleSignIn() async {
+    _googleSignIn = GoogleSignIn.instance;
+    await _googleSignIn.initialize();
+  }
+
+  // ==================== Login Methods ====================
+
+  /// Login with email and password
+  Future<AuthResult> loginWithEmail({
+    required String email,
+    required String password,
+    required UserRole role,
+  }) async {
+    try {
+      final response = await _api.post(
+        AppConfig.loginEndpoint,
+        body: {
+          'email': email,
+          'password': password,
+          'role': role.value,
+        },
+        requiresAuth: false,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        return await _handleAuthSuccess(response.data);
+      } else {
+        return AuthResult(
+          success: false,
+          message: response.message ?? 'Login failed',
+        );
+      }
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        message: 'An error occurred during login',
+      );
+    }
+  }
+
+  /// Login with Google
+  Future<AuthResult> loginWithGoogle({required UserRole role}) async {
+    try {
+      // Initialize GoogleSignIn if not already done
+      await _initializeGoogleSignIn();
+
+      // Trigger Google Sign-In flow (authenticate in v7.x)
+      final GoogleSignInAccount? googleUser =
+          await _googleSignIn.authenticate();
+
+      if (googleUser == null) {
+        return AuthResult(
+          success: false,
+          message: 'Google Sign-In cancelled',
+        );
+      }
+
+      // Get authentication details (no await needed, synchronous in v7.x)
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+
+      // In v7.x, we only have idToken directly available
+      // accessToken requires additional authorization flow
+      // For backend auth, idToken is sufficient
+      final response = await _api.post(
+        AppConfig.googleLoginEndpoint,
+        body: {
+          'idToken': googleAuth.idToken,
+          'role': role.value,
+        },
+        requiresAuth: false,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        return await _handleAuthSuccess(response.data);
+      } else {
+        await _googleSignIn.signOut();
+        return AuthResult(
+          success: false,
+          message: response.message ?? 'Google Sign-In failed',
+        );
+      }
+    } catch (e) {
+      try {
+        await _googleSignIn.signOut();
+      } catch (_) {
+        // Ignore sign-out errors
+      }
+      return AuthResult(
+        success: false,
+        message: 'Google Sign-In error: ${e.toString()}',
+      );
+    }
+  }
+
+  // ==================== Registration ====================
+
+  /// Register new user
+  Future<AuthResult> register({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String password,
+    required String phone,
+    required UserRole role,
+    String? businessName,
+    String? businessAddress,
+  }) async {
+    try {
+      final body = {
+        'firstName': firstName,
+        'lastName': lastName,
+        'email': email,
+        'password': password,
+        'phone': phone,
+        'role': role.value,
+      };
+
+      // Add supplier-specific fields
+      if (role == UserRole.supplier) {
+        if (businessName != null) body['businessName'] = businessName;
+        if (businessAddress != null) {
+          body['businessAddress'] = businessAddress;
+        }
+      }
+
+      final response = await _api.post(
+        AppConfig.registerEndpoint,
+        body: body,
+        requiresAuth: false,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        return await _handleAuthSuccess(response.data);
+      } else {
+        return AuthResult(
+          success: false,
+          message: response.message ?? 'Registration failed',
+        );
+      }
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        message: 'An error occurred during registration',
+      );
+    }
+  }
+
+  // ==================== Token Management ====================
+
+  /// Refresh access token
+  Future<bool> refreshToken() async {
+    try {
+      final refreshToken = await _storage.getRefreshToken();
+
+      if (refreshToken == null) {
+        return false;
+      }
+
+      final response = await _api.post(
+        AppConfig.refreshTokenEndpoint,
+        body: {'refreshToken': refreshToken},
+        requiresAuth: false,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final data = response.data;
+        final newAccessToken = data['accessToken'] ?? data['token'];
+        final newRefreshToken = data['refreshToken'];
+
+        if (newAccessToken != null) {
+          await _storage.saveAccessToken(newAccessToken);
+          if (newRefreshToken != null) {
+            await _storage.saveRefreshToken(newRefreshToken);
+          }
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Check if user is authenticated
+  Future<bool> isAuthenticated() async {
+    final token = await _storage.getAccessToken();
+    return token != null && token.isNotEmpty;
+  }
+
+  /// Get current user from storage
+  Future<User?> getCurrentUser() async {
+    try {
+      final userId = await _storage.getUserId();
+      if (userId == null) return null;
+
+      // Fetch user from backend
+      final response = await _api.get(AppConfig.userProfileEndpoint);
+
+      if (response.isSuccess && response.data != null) {
+        return User.fromJson(response.data);
+      }
+
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ==================== Logout ====================
+
+  /// Logout user
+  Future<void> logout() async {
+    try {
+      // Call logout endpoint (optional)
+      await _api.post(AppConfig.logoutEndpoint);
+    } catch (e) {
+      // Continue with logout even if API call fails
+    }
+
+    // Sign out from Google
+    try {
+      await _googleSignIn.signOut();
+    } catch (e) {
+      // Ignore Google sign-out errors
+    }
+
+    // Clear local storage
+    await _storage.clearUserData();
+  }
+
+  // ==================== Password Management ====================
+
+  /// Request password reset
+  Future<AuthResult> forgotPassword(String email) async {
+    try {
+      final response = await _api.post(
+        AppConfig.forgotPasswordEndpoint,
+        body: {'email': email},
+        requiresAuth: false,
+      );
+
+      return AuthResult(
+        success: response.isSuccess,
+        message: response.message ??
+            (response.isSuccess
+                ? 'Password reset email sent'
+                : 'Failed to send reset email'),
+      );
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        message: 'An error occurred',
+      );
+    }
+  }
+
+  /// Reset password with token
+  Future<AuthResult> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _api.post(
+        AppConfig.resetPasswordEndpoint,
+        body: {
+          'token': token,
+          'newPassword': newPassword,
+        },
+        requiresAuth: false,
+      );
+
+      return AuthResult(
+        success: response.isSuccess,
+        message: response.message ??
+            (response.isSuccess
+                ? 'Password reset successful'
+                : 'Failed to reset password'),
+      );
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        message: 'An error occurred',
+      );
+    }
+  }
+
+  /// Change password (authenticated)
+  Future<AuthResult> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _api.post(
+        AppConfig.changePasswordEndpoint,
+        body: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        },
+      );
+
+      return AuthResult(
+        success: response.isSuccess,
+        message: response.message ??
+            (response.isSuccess
+                ? 'Password changed successfully'
+                : 'Failed to change password'),
+      );
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        message: 'An error occurred',
+      );
+    }
+  }
+
+  // ==================== Helper Methods ====================
+
+  /// Handle successful authentication response
+  Future<AuthResult> _handleAuthSuccess(dynamic data) async {
+    try {
+      // Extract tokens
+      final accessToken = data['accessToken'] ?? data['token'];
+      final refreshToken = data['refreshToken'];
+      final userData = data['user'];
+
+      if (accessToken == null || userData == null) {
+        return AuthResult(
+          success: false,
+          message: 'Invalid response from server',
+        );
+      }
+
+      // Save tokens
+      await _storage.saveAccessToken(accessToken);
+      if (refreshToken != null) {
+        await _storage.saveRefreshToken(refreshToken);
+      }
+
+      // Parse and save user data
+      final user = User.fromJson(userData);
+      await _storage.saveUserId(user.id);
+      await _storage.saveUserRole(user.role.value);
+      await _storage.saveUserEmail(user.email);
+      await _storage.saveUserName(user.fullName);
+
+      return AuthResult(
+        success: true,
+        message: 'Authentication successful',
+        user: user,
+      );
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        message: 'Failed to process authentication response',
+      );
+    }
+  }
+}
+
+/// 📋 Authentication Result Model
+class AuthResult {
+  final bool success;
+  final String message;
+  final User? user;
+
+  AuthResult({
+    required this.success,
+    required this.message,
+    this.user,
+  });
+}

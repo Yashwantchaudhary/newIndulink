@@ -25,7 +25,7 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           // Account Section
           const _SectionHeader(title: 'Account'),
-
+          
           if (user != null) ...[
             _SettingsTile(
               icon: Icons.person_outline,
@@ -47,7 +47,7 @@ class SettingsScreen extends ConsumerWidget {
 
           // Preferences Section
           const _SectionHeader(title: 'Preferences'),
-
+          
           _SettingsTile(
             icon: Icons.language,
             title: l10n.language,
@@ -85,7 +85,7 @@ class SettingsScreen extends ConsumerWidget {
 
           // App Section
           const _SectionHeader(title: 'App'),
-
+          
           _SettingsTile(
             icon: Icons.info_outline,
             title: 'About',
@@ -191,7 +191,7 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showThemeDialog(BuildContext context, WidgetRef ref) {
     final currentMode = ref.read(themeProvider).themeMode;
-
+    
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -250,7 +250,7 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
+    
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Text(
@@ -283,12 +283,12 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
+    
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: theme.primaryColor.withValues(alpha: 0.1),
+          color: theme.primaryColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(

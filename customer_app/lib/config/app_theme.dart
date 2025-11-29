@@ -11,11 +11,11 @@ class AppTheme {
   // ===== LIGHT THEME =====
   static ThemeData get lightTheme {
     final textTheme = _buildTextTheme(AppColors.lightTextPrimary);
-
+    
     return ThemeData(
       useMaterial3: false,
       brightness: Brightness.light,
-
+      
       // Color Scheme
       colorScheme: const ColorScheme.light(
         primary: AppColors.primaryBlue,
@@ -32,13 +32,13 @@ class AppTheme {
         outline: AppColors.lightBorder,
         surfaceContainerHighest: AppColors.lightSurfaceVariant,
       ),
-
+      
       // Scaffold
       scaffoldBackgroundColor: AppColors.lightBackground,
-
+      
       // Text Theme
       textTheme: textTheme,
-
+      
       // AppBar Theme
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.lightSurface,
@@ -56,7 +56,7 @@ class AppTheme {
           letterSpacing: -0.5,
         ),
       ),
-
+      
       // Card Theme
       cardTheme: CardThemeData(
         color: AppColors.lightSurface,
@@ -71,7 +71,7 @@ class AppTheme {
           vertical: AppConstants.spacing8,
         ),
       ),
-
+      
       // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -82,8 +82,7 @@ class AppTheme {
           elevation: AppConstants.elevationMedium,
           shadowColor: AppColors.primaryBlue.withValues(alpha: 0.3),
           padding: AppConstants.paddingH24,
-          minimumSize: const Size(
-              AppConstants.buttonMinWidth, AppConstants.buttonHeightMedium),
+          minimumSize: const Size(AppConstants.buttonMinWidth, AppConstants.buttonHeightMedium),
           shape: const RoundedRectangleBorder(
             borderRadius: AppConstants.borderRadiusMedium,
           ),
@@ -94,15 +93,14 @@ class AppTheme {
           ),
         ),
       ),
-
+      
       // Outlined Button Theme
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primaryBlue,
           disabledForegroundColor: AppColors.lightTextTertiary,
           padding: AppConstants.paddingH24,
-          minimumSize: const Size(
-              AppConstants.buttonMinWidth, AppConstants.buttonHeightMedium),
+          minimumSize: const Size(AppConstants.buttonMinWidth, AppConstants.buttonHeightMedium),
           shape: const RoundedRectangleBorder(
             borderRadius: AppConstants.borderRadiusMedium,
           ),
@@ -117,7 +115,7 @@ class AppTheme {
           ),
         ),
       ),
-
+      
       // Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
@@ -131,7 +129,7 @@ class AppTheme {
           ),
         ),
       ),
-
+      
       // Icon Button Theme
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
@@ -139,7 +137,7 @@ class AppTheme {
           iconSize: AppConstants.iconSizeMedium,
         ),
       ),
-
+      
       // Floating Action Button Theme
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.primaryBlue,
@@ -149,7 +147,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
         ),
       ),
-
+      
       // Input Decoration Theme
       inputDecorationTheme: const InputDecorationTheme(
         filled: true,
@@ -184,7 +182,7 @@ class AppTheme {
           fontSize: 14,
         ),
       ),
-
+      
       // Bottom Navigation Bar Theme
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.lightSurface,
@@ -201,7 +199,7 @@ class AppTheme {
           fontWeight: FontWeight.w500,
         ),
       ),
-
+      
       // Chip Theme
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.lightSurfaceVariant,
@@ -214,14 +212,14 @@ class AppTheme {
           borderRadius: AppConstants.borderRadiusSmall,
         ),
       ),
-
+      
       // Divider Theme
       dividerTheme: const DividerThemeData(
         color: AppColors.lightBorder,
         thickness: AppConstants.dividerThickness,
         space: AppConstants.spacing16,
       ),
-
+      
       // Bottom Sheet Theme
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.lightSurface,
@@ -230,7 +228,7 @@ class AppTheme {
           borderRadius: AppConstants.borderRadiusTop,
         ),
       ),
-
+      
       // Dialog Theme
       dialogTheme: const DialogThemeData(
         backgroundColor: AppColors.lightSurface,
@@ -244,14 +242,14 @@ class AppTheme {
           color: AppColors.lightTextPrimary,
         ),
       ),
-
+      
       // Progress Indicator Theme
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.primaryBlue,
         linearTrackColor: AppColors.lightBorder,
         circularTrackColor: AppColors.lightBorder,
       ),
-
+      
       // Snackbar Theme
       snackBarTheme: const SnackBarThemeData(
         backgroundColor: AppColors.lightTextPrimary,
@@ -270,11 +268,11 @@ class AppTheme {
   // ===== DARK THEME =====
   static ThemeData get darkTheme {
     final textTheme = _buildTextTheme(AppColors.darkTextPrimary);
-
+    
     return ThemeData(
       useMaterial3: false,
       brightness: Brightness.dark,
-
+      
       // Color Scheme
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primaryBlueLight,
@@ -291,13 +289,13 @@ class AppTheme {
         outline: AppColors.darkBorder,
         surfaceContainerHighest: AppColors.darkSurfaceVariant,
       ),
-
+      
       // Scaffold
       scaffoldBackgroundColor: AppColors.darkBackground,
-
+      
       // Text Theme
       textTheme: textTheme,
-
+      
       // AppBar Theme
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.darkSurface,
@@ -315,7 +313,7 @@ class AppTheme {
           letterSpacing: -0.5,
         ),
       ),
-
+      
       // Card Theme
       cardTheme: CardThemeData(
         color: AppColors.darkSurface,
@@ -330,7 +328,7 @@ class AppTheme {
           vertical: AppConstants.spacing8,
         ),
       ),
-
+      
       // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -341,8 +339,7 @@ class AppTheme {
           elevation: AppConstants.elevationMedium,
           shadowColor: AppColors.primaryBlueLight.withValues(alpha: 0.3),
           padding: AppConstants.paddingH24,
-          minimumSize: const Size(
-              AppConstants.buttonMinWidth, AppConstants.buttonHeightMedium),
+          minimumSize: const Size(AppConstants.buttonMinWidth, AppConstants.buttonHeightMedium),
           shape: const RoundedRectangleBorder(
             borderRadius: AppConstants.borderRadiusMedium,
           ),
@@ -353,10 +350,10 @@ class AppTheme {
           ),
         ),
       ),
-
+      
       // Other components follow similar pattern...
       // (Abbreviated for brevity - full implementation would include all components)
-
+      
       inputDecorationTheme: const InputDecorationTheme(
         filled: true,
         fillColor: AppColors.darkSurface,
@@ -382,7 +379,7 @@ class AppTheme {
           fontSize: 14,
         ),
       ),
-
+      
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.darkSurface,
         selectedItemColor: AppColors.primaryBlueLight,
@@ -398,7 +395,7 @@ class AppTheme {
           fontWeight: FontWeight.w500,
         ),
       ),
-
+      
       dividerTheme: const DividerThemeData(
         color: AppColors.darkBorder,
         thickness: AppConstants.dividerThickness,

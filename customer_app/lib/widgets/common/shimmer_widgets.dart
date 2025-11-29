@@ -13,11 +13,14 @@ class ShimmerWidgets {
     required BuildContext context,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    
     return Shimmer.fromColors(
-      baseColor:
-          isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
-      highlightColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+      baseColor: isDark
+          ? AppColors.darkSurfaceVariant
+          : AppColors.lightSurfaceVariant,
+      highlightColor: isDark
+          ? AppColors.darkSurface
+          : AppColors.lightSurface,
       child: child,
     );
   }
@@ -127,8 +130,7 @@ class ShimmerWidgets {
                 height: 24,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius:
-                      BorderRadius.circular(AppConstants.radiusCircle),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusCircle),
                 ),
               ),
             ],

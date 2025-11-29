@@ -15,19 +15,18 @@ class StockIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
+    
     if (stock == 0) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.error.withValues(alpha: 0.1),
+          color: AppColors.error.withOpacity(0.1),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.remove_circle_outline,
-                size: 16, color: AppColors.error),
+            const Icon(Icons.remove_circle_outline, size: 16, color: AppColors.error),
             const SizedBox(width: 4),
             Text(
               'Out of Stock',
@@ -45,14 +44,13 @@ class StockIndicator extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.warning.withValues(alpha: 0.1),
+          color: AppColors.warning.withOpacity(0.1),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.warning_amber_rounded,
-                size: 16, color: AppColors.warning),
+            const Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.warning),
             const SizedBox(width: 4),
             Text(
               'Only $stock left',

@@ -58,7 +58,8 @@ class _ModernPaymentMethodsScreenState
               onSeeAll: _showAddCardDialog,
             ),
             const SizedBox(height: 12),
-            ...paymentMethods.map((pm) => _buildPaymentCard(pm, isDark, theme)),
+            ...paymentMethods
+                .map((pm) => _buildPaymentCard(pm, isDark, theme)),
             const SizedBox(height: 24),
 
             // Cash on Delivery
@@ -86,7 +87,7 @@ class _ModernPaymentMethodsScreenState
         borderRadius: AppConstants.borderRadiusLarge,
         boxShadow: [
           BoxShadow(
-            color: g.colors.first.withValues(alpha: 0.3),
+            color: g.colors.first.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -97,7 +98,7 @@ class _ModernPaymentMethodsScreenState
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: Colors.white.withOpacity(0.2),
               borderRadius: AppConstants.borderRadiusSmall,
             ),
             child: Icon(icon, color: Colors.white, size: 28),
@@ -118,7 +119,7 @@ class _ModernPaymentMethodsScreenState
                 Text(
                   phone,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: Colors.white.withOpacity(0.9),
                     fontSize: 14,
                   ),
                 ),
@@ -155,8 +156,8 @@ class _ModernPaymentMethodsScreenState
         gradient: isDefault
             ? LinearGradient(
                 colors: [
-                  AppColors.primaryBlue.withValues(alpha: 0.1),
-                  AppColors.secondaryPurple.withValues(alpha: 0.05),
+                  AppColors.primaryBlue.withOpacity(0.1),
+                  AppColors.secondaryPurple.withOpacity(0.05),
                 ],
               )
             : null,
@@ -299,7 +300,7 @@ class _ModernPaymentMethodsScreenState
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.accentOrange.withValues(alpha: 0.1),
+              color: AppColors.accentOrange.withOpacity(0.1),
               borderRadius: AppConstants.borderRadiusSmall,
             ),
             child: const Icon(
@@ -466,8 +467,7 @@ class _ModernPaymentMethodsScreenState
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Remove Card'),
-        content:
-            Text('Remove ${method.type} ending in ${method.lastFourDigits}?'),
+        content: Text('Remove ${method.type} ending in ${method.lastFourDigits}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

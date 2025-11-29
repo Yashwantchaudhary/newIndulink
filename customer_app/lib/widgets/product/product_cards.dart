@@ -314,8 +314,7 @@ class ProductCardList extends StatelessWidget {
             borderRadius: AppConstants.borderRadiusMedium,
             boxShadow: [
               BoxShadow(
-                color: (isDark ? Colors.black : Colors.grey)
-                    .withValues(alpha: 0.08),
+                color: (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -331,7 +330,7 @@ class ProductCardList extends StatelessWidget {
                   height: 80,
                   child: product.images.isNotEmpty
                       ? Image.network(
-                          product.primaryImageUrl,
+                          product.thumbnailUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
@@ -392,8 +391,7 @@ class ProductCardList extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color:
-                                  AppColors.accentOrange.withValues(alpha: 0.1),
+                              color: AppColors.accentOrange.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -634,8 +632,7 @@ class ProductCardCompact extends StatelessWidget {
           borderRadius: AppConstants.borderRadiusMedium,
           boxShadow: [
             BoxShadow(
-              color:
-                  (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.08),
+              color: (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

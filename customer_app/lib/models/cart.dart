@@ -157,7 +157,7 @@ class CartProduct {
   factory CartProduct.fromJson(Map<String, dynamic> json) {
     // Handle both populated product object and simple product reference
     final productData = json['_id'] != null ? json : {};
-
+    
     // Get first image URL if available
     String? imageUrl;
     if (productData['images'] != null && productData['images'] is List) {
@@ -181,10 +181,9 @@ class CartProduct {
     return {
       '_id': id,
       'title': title,
-      if (image != null)
-        'images': [
-          {'url': image}
-        ],
+      if (image != null) 'images': [
+        {'url': image}
+      ],
       'price': price,
       'stock': stock,
     };

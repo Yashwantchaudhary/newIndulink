@@ -66,7 +66,7 @@ class _ModernSearchScreenState extends ConsumerState<ModernSearchScreen>
             Expanded(
               child: _searchController.text.isEmpty
                   ? _buildSearchSuggestions(theme, isDark)
-                  : _buildSearchResults(theme, isDark),
+                  : _buildSearchResults(theme, isDark, searchState),
             ),
           ],
         ),

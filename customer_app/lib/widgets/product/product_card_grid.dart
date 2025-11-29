@@ -75,8 +75,8 @@ class ProductCardGrid extends StatelessWidget {
                       Text(
                         product.name,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                          fontWeight: FontWeight.w600,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -86,11 +86,10 @@ class ProductCardGrid extends StatelessWidget {
                       // Price
                       Text(
                         '\$${product.price.toStringAsFixed(2)}',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppColors.primaryBlue,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: AppColors.primaryBlue,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
 
                       const SizedBox(height: 4),

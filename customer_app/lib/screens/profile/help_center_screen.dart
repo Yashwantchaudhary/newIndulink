@@ -133,7 +133,8 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
           SliverList(
             delegate: SliverChildListDelegate([
               ...getFaqsByCategory(_selectedCategory)
-                  .map((faq) => _buildFaqItem(context, faq)),
+                  .map((faq) => _buildFaqItem(context, faq))
+                  ,
               const SizedBox(height: 32),
             ]),
           ),

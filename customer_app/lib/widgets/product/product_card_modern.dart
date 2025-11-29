@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
 import '../../models/product.dart';
 
@@ -110,36 +110,68 @@ class _ProductCardModernState extends State<ProductCardModern>
                     ),
                   ),
 
-                  // Discount badge
-                  if (widget.product.hasDiscount)
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          gradient: AppColors.accentGradient,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color:
-                                  AppColors.accentOrange.withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                  // Badges row
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Row(
+                      children: [
+                        // NEW badge
+                        if (widget.product.isNew)
+                          Container(
+                            margin: const EdgeInsets.only(right: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              gradient: AppColors.successGradient,
+                              borderRadius: BorderRadius.circular(6),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.success.withValues(alpha: 0.3),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: Text(
-                          '${widget.product.discountPercentage.toStringAsFixed(0)}% OFF',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            child: const Text(
+                              'NEW',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
+
+                        // Discount badge
+                        if (widget.product.hasDiscount)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              gradient: AppColors.accentGradient,
+                              borderRadius: BorderRadius.circular(6),
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      AppColors.accentOrange.withValues(alpha: 0.3),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              '${widget.product.discountPercentage.toStringAsFixed(0)}% OFF',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
+                  ),
 
                   // Wishlist button
                   Positioned(

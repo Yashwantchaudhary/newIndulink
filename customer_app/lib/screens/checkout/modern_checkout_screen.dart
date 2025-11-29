@@ -48,7 +48,7 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
         children: [
           // Progress Indicator
           _buildProgressIndicator(theme, isDark),
-
+          
           // Content
           Expanded(
             child: SingleChildScrollView(
@@ -66,14 +66,14 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
 
   Widget _buildProgressIndicator(ThemeData theme, bool isDark) {
     final steps = ['Address', 'Payment', 'Review'];
-
+    
     return Container(
       padding: AppConstants.paddingAll20,
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -83,7 +83,7 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
         children: List.generate(steps.length, (index) {
           final isCompleted = index < _currentStep;
           final isCurrent = index == _currentStep;
-
+          
           return Expanded(
             child: Row(
               children: [
@@ -104,8 +104,7 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
                           boxShadow: isCurrent
                               ? [
                                   BoxShadow(
-                                    color: AppColors.primaryBlue
-                                        .withValues(alpha: 0.3),
+                                    color: AppColors.primaryBlue.withOpacity(0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -113,7 +112,9 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
                               : null,
                         ),
                         child: Icon(
-                          isCompleted ? Icons.check : Icons.circle,
+                          isCompleted
+                              ? Icons.check
+                              : Icons.circle,
                           color: Colors.white,
                           size: isCompleted ? 24 : 12,
                         ),
@@ -122,8 +123,7 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
                       Text(
                         steps[index],
                         style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight:
-                              isCurrent ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
                           color: isCurrent ? AppColors.primaryBlue : null,
                         ),
                       ),
@@ -173,7 +173,7 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
         const SizedBox(height: 16),
         ..._addressOptions.map((address) {
           final isSelected = _selectedAddress == address['id'];
-
+          
           return GestureDetector(
             onTap: () => setState(() => _selectedAddress = address['id']!),
             child: Container(
@@ -183,8 +183,8 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
                 gradient: isSelected
                     ? LinearGradient(
                         colors: [
-                          AppColors.primaryBlue.withValues(alpha: 0.1),
-                          AppColors.primaryBlue.withValues(alpha: 0.05),
+                          AppColors.primaryBlue.withOpacity(0.1),
+                          AppColors.primaryBlue.withOpacity(0.05),
                         ],
                       )
                     : null,
@@ -262,10 +262,9 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
         const SizedBox(height: 16),
         ..._paymentOptions.map((payment) {
           final isSelected = _selectedPayment == payment['id'];
-
+          
           return GestureDetector(
-            onTap: () =>
-                setState(() => _selectedPayment = payment['id'] as String),
+            onTap: () => setState(() => _selectedPayment = payment['id'] as String),
             child: Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: AppConstants.paddingAll16,
@@ -273,8 +272,8 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
                 gradient: isSelected
                     ? LinearGradient(
                         colors: [
-                          AppColors.primaryBlue.withValues(alpha: 0.1),
-                          AppColors.primaryBlue.withValues(alpha: 0.05),
+                          AppColors.primaryBlue.withOpacity(0.1),
+                          AppColors.primaryBlue.withOpacity(0.05),
                         ],
                       )
                     : null,
@@ -301,9 +300,7 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
                     ),
                     child: Icon(
                       payment['icon'] as IconData,
-                      color: isSelected
-                          ? Colors.white
-                          : AppColors.lightTextSecondary,
+                      color: isSelected ? Colors.white : AppColors.lightTextSecondary,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -354,15 +351,11 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
             children: [
               _buildSummaryRow('Items', '3 products', theme),
               const Divider(height: 24),
-              _buildSummaryRow('Subtotal',
-                  'Rs ${cartState.subtotal.toStringAsFixed(2)}', theme),
+              _buildSummaryRow('Subtotal', 'Rs ${cartState.subtotal.toStringAsFixed(2)}', theme),
               const SizedBox(height: 8),
               _buildSummaryRow('Shipping', 'Rs 150.00', theme),
               const SizedBox(height: 8),
-              _buildSummaryRow(
-                  'Tax (13%)',
-                  'Rs ${(cartState.subtotal * 0.13).toStringAsFixed(2)}',
-                  theme),
+              _buildSummaryRow('Tax (13%)', 'Rs ${(cartState.subtotal * 0.13).toStringAsFixed(2)}', theme),
               const Divider(height: 24),
               _buildSummaryRow(
                 'Total',
@@ -378,9 +371,9 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
         Container(
           padding: AppConstants.paddingAll16,
           decoration: BoxDecoration(
-            color: AppColors.success.withValues(alpha: 0.1),
+            color: AppColors.success.withOpacity(0.1),
             borderRadius: AppConstants.borderRadiusMedium,
-            border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+            border: Border.all(color: AppColors.success.withOpacity(0.3)),
           ),
           child: Row(
             children: [
@@ -425,8 +418,7 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
         Text(
           label,
           style: isTotal
-              ? theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold)
+              ? theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)
               : theme.textTheme.bodyMedium,
         ),
         Text(
@@ -436,8 +428,7 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
                   fontWeight: FontWeight.bold,
                   color: AppColors.primaryBlue,
                 )
-              : theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              : theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -450,7 +441,7 @@ class _ModernCheckoutScreenState extends ConsumerState<ModernCheckoutScreen> {
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),

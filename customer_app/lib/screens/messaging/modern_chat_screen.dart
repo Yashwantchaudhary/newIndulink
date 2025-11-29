@@ -407,11 +407,15 @@ class _ModernChatScreenState extends ConsumerState<ModernChatScreen> {
     _messageController.clear();
 
     try {
-      await ref.read(messageProvider.notifier).sendMessage(
-            receiverId: widget.receiverId ?? '',
-            content: content,
-            conversationId: widget.conversationId,
-          );
+      final authState = ref.read(authProvider);
+      final senderId = authState.user?.id;
+      if (senderId != null) {
+        await ref.read(messageProvider.notifier).sendMessage(
+              senderId: senderId,
+              receiverId: widget.receiverId ?? '',
+              content: content,
+            );
+      }
 
       // Scroll to bottom
       if (_scrollController.hasClients) {

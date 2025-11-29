@@ -31,7 +31,7 @@ class OrderSuccessScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
+                  color: AppColors.success.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -143,8 +143,7 @@ class OrderSuccessScreen extends StatelessWidget {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        AppRoutes.navigateTo(context, AppRoutes.orderDetail,
-                            arguments: order.id);
+                        AppRoutes.navigateTo(context, AppRoutes.orderDetail, arguments: order.id);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryBlue,
@@ -161,8 +160,7 @@ class OrderSuccessScreen extends StatelessWidget {
                     width: double.infinity,
                     child: OutlinedButton(
                       onPressed: () {
-                        AppRoutes.navigateToAndRemoveUntil(
-                            context, AppRoutes.home);
+                        AppRoutes.navigateToAndRemoveUntil(context, AppRoutes.home);
                       },
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),

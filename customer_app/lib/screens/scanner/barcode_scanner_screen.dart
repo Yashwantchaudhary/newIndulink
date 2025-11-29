@@ -155,7 +155,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
                     Container(
                       padding: AppConstants.paddingAll16,
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
+                        color: Colors.black.withOpacity(0.7),
                         borderRadius: AppConstants.borderRadiusMedium,
                       ),
                       child: Text(
@@ -181,7 +181,7 @@ class ScannerOverlayPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.5)
+      ..color = Colors.black.withOpacity(0.5)
       ..style = PaintingStyle.fill;
 
     final scanAreaWidth = size.width * 0.7;

@@ -40,7 +40,7 @@ class SearchBarWidget extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -53,12 +53,10 @@ class SearchBarWidget extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Icon(
               Icons.search_rounded,
-              color: isDark
-                  ? AppColors.darkTextTertiary
-                  : AppColors.lightTextTertiary,
+              color: isDark ? AppColors.darkTextTertiary : AppColors.lightTextTertiary,
             ),
           ),
-
+          
           // Search input
           Expanded(
             child: TextField(
@@ -69,21 +67,17 @@ class SearchBarWidget extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: hintText,
                 hintStyle: TextStyle(
-                  color: isDark
-                      ? AppColors.darkTextTertiary
-                      : AppColors.lightTextTertiary,
+                  color: isDark ? AppColors.darkTextTertiary : AppColors.lightTextTertiary,
                 ),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
               ),
               style: TextStyle(
-                color: isDark
-                    ? AppColors.darkTextPrimary
-                    : AppColors.lightTextPrimary,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
               ),
             ),
           ),
-
+          
           // Voice search button
           if (showVoiceSearch)
             IconButton(
@@ -93,7 +87,7 @@ class SearchBarWidget extends StatelessWidget {
               ),
               onPressed: onVoiceSearch,
             ),
-
+          
           // Scan button
           if (showScanButton)
             Container(

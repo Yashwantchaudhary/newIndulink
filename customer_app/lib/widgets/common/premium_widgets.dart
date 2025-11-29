@@ -39,7 +39,7 @@ class GradientCard extends StatelessWidget {
         borderRadius: borderRadius ?? AppConstants.borderRadiusMedium,
         boxShadow: [
           BoxShadow(
-            color: gradient.colors.first.withValues(alpha: 0.3),
+            color: gradient.colors.first.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -147,8 +147,7 @@ class _StatsCardState extends State<StatsCard>
               borderRadius: AppConstants.borderRadiusMedium,
               boxShadow: [
                 BoxShadow(
-                  color: (isDark ? Colors.black : Colors.grey)
-                      .withValues(alpha: 0.1),
+                  color: (isDark ? Colors.black : Colors.grey).withOpacity(0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -175,7 +174,7 @@ class _StatsCardState extends State<StatsCard>
                     Container(
                       padding: AppConstants.paddingAll8,
                       decoration: BoxDecoration(
-                        color: widget.iconColor.withValues(alpha: 0.1),
+                        color: widget.iconColor.withOpacity(0.1),
                         borderRadius: AppConstants.borderRadiusSmall,
                       ),
                       child: Icon(
@@ -217,7 +216,8 @@ class _StatsCardState extends State<StatsCard>
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        if (widget.subtitle != null) const SizedBox(width: 8),
+                        if (widget.subtitle != null)
+                          const SizedBox(width: 8),
                       ],
                       if (widget.subtitle != null)
                         Expanded(
@@ -349,7 +349,7 @@ class _AnimatedButtonState extends State<AnimatedButton>
                       color: (widget.backgroundColor ??
                               widget.gradient?.colors.first ??
                               theme.colorScheme.primary)
-                          .withValues(alpha: 0.3),
+                          .withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -444,7 +444,7 @@ class SearchBarWidget extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             (isDark ? AppColors.darkSurface : AppColors.lightSurface)
-                .withValues(alpha: 0.95),
+                .withOpacity(0.95),
             (isDark ? AppColors.darkSurface : AppColors.lightSurface),
           ],
           begin: Alignment.topCenter,
@@ -453,7 +453,7 @@ class SearchBarWidget extends StatelessWidget {
         borderRadius: AppConstants.borderRadiusMedium,
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryBlue.withValues(alpha: 0.15),
+            color: AppColors.primaryBlue.withOpacity(0.15),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -599,7 +599,7 @@ class EmptyStateWidget extends StatelessWidget {
             Container(
               padding: AppConstants.paddingAll24,
               decoration: BoxDecoration(
-                color: AppColors.primaryBlue.withValues(alpha: 0.1),
+                color: AppColors.primaryBlue.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -688,7 +688,8 @@ class _LoadingShimmerState extends State<LoadingShimmer>
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            borderRadius: widget.borderRadius ?? AppConstants.borderRadiusSmall,
+            borderRadius:
+                widget.borderRadius ?? AppConstants.borderRadiusSmall,
             gradient: LinearGradient(
               colors: isDark
                   ? AppColors.shimmerGradientDark.colors
@@ -729,13 +730,14 @@ class StatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(isSmall ? 8 : 12),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
       child: Text(
         status.toUpperCase(),
-        style:
-            (isSmall ? theme.textTheme.labelSmall : theme.textTheme.labelMedium)
-                ?.copyWith(
+        style: (isSmall
+                ? theme.textTheme.labelSmall
+                : theme.textTheme.labelMedium)
+            ?.copyWith(
           color: color,
           fontWeight: FontWeight.bold,
         ),

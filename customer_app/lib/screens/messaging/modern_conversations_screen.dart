@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:indulink/providers/auth_provider.dart';
 import 'package:intl/intl.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_constants.dart';
@@ -290,19 +291,25 @@ class _ModernConversationsScreenState
     }
   }
 
-  void _openConversation(Conversation conversation) {
+  Future<void> _openConversation(Conversation conversation) async {
     // Mark messages as read
-    ref.read(messageProvider.notifier).markAsRead(conversation.id);
+    final authState = ref.read(authProvider);
+    final userId = authState.user?.id;
+    if (userId != null) {
+      await ref.read(messageProvider.notifier).markAsRead(conversation.id, userId);
+    }
 
     // Navigate to chat screen
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ModernChatScreen(
-          conversationId: conversation.id,
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ModernChatScreen(
+            conversationId: conversation.id,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   void _showSearchBar() {

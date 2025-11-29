@@ -63,12 +63,12 @@ class _FileAttachmentPickerState extends State<FileAttachmentPicker> {
           Container(
             decoration: BoxDecoration(
               border: Border.all(
-                color: AppColors.primaryBlue.withValues(alpha: 0.3),
+                color: AppColors.primaryBlue.withOpacity(0.3),
                 width: 2,
                 style: BorderStyle.solid,
               ),
               borderRadius: AppConstants.borderRadiusMedium,
-              color: AppColors.primaryBlue.withValues(alpha: 0.05),
+              color: AppColors.primaryBlue.withOpacity(0.05),
             ),
             child: Material(
               color: Colors.transparent,
@@ -121,9 +121,7 @@ class _FileAttachmentPickerState extends State<FileAttachmentPicker> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.darkSurfaceVariant
-            : AppColors.lightSurfaceVariant,
+        color: isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
         borderRadius: AppConstants.borderRadiusSmall,
         border: Border.all(
           color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
@@ -136,8 +134,8 @@ class _FileAttachmentPickerState extends State<FileAttachmentPicker> {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: isImage
-                  ? AppColors.primaryBlue.withValues(alpha: 0.1)
-                  : AppColors.accentOrange.withValues(alpha: 0.1),
+                  ? AppColors.primaryBlue.withOpacity(0.1)
+                  : AppColors.accentOrange.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -193,8 +191,7 @@ class _FileAttachmentPickerState extends State<FileAttachmentPicker> {
           children: [
             if (widget.allowImages) ...[
               ListTile(
-                leading: const Icon(Icons.photo_camera,
-                    color: AppColors.primaryBlue),
+                leading: const Icon(Icons.photo_camera, color: AppColors.primaryBlue),
                 title: const Text('Take Photo'),
                 onTap: () {
                   Navigator.pop(context);
@@ -202,8 +199,7 @@ class _FileAttachmentPickerState extends State<FileAttachmentPicker> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library,
-                    color: AppColors.primaryBlue),
+                leading: const Icon(Icons.photo_library, color: AppColors.primaryBlue),
                 title: const Text('Choose from Gallery'),
                 onTap: () {
                   Navigator.pop(context);
@@ -213,8 +209,7 @@ class _FileAttachmentPickerState extends State<FileAttachmentPicker> {
             ],
             if (widget.allowDocuments) ...[
               ListTile(
-                leading: const Icon(Icons.description,
-                    color: AppColors.accentOrange),
+                leading: const Icon(Icons.description, color: AppColors.accentOrange),
                 title: const Text('Choose Document'),
                 onTap: () {
                   Navigator.pop(context);

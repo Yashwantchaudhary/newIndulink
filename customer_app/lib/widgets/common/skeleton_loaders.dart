@@ -299,11 +299,12 @@ class _SkeletonBoxState extends State<_SkeletonBox>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor =
-        isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant;
+    final baseColor = isDark
+        ? AppColors.darkSurfaceVariant
+        : AppColors.lightSurfaceVariant;
     final highlightColor = isDark
-        ? AppColors.darkSurfaceVariant.withValues(alpha: 0.5)
-        : Colors.white.withValues(alpha: 0.3);
+        ? AppColors.darkSurfaceVariant.withOpacity(0.5)
+        : Colors.white.withOpacity(0.3);
 
     return AnimatedBuilder(
       animation: _animation,
@@ -321,9 +322,9 @@ class _SkeletonBoxState extends State<_SkeletonBox>
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
               colors: [
-                highlightColor.withValues(alpha: 0.0),
+                highlightColor.withOpacity(0.0),
                 highlightColor,
-                highlightColor.withValues(alpha: 0.0),
+                highlightColor.withOpacity(0.0),
               ],
               stops: [
                 _animation.value - 0.3,
@@ -360,8 +361,7 @@ class SkeletonLoadingScreens {
       appBar: AppBar(title: const Text('Orders')),
       body: SkeletonLoaders.listSkeleton(
         itemCount: 5,
-        itemBuilder: (isDark) =>
-            SkeletonLoaders.orderCardSkeleton(isDark: isDark),
+        itemBuilder: (isDark) => SkeletonLoaders.orderCardSkeleton(isDark: isDark),
         isDark: isDark,
       ),
     );
@@ -376,8 +376,7 @@ class SkeletonLoadingScreens {
       appBar: AppBar(title: const Text('Notifications')),
       body: SkeletonLoaders.listSkeleton(
         itemCount: 8,
-        itemBuilder: (isDark) =>
-            SkeletonLoaders.notificationSkeleton(isDark: isDark),
+        itemBuilder: (isDark) => SkeletonLoaders.notificationSkeleton(isDark: isDark),
         isDark: isDark,
       ),
     );

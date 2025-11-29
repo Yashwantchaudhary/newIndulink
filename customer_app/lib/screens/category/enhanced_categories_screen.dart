@@ -207,9 +207,7 @@ class _EnhancedCategoriesScreenState
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: category.gradient.colors
-                  .map((c) => c.withValues(alpha: 0.15))
-                  .toList(),
+              colors: category.gradient.colors.map((c) => c.withValues(alpha: 0.15)).toList(),
               begin: category.gradient.begin,
               end: category.gradient.end,
             ),
@@ -253,8 +251,7 @@ class _EnhancedCategoriesScreenState
                     child: Text(
                       '${category.count}',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: category.gradient.colors.first
-                            .withValues(alpha: 1.0),
+                        color: category.gradient.colors.first.withValues(alpha: 1.0),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -284,8 +281,7 @@ class _EnhancedCategoriesScreenState
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: category.gradient.colors.first
-                                  .withValues(alpha: 0.4),
+                              color: category.gradient.colors.first.withValues(alpha: 0.4),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),

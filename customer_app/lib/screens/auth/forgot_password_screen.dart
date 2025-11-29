@@ -157,12 +157,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             prefixIcon: const Icon(Icons.email_rounded),
             textInputAction: TextInputAction.done,
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your email';
+              if (value == null || value.trim().isEmpty) {
+                return 'Email is required';
               }
-              if (!value.contains('@')) {
-                return 'Please enter a valid email';
+
+              final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+              if (!emailRegex.hasMatch(value.trim())) {
+                return 'Please enter a valid email address';
               }
+
               return null;
             },
           )
