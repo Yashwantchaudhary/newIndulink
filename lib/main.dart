@@ -14,9 +14,19 @@ import 'providers/auth_provider.dart';
 import 'providers/product_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/order_provider.dart';
+import 'providers/wishlist_provider.dart';
+import 'providers/search_provider.dart';
+import 'providers/theme_provider.dart';
+import 'providers/notification_provider.dart';
+import 'providers/message_provider.dart';
+import 'providers/language_provider.dart';
+import 'providers/address_provider.dart';
+import 'providers/rfq_provider.dart';
 
-// Screens
-import 'screens/splash/splash_screen.dart';
+// Routes
+import 'routes/app_router.dart';
+import 'routes/app_routes.dart';
+import 'routes/navigation_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +37,7 @@ void main() async {
   // Initialize Firebase
   try {
     await Firebase.initializeApp();
+    debugPrint('Firebase initialized successfully');
   } catch (e) {
     debugPrint('Firebase initialization error: $e');
   }
@@ -57,32 +68,49 @@ class IndulinkApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Auth Provider
+        // Core Providers
         ChangeNotifierProvider(create: (_) => AuthProvider()..init()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()..init()),
+        ChangeNotifierProvider(create: (_) => LanguageProvider()..init()),
 
-        // Product Provider
+        // Product & Search Providers
         ChangeNotifierProvider(create: (_) => ProductProvider()),
+        ChangeNotifierProvider(create: (_) => SearchProvider()..init()),
+        ChangeNotifierProvider(create: (_) => WishlistProvider()..init()),
 
-        // Cart Provider
+        // Shopping Providers
         ChangeNotifierProvider(create: (_) => CartProvider()..init()),
-
-        // Order Provider
         ChangeNotifierProvider(create: (_) => OrderProvider()),
+
+        // Communication Providers
+        ChangeNotifierProvider(create: (_) => NotificationProvider()..init()),
+        ChangeNotifierProvider(create: (_) => MessageProvider()..init()),
+
+        // User Data Providers
+        ChangeNotifierProvider(create: (_) => AddressProvider()..init()),
+        ChangeNotifierProvider(create: (_) => RFQProvider()..init()),
       ],
-      child: MaterialApp(
-        title: 'INDULINK',
-        debugShowCheckedModeBanner: false,
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'INDULINK',
+            debugShowCheckedModeBanner: false,
 
-        // Theme
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.light, // Can be controlled by user preference
+            // Theme
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeProvider.themeMode,
 
-        // Initial route
-        home: const SplashScreen(),
+            // Navigation
+            navigatorKey: NavigationService().navigatorKey,
+            onGenerateRoute: AppRouter.generateRoute,
+            initialRoute: AppRoutes.splash,
 
-        // Routes will be added here
-        // onGenerateRoute: AppRouter.generateRoute,
+            // Localization (for future implementation)
+            // localizationsDelegates: AppLocalizations.localizationsDelegates,
+            // supportedLocales: AppLocalizations.supportedLocales,
+          );
+        },
       ),
     );
   }

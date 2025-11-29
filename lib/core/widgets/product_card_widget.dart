@@ -220,7 +220,7 @@ class ProductCard extends StatelessWidget {
                       if (showAddButton)
                         InkWell(
                           onTap: () {
-                            context.read<CartProvider>().addToCart(product);
+                            context.read<CartProvider>().addToCart(product: product);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('${product.title} added to cart'),

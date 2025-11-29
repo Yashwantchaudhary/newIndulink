@@ -194,6 +194,21 @@ class StorageService {
     return await prefs.remove(StorageKeys.searchHistory);
   }
 
+  /// Save recent searches (alias for saveSearchHistory)
+  Future<bool> saveRecentSearches(List<String> searches) async {
+    return await saveSearchHistory(searches);
+  }
+
+  /// Get recent searches (alias for getSearchHistory)
+  Future<List<String>> getRecentSearches() async {
+    return await getSearchHistory();
+  }
+
+  /// Clear recent searches (alias for clearSearchHistory)
+  Future<bool> clearRecentSearches() async {
+    return await clearSearchHistory();
+  }
+
   // ==================== Recently Viewed ====================
 
   /// Save recently viewed product IDs

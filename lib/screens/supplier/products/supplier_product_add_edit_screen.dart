@@ -12,8 +12,9 @@ import '../../../services/api_service.dart';
 /// Comprehensive form for creating/editing products
 class SupplierProductAddEditScreen extends StatefulWidget {
   final Product? product;
+  final String? productId;
 
-  const SupplierProductAddEditScreen({super.key, this.product});
+  const SupplierProductAddEditScreen({super.key, this.product, this.productId});
 
   @override
   State<SupplierProductAddEditScreen> createState() =>

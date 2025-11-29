@@ -100,9 +100,10 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
 
   Future<void> _addToCart(Product product) async {
     try {
-      await context
-          .read<CartProvider>()
-          .addToCart(product: product, quantity: 1);
+      final success = await context.read<CartProvider>().addToCart(
+            product: product,
+            quantity: 1,
+          );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
