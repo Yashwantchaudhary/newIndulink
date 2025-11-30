@@ -33,8 +33,9 @@ exports.getProducts = async (req, res, next) => {
         }
 
         // Search query
-        if (req.query.search) {
-            filter.$text = { $search: req.query.search };
+        if (req.query.search || req.query.q) {
+            const searchTerm = req.query.search || req.query.q;
+            filter.$text = { $search: searchTerm };
         }
 
         // Sort

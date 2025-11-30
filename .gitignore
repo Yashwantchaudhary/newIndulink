@@ -33,6 +33,15 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Flutter build artifacts
+frontend/build/
+frontend/android/app/build/
+frontend/ios/build/
+frontend/web/build/
+frontend/macos/build/
+frontend/linux/build/
+frontend/windows/build/
+
 # Symbolication related
 app.*.symbols
 

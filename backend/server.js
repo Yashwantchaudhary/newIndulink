@@ -1,9 +1,9 @@
 require('dotenv').config();
 
-// Initialize New Relic APM (must be first)
-if (process.env.NEW_RELIC_LICENSE_KEY) {
-    require('newrelic');
-}
+// // Initialize New Relic APM (must be first)
+// if (process.env.NEW_RELIC_LICENSE_KEY) {
+//     require('newrelic');
+// }
 
 const express = require('express');
 const cors = require('cors');
@@ -14,7 +14,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 const connectDatabase = require('./config/database');
-const { initializeFirebase } = require('./config/firebase');
+// const { initializeFirebase } = require('./config/firebase'); // Commented out for local testing
 const cdnConfig = require('./config/cdn');
 const errorHandler = require('./middleware/errorHandler');
 const { languageMiddleware } = require('./middleware/languageMiddleware');
@@ -38,6 +38,11 @@ const corsOptions = {
         // Allow requests with no origin (like mobile apps, Postman, or cURL)
         if (!origin) return callback(null, true);
 
+        // Allow localhost origins for development (web browsers)
+        if (origin && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
+            return callback(null, true);
+        }
+
         // If ALLOWED_ORIGINS is '*', allow all origins
         if (allowedOrigins === '*') {
             return callback(null, true);
@@ -58,9 +63,6 @@ const corsOptions = {
     exposedHeaders: ['Authorization'],
 };
 app.use(cors(corsOptions));
-
-// Handle preflight requests explicitly
-app.options('*', cors(corsOptions));
 
 // Security Middleware (configured for CORS compatibility)
 app.use(helmet({
@@ -97,7 +99,11 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Body Parser Middleware
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '10mb', verify: (req, res, buf) => {
+  if (req.url.includes('/auth/register')) {
+    console.log('Raw register request body:', buf.toString());
+  }
+} }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Compression Middleware
