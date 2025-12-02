@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../services/api_service.dart';
-import '../../../models/product.dart';
+import '../widgets/admin_layout.dart';
 
-/// 📦 Admin Products Screen
+/// 🛍️ Admin Products Screen
 class AdminProductsScreen extends StatefulWidget {
   const AdminProductsScreen({super.key});
 
@@ -16,7 +16,7 @@ class AdminProductsScreen extends StatefulWidget {
 class _AdminProductsScreenState extends State<AdminProductsScreen> {
   final ApiService _apiService = ApiService();
   bool _isLoading = true;
-  List<Product> _products = [];
+  List<Map<String, dynamic>> _products = [];
 
   @override
   void initState() {
@@ -29,12 +29,8 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
     try {
       final response = await _apiService.get('/api/products');
       if (response.isSuccess && response.data != null) {
-        final List<dynamic> productsJson = response.data is List
-            ? response.data
-            : response.data['products'] ?? [];
         setState(() {
-          _products =
-              productsJson.map((json) => Product.fromJson(json)).toList();
+          _products = List<Map<String, dynamic>>.from(response.data['data'] ?? []);
           _isLoading = false;
         });
       }
@@ -45,14 +41,10 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('All Products'),
-        actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
-        ],
-      ),
-      body: _isLoading
+    return AdminLayout(
+      title: 'Products',
+      currentIndex: 2,
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _loadProducts,
@@ -85,12 +77,12 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(product.title,
+                              Text(product['title'] ?? 'Product',
                                   style: AppTypography.labelLarge),
-                              Text('₹${product.price}',
+                              Text('₹${product['price'] ?? 0}',
                                   style: AppTypography.bodyMedium
                                       .copyWith(color: AppColors.primary)),
-                              Text('Stock: ${product.stock}',
+                              Text('Stock: ${product['stock'] ?? 0}',
                                   style: AppTypography.bodySmall.copyWith(
                                       color: AppColors.textSecondary)),
                             ],

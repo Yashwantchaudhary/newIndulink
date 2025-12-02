@@ -129,6 +129,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Checkout'),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.primaryGradient,
+          ),
+        ),
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: Consumer<OrderProvider>(
         builder: (context, orderProvider, _) {

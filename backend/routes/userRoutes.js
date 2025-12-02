@@ -16,6 +16,8 @@ const {
     unregisterFCMToken,
     updateNotificationPreferences,
     getNotificationPreferences,
+    updateLanguage,
+    getLanguage,
 } = require('../controllers/userController');
 const { protect, requireCustomer, requireAdmin } = require('../middleware/authMiddleware');
 const { uploadSingle } = require('../middleware/upload');
@@ -41,6 +43,10 @@ router.delete('/fcm-token', protect, unregisterFCMToken);
 // Notification preferences routes
 router.get('/notification-preferences', protect, getNotificationPreferences);
 router.put('/notification-preferences', protect, updateNotificationPreferences);
+
+// Language preference routes
+router.get('/language', protect, getLanguage);
+router.put('/language', protect, updateLanguage);
 
 // Admin routes
 router.get('/', protect, requireAdmin, getUsers);

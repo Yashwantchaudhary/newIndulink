@@ -7,6 +7,7 @@ import '../constants/app_typography.dart';
 import '../constants/app_dimensions.dart';
 import '../../models/product.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/wishlist_provider.dart';
 import '../../screens/customer/products/product_detail_screen.dart';
 
 class ProductCard extends StatelessWidget {
@@ -106,27 +107,59 @@ class ProductCard extends StatelessWidget {
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 4,
+                  child: Consumer<WishlistProvider>(
+                    builder: (context, wishlist, child) {
+                      final isInWishlist = wishlist.isInWishlist(product.id);
+                      return Container(
+                        width: 32,
+                        height: 32,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 4,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.favorite_border, size: 18),
-                      color: AppColors.textSecondary,
-                      onPressed: () {
-                        // TODO: Toggle wishlist
-                      },
-                    ),
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: Icon(
+                            isInWishlist
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            size: 18,
+                          ),
+                          color: isInWishlist
+                              ? AppColors.error
+                              : AppColors.textSecondary,
+                          onPressed: () async {
+                            final success =
+                                await wishlist.toggleWishlist(product);
+                            if (success && context.mounted) {
+                              final action =
+                                  isInWishlist ? 'removed from' : 'added to';
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content:
+                                      Text('${product.title} $action wishlist'),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            } else if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(wishlist.errorMessage ??
+                                      'Failed to update wishlist'),
+                                  backgroundColor: AppColors.error,
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -137,6 +170,7 @@ class ProductCard extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // Category
                   if (product.categoryName != null)
@@ -195,42 +229,50 @@ class ProductCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Rs. ${product.price.toStringAsFixed(0)}',
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          if (product.hasDiscount)
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              'Rs. ${product.compareAtPrice!.toStringAsFixed(0)}',
+                              'Rs. ${product.price.toStringAsFixed(0)}',
                               style: const TextStyle(
-                                color: AppColors.textTertiary,
-                                decoration: TextDecoration.lineThrough,
-                                fontSize: 12,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
                               ),
                             ),
-                        ],
+                            if (product.hasDiscount)
+                              Text(
+                                'Rs. ${product.compareAtPrice!.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  color: AppColors.textTertiary,
+                                  decoration: TextDecoration.lineThrough,
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                       if (showAddButton)
                         InkWell(
                           onTap: () async {
-                            final success = await context.read<CartProvider>().addToCart(product);
+                            final success = await context
+                                .read<CartProvider>()
+                                .addToCart(product);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(success ? '${product.title} added to cart' : 'Failed to add ${product.title} to cart'),
+                                content: Text(success
+                                    ? '${product.title} added to cart'
+                                    : 'Failed to add ${product.title} to cart'),
                                 duration: const Duration(seconds: 1),
-                                action: success ? SnackBarAction(
-                                  label: 'VIEW CART',
-                                  onPressed: () {
-                                    // Navigate to cart
-                                  },
-                                ) : null,
+                                action: success
+                                    ? SnackBarAction(
+                                        label: 'VIEW CART',
+                                        onPressed: () {
+                                          // Navigate to cart
+                                        },
+                                      )
+                                    : null,
                               ),
                             );
                           },

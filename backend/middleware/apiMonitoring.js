@@ -1,4 +1,13 @@
-const newrelic = require('newrelic');
+let newrelic;
+try {
+  newrelic = require('newrelic');
+} catch (error) {
+  console.log('New Relic not available, running without monitoring');
+  newrelic = {
+    recordMetric: () => {},
+    recordCustomEvent: () => {}
+  };
+}
 const alertService = require('../services/alertService');
 
 /**

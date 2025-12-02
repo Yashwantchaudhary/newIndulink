@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/constants/app_config.dart';
 import '../../../models/order.dart';
 import '../../../services/api_service.dart';
 import 'supplier_order_detail_screen.dart';
@@ -40,7 +41,7 @@ class _SupplierOrdersScreenState extends State<SupplierOrdersScreen> {
     });
 
     try {
-      final response = await _apiService.get('/api/orders/supplier');
+      final response = await _apiService.get(AppConfig.supplierOrdersEndpoint);
 
       if (response.isSuccess && response.data != null) {
         final List<dynamic> ordersJson = response.data is List
@@ -266,11 +267,10 @@ class _SupplierOrdersScreenState extends State<SupplierOrdersScreen> {
   Widget _buildOrderCard(Order order) {
     return InkWell(
       onTap: () async {
-        final result = await Navigator.push(
+        final result = await Navigator.pushNamed(
           context,
-          MaterialPageRoute(
-            builder: (context) => SupplierOrderDetailScreen(order: order),
-          ),
+          '/supplier/orders/detail',
+          arguments: order.id,
         );
 
         if (result == true) {

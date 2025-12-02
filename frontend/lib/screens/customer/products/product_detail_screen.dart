@@ -1,16 +1,21 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/error_widget.dart';
 import '../../../core/widgets/loading_widgets.dart';
+import '../../../core/widgets/review_card_widget.dart';
 import '../../../models/product.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/product_provider.dart';
+import '../../../providers/review_provider.dart';
+import '../../../providers/wishlist_provider.dart';
 import '../cart/cart_screen.dart';
+import 'write_review_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -31,6 +36,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProductProvider>().getProductDetails(widget.productId);
+      // Load reviews for this product
+      context.read<ReviewProvider>().fetchProductReviews(widget.productId);
     });
   }
 
@@ -58,6 +65,51 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
       ),
     );
+  }
+
+  void _toggleWishlist(Product product) async {
+    final wishlistProvider = context.read<WishlistProvider>();
+    final isInWishlist = wishlistProvider.isInWishlist(product.id);
+
+    final success = await wishlistProvider.toggleWishlist(product);
+
+    if (success && mounted) {
+      final action = isInWishlist ? 'removed from' : 'added to';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${product.title} $action wishlist'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(wishlistProvider.errorMessage ?? 'Failed to update wishlist'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  void _shareProduct(Product product) {
+    final String shareText = '''
+Check out this amazing product on INDULINK!
+
+🏗️ ${product.title}
+
+💰 Price: Rs. ${product.price.toStringAsFixed(0)}
+${product.hasDiscount ? '🔥 Special Offer: ${product.discountPercentage}% OFF!' : ''}
+
+📦 ${product.stockStatusText}
+
+${product.description.length > 100
+        ? '${product.description.substring(0, 100)}...'
+        : product.description}
+
+Download INDULINK app to purchase: https://indulink.com/product/${product.id}
+''';
+
+    Share.share(shareText.trim(), subject: 'Check out this product on INDULINK');
   }
 
   @override
@@ -98,6 +150,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     _buildSpecifications(product),
                     const Divider(height: 1),
                     _buildSupplierInfo(product),
+                    const Divider(height: 1),
+                    _buildReviewsSection(product),
                     const SizedBox(height: 100), // Space for bottom bar
                   ],
                 ),
@@ -128,16 +182,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         onPressed: () => Navigator.pop(context),
       ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.share_outlined, color: AppColors.textPrimary),
-          onPressed: () {
-            // TODO: Implement share
+        Consumer<ProductProvider>(
+          builder: (context, provider, child) {
+            final product = provider.selectedProduct;
+            return IconButton(
+              icon: const Icon(Icons.share_outlined, color: AppColors.textPrimary),
+              onPressed: product != null ? () => _shareProduct(product) : null,
+            );
           },
         ),
-        IconButton(
-          icon: const Icon(Icons.favorite_border, color: AppColors.textPrimary),
-          onPressed: () {
-            // TODO: Implement wishlist
+        Consumer<WishlistProvider>(
+          builder: (context, wishlist, child) {
+            final product = context.read<ProductProvider>().selectedProduct;
+            if (product == null) return const SizedBox.shrink();
+
+            final isInWishlist = wishlist.isInWishlist(product.id);
+            return IconButton(
+              icon: Icon(
+                isInWishlist ? Icons.favorite : Icons.favorite_border,
+                color: isInWishlist ? AppColors.error : AppColors.textPrimary,
+              ),
+              onPressed: () => _toggleWishlist(product),
+            );
           },
         ),
         Consumer<CartProvider>(
@@ -459,7 +525,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
           OutlinedButton(
             onPressed: () {
-              // TODO: View supplier profile
+              if (product.supplierId != null) {
+                Navigator.pushNamed(
+                  context,
+                  '/customer/supplier/profile',
+                  arguments: product.supplierId,
+                );
+              }
             },
             child: const Text('View Profile'),
           ),
@@ -534,5 +606,182 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildReviewsSection(Product product) {
+    return Consumer<ReviewProvider>(
+      builder: (context, reviewProvider, child) {
+        return Container(
+          color: Colors.white,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppDimensions.paddingL),
+                child: Row(
+                  children: [
+                    Text(
+                      'Customer Reviews',
+                      style: AppTypography.h6.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    if (reviewProvider.reviews.isNotEmpty)
+                      TextButton(
+                        onPressed: () {
+                          final productProvider = context.read<ProductProvider>();
+                          Navigator.pushNamed(
+                            context,
+                            '/customer/products/reviews',
+                            arguments: {
+                              'productId': widget.productId,
+                              'productTitle': productProvider.selectedProduct?.title ?? 'Product',
+                              'productImage': productProvider.selectedProduct?.images.isNotEmpty == true
+                                  ? productProvider.selectedProduct!.images.first.url
+                                  : null,
+                            },
+                          );
+                        },
+                        child: Text(
+                          'View All (${reviewProvider.reviews.length})',
+                          style: TextStyle(color: AppColors.primary),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              // Review Summary
+              if (reviewProvider.reviews.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingL),
+                  child: ReviewSummaryWidget(
+                    averageRating: product.averageRating,
+                    totalReviews: product.totalReviews,
+                    ratingDistribution: _calculateRatingDistribution(reviewProvider.reviews),
+                  ),
+                ),
+
+              // Write Review Button
+              Padding(
+                 padding: const EdgeInsets.all(AppDimensions.paddingL),
+                 child: SizedBox(
+                   width: double.infinity,
+                   child: OutlinedButton.icon(
+                     onPressed: () {
+                       Navigator.push(
+                         context,
+                         MaterialPageRoute(
+                           builder: (context) => WriteReviewScreen(
+                             productId: product.id,
+                             productTitle: product.title,
+                             productImage: product.images.isNotEmpty ? product.images.first.url : null,
+                           ),
+                         ),
+                       );
+                     },
+                     icon: const Icon(Icons.edit_outlined),
+                     label: const Text('Write a Review'),
+                     style: OutlinedButton.styleFrom(
+                       padding: const EdgeInsets.symmetric(vertical: 12),
+                       side: BorderSide(color: AppColors.primary),
+                       foregroundColor: AppColors.primary,
+                     ),
+                   ),
+                 ),
+               ),
+
+              // Reviews List
+              if (reviewProvider.isLoading)
+                const Padding(
+                  padding: EdgeInsets.all(AppDimensions.paddingL),
+                  child: Center(child: LoadingSpinner()),
+                )
+              else if (reviewProvider.reviews.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(AppDimensions.paddingL),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.rate_review_outlined,
+                          size: 48,
+                          color: AppColors.textTertiary,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No reviews yet',
+                          style: AppTypography.bodyLarge.copyWith(
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Be the first to review this product',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: reviewProvider.reviews.length > 3 ? 3 : reviewProvider.reviews.length,
+                  itemBuilder: (context, index) {
+                    final review = reviewProvider.reviews[index];
+                    return ReviewCard(review: review);
+                  },
+                ),
+
+              // Show more button if there are more than 3 reviews
+              if (reviewProvider.reviews.length > 3)
+                Padding(
+                  padding: const EdgeInsets.all(AppDimensions.paddingL),
+                  child: Center(
+                    child: TextButton(
+                      onPressed: () {
+                        final productProvider = context.read<ProductProvider>();
+                        Navigator.pushNamed(
+                          context,
+                          '/customer/products/reviews',
+                          arguments: {
+                            'productId': widget.productId,
+                            'productTitle': productProvider.selectedProduct?.title ?? 'Product',
+                            'productImage': productProvider.selectedProduct?.images.isNotEmpty == true
+                                ? productProvider.selectedProduct!.images.first.url
+                                : null,
+                          },
+                        );
+                      },
+                      child: Text(
+                        'Show All Reviews (${reviewProvider.reviews.length})',
+                        style: TextStyle(color: AppColors.primary),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Map<int, int> _calculateRatingDistribution(List reviews) {
+    final distribution = <int, int>{1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+
+    for (final review in reviews) {
+      if (review is Map && review.containsKey('rating')) {
+        final rating = review['rating'] as int;
+        if (distribution.containsKey(rating)) {
+          distribution[rating] = distribution[rating]! + 1;
+        }
+      }
+    }
+
+    return distribution;
   }
 }

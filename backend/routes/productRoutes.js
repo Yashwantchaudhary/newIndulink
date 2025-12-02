@@ -17,10 +17,6 @@ router.get('/', getProducts);
 router.get('/barcode/:sku', getProductBySKU);
 router.get('/:id', getProduct);
 
-// Supplier routes
-router.get('/supplier/me', protect, requireSupplier, getMyProducts);
-router.post('/', protect, requireSupplier, uploadMultiple('images', 5), createProduct);
-router.put('/:id', protect, requireSupplier, uploadMultiple('images', 5), updateProduct);
-router.delete('/:id', protect, requireSupplier, deleteProduct);
+// Note: Supplier product management moved to /api/supplier/products
 
 module.exports = router;

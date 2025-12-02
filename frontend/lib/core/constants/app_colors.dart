@@ -171,8 +171,8 @@ class AppColors {
   /// Get shadow color for elevation
   static Color getShadowColor({bool isDark = false}) {
     return isDark
-        ? Colors.black.withOpacity(0.6)
-        : Colors.black.withOpacity(0.1);
+        ? Colors.black.withValues(alpha: 0.6)
+        : Colors.black.withValues(alpha: 0.1);
   }
 
   /// Get theme-aware background

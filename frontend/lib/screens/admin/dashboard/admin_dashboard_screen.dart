@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/constants/app_config.dart';
+import '../../../routes/app_routes.dart';
+import '../analytics/admin_analytics_dashboard_screen.dart';
 import '../../../services/api_service.dart';
 import '../../../models/dashboard.dart';
 
@@ -27,7 +30,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final response = await _apiService.get('/api/dashboard/admin');
+      final response = await _apiService.get(AppConfig.adminDashboardEndpoint);
       if (response.isSuccess && response.data != null) {
         setState(() {
           _data = AdminDashboardData.fromJson(response.data);
@@ -132,9 +135,38 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         }).toList(),
                       ),
                     ),
+                  const SizedBox(height: 16),
+
+                  // Data Management Access
+                  _buildCard(
+                    'System Management',
+                    Column(
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () => Navigator.pushNamed(context, AppRoutes.adminDataManagement),
+                          icon: const Icon(Icons.storage),
+                          label: const Text('Data Management Hub'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 48),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Manage all system data collections, users, products, orders, and more',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
+      bottomNavigationBar: _buildBottomNavigation(),
     );
   }
 
@@ -178,6 +210,84 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   .copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigation() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        currentIndex: 0,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textSecondary,
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              // Already on dashboard
+              break;
+            case 1:
+              Navigator.pushNamed(context, AppRoutes.adminUsers);
+              break;
+            case 2:
+              Navigator.pushNamed(context, AppRoutes.adminProducts);
+              break;
+            case 3:
+              Navigator.pushNamed(context, AppRoutes.adminCategories);
+              break;
+            case 4:
+              Navigator.pushNamed(context, AppRoutes.adminOrders);
+              break;
+            case 5:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AdminAnalyticsDashboardScreen()),
+              );
+              break;
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_outlined),
+            activeIcon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people_outline),
+            activeIcon: Icon(Icons.people),
+            label: 'Users',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.inventory_outlined),
+            activeIcon: Icon(Icons.inventory),
+            label: 'Products',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.category_outlined),
+            activeIcon: Icon(Icons.category),
+            label: 'Categories',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long_outlined),
+            activeIcon: Icon(Icons.receipt_long),
+            label: 'Orders',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics_outlined),
+            activeIcon: Icon(Icons.analytics),
+            label: 'Analytics',
+          ),
         ],
       ),
     );

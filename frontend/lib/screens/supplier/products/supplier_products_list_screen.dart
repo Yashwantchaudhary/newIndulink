@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/constants/app_config.dart';
 import '../../../models/product.dart';
 import '../../../services/api_service.dart';
 import 'supplier_product_add_edit_screen.dart';
@@ -47,8 +48,8 @@ class _SupplierProductsListScreenState
     try {
       // Get current supplier ID from storage or use parameter
       final endpoint = supplierId != null
-          ? '/api/products/supplier/$supplierId'
-          : '/api/products'; // Fallback to all products
+          ? '/products/supplier/$supplierId'
+          : AppConfig.supplierProductsEndpoint; // Use supplier-specific endpoint
 
       final response = await _apiService.get(endpoint);
 
@@ -99,7 +100,7 @@ class _SupplierProductsListScreenState
     if (confirmed != true) return;
 
     try {
-      final response = await _apiService.delete('/api/products/$productId');
+      final response = await _apiService.delete(AppConfig.replaceParams(AppConfig.deleteProductEndpoint, {'id': productId}));
 
       if (response.isSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -95,28 +95,12 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  Future<void> _handleGoogleSignIn() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    final success = await authProvider.loginWithGoogle(role: widget.selectedRole);
-
-    if (mounted) {
-      if (success) {
-        _navigateToDashboard();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.errorMessage ?? 'Google Sign-In failed'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    }
-  }
 
   void _navigateToDashboard() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userRole = authProvider.user?.role ?? widget.selectedRole;
     String routeName;
-    switch (widget.selectedRole) {
+    switch (userRole) {
       case UserRole.customer:
         routeName = AppRoutes.customerHome;
         break;
@@ -361,7 +345,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                   TextButton(
                     onPressed: () {
-                      // TODO: Navigate to forgot password
+                      Navigator.pushNamed(context, AppRoutes.forgotPassword);
                     },
                     child: Text(
                       'Forgot Password?',
@@ -401,53 +385,6 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
 
-              const SizedBox(height: AppDimensions.space24),
-
-              // Divider
-              Row(
-                children: [
-                  const Expanded(child: Divider()),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimensions.paddingM,
-                    ),
-                    child: Text(
-                      'OR',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                  const Expanded(child: Divider()),
-                ],
-              ),
-
-              const SizedBox(height: AppDimensions.space24),
-
-              // Google Sign In Button
-              Consumer<AuthProvider>(
-                builder: (context, authProvider, child) => SizedBox(
-                  height: AppDimensions.buttonHeight,
-                  child: OutlinedButton.icon(
-                    onPressed: authProvider.isLoading ? null : _handleGoogleSignIn,
-                    icon: Image.asset(
-                      'assets/icons/google.png',
-                      width: 24,
-                      height: 24,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.g_mobiledata, size: 24);
-                      },
-                    ),
-                    label: Text(
-                      'Sign in with Google',
-                      style: AppTypography.buttonMedium,
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.border),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),

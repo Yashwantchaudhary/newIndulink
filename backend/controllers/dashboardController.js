@@ -123,25 +123,113 @@ exports.getSupplierDashboard = async (req, res, next) => {
             .sort({ createdAt: -1 })
             .limit(5);
 
+        // Format data to match frontend expectations
+        const revenue = revenueData[0] || {
+            totalRevenue: 0,
+            totalOrders: 0,
+            averageOrderValue: 0,
+        };
+
+        const productStatsData = productStats[0] || {
+            totalProducts: 0,
+            activeProducts: 0,
+            outOfStock: 0,
+            totalStock: 0,
+        };
+
+        // Format recent orders for frontend
+        const formattedRecentOrders = recentOrders.map(order => ({
+            orderNumber: order.orderNumber,
+            customerName: order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : 'Unknown',
+            amount: order.total,
+            status: order.status,
+        }));
+
+        // Format top products for frontend
+        const formattedTopProducts = topProducts.map(product => ({
+            name: product._id ? product._id.title : 'Unknown Product',
+            soldCount: product.totalQuantity,
+            revenue: product.totalRevenue,
+        }));
+
+        // Calculate trends by comparing with previous period
+        const previousPeriodStart = new Date(startDate);
+        previousPeriodStart.setDate(previousPeriodStart.getDate() - 30);
+        const previousPeriodEnd = new Date(startDate);
+
+        // Previous period revenue
+        const previousRevenueData = await Order.aggregate([
+            {
+                $match: {
+                    supplier: req.user._id,
+                    status: { $in: ['delivered', 'shipped', 'processing'] },
+                    createdAt: { $gte: previousPeriodStart, $lt: previousPeriodEnd },
+                },
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: { $sum: '$total' },
+                    totalOrders: { $sum: 1 },
+                },
+            },
+        ]);
+
+        const previousRevenue = previousRevenueData[0] || { totalRevenue: 0, totalOrders: 0 };
+
+        // Calculate percentage changes
+        const revenueTrend = previousRevenue.totalRevenue > 0
+            ? ((revenue.totalRevenue - previousRevenue.totalRevenue) / previousRevenue.totalRevenue) * 100
+            : (revenue.totalRevenue > 0 ? 100 : 0);
+
+        const ordersTrend = previousRevenue.totalOrders > 0
+            ? ((revenue.totalOrders - previousRevenue.totalOrders) / previousRevenue.totalOrders) * 100
+            : (revenue.totalOrders > 0 ? 100 : 0);
+
+        // Product trend (compare current active products with previous)
+        const previousProductStats = await Product.aggregate([
+            {
+                $match: {
+                    supplier: req.user._id,
+                    createdAt: { $lt: startDate },
+                },
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalProducts: { $sum: 1 },
+                },
+            },
+        ]);
+
+        const previousProducts = previousProductStats[0]?.totalProducts || 0;
+        const productsTrend = previousProducts > 0
+            ? ((productStatsData.totalProducts - previousProducts) / previousProducts) * 100
+            : (productStatsData.totalProducts > 0 ? 100 : 0);
+
+        // Get unread notifications count
+        const Notification = require('../models/Notification');
+        const unreadNotifications = await Notification.countDocuments({
+            userId: req.user._id,
+            isRead: false
+        });
+
+        // Extract revenue data for chart
+        const revenueDataPoints = revenueOverTime.map(item => item.revenue);
+
         res.status(200).json({
             success: true,
-            data: {
-                revenue: revenueData[0] || {
-                    totalRevenue: 0,
-                    totalOrders: 0,
-                    averageOrderValue: 0,
-                },
-                ordersByStatus,
-                topProducts,
-                revenueOverTime,
-                productStats: productStats[0] || {
-                    totalProducts: 0,
-                    activeProducts: 0,
-                    outOfStock: 0,
-                    totalStock: 0,
-                },
-                recentOrders,
-            },
+            totalRevenue: revenue.totalRevenue,
+            totalOrders: revenue.totalOrders,
+            totalProducts: productStatsData.totalProducts,
+            lowStockCount: productStatsData.outOfStock,
+            unreadNotifications,
+            revenueTrend: Math.round(revenueTrend * 100) / 100, // Round to 2 decimal places
+            ordersTrend: Math.round(ordersTrend * 100) / 100,
+            productsTrend: Math.round(productsTrend * 100) / 100,
+            revenueData: revenueDataPoints,
+            recentOrders: formattedRecentOrders,
+            topProducts: formattedTopProducts,
         });
     } catch (error) {
         next(error);
@@ -246,36 +334,27 @@ exports.getAdminDashboard = async (req, res, next) => {
             },
         };
 
+        // Format data to match frontend AdminDashboardData expectations
         res.status(200).json({
             success: true,
-            data: {
-                platformAnalytics: {
-                    totalPlatformRevenue: platformAnalytics[0]?.totalPlatformRevenue || 0,
-                    totalActiveUsers,
-                    totalOrders: platformAnalytics[0]?.totalOrders || 0,
-                    averageOrderValue: platformAnalytics[0]?.averageOrderValue || 0,
-                    platformGrowthRate: 0, // Placeholder
-                },
-                adminMetrics: {
-                    totalCommissions: platformRevenue * 0.5, // 5% commission
-                    platformFees: platformRevenue * 0.5, // 5% platform fee
-                    userGrowth: {
-                        newUsersThisMonth: thisMonthUsers,
-                        newUsersLastMonth: lastMonthUsers,
-                        growthRate,
-                        totalSuppliers,
-                        totalCustomers,
-                    },
-                    revenueBreakdown: {
-                        supplierRevenue,
-                        platformRevenue,
-                        commissionRevenue: platformRevenue * 0.5,
-                        feeRevenue: platformRevenue * 0.5,
-                    },
-                },
-                recentUsers,
-                recentOrders,
-                systemHealth,
+            totalUsers: totalActiveUsers,
+            totalSuppliers,
+            totalCustomers,
+            totalProducts: 0, // TODO: Get actual product count
+            totalOrders: platformAnalytics[0]?.totalOrders || 0,
+            totalRevenue: platformAnalytics[0]?.totalPlatformRevenue || 0,
+            platformCommission: platformRevenue,
+            revenueData: [], // TODO: Add revenue chart data
+            recentUsers: recentUsers.map(user => ({
+                name: `${user.firstName} ${user.lastName}`,
+                email: user.email,
+                role: user.role,
+            })),
+            topSuppliers: [], // TODO: Add top suppliers
+            usersByRole: {
+                'customer': totalCustomers,
+                'supplier': totalSuppliers,
+                'admin': userStats.find(stat => stat._id === 'admin')?.count || 0,
             },
         });
     } catch (error) {

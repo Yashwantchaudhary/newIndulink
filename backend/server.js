@@ -12,6 +12,8 @@ const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
 
 const connectDatabase = require('./config/database');
 // const { initializeFirebase } = require('./config/firebase'); // Commented out for local testing
@@ -23,6 +25,40 @@ const infrastructureMonitor = require('./services/infrastructureMonitor');
 
 // Initialize Express app
 const app = express();
+
+// Create HTTP server for Socket.IO
+const server = createServer(app);
+
+// Initialize Socket.IO
+const io = new Server(server, {
+    cors: {
+        origin: function (origin, callback) {
+            // Allow requests with no origin (like mobile apps, Postman, or cURL)
+            if (!origin) return callback(null, true);
+
+            // Allow localhost origins for development (web browsers)
+            if (origin && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
+                return callback(null, true);
+            }
+
+            // If ALLOWED_ORIGINS is '*', allow all origins
+            if (allowedOrigins === '*') {
+                return callback(null, true);
+            }
+
+            // Otherwise, check if origin is in the allowed list
+            const allowedList = allowedOrigins.split(',').map(o => o.trim());
+            if (allowedList.indexOf(origin) !== -1 || allowedList.includes('*')) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        credentials: true,
+        methods: ['GET', 'POST'],
+    },
+    transports: ['websocket', 'polling'],
+});
 
 // Connect to Database
 connectDatabase();
@@ -146,20 +182,45 @@ app.use('/monitoring', express.static(path.join(__dirname, 'public'), {
     lastModified: true
 }));
 
-// API Routes
+// ==================== API ROUTES BY ROLE ====================
+
+// 🔐 Authentication Routes (Public)
 app.use('/api/auth', require('./routes/authRoutes'));
+
+// 👥 General/User Routes (Authenticated)
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
-app.use('/api/cart', require('./routes/cartRoutes'));
-app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
-app.use('/api/dashboard', require('./routes/dashboardRoutes'));
-app.use('/api/rfq', require('./routes/rfqRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/wishlist', require('./routes/wishlistRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes')); // Admin routes
+app.use('/api/addresses', require('./routes/addressRoutes'));
+
+// 🛒 Customer Routes (Customer + Admin)
+app.use('/api/cart', require('./routes/cartRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
+
+// 🏭 Supplier Routes (Supplier + Admin)
+app.use('/api/supplier', require('./routes/supplierRoutes'));
+
+// 📊 Dashboard Routes (Role-based)
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+
+// 📋 RFQ Routes (All authenticated users)
+app.use('/api/rfq', require('./routes/rfqRoutes'));
+
+// 👨‍💼 Admin Routes (Admin only)
+app.use('/api/admin', require('./routes/adminRoutes'));
+
+// 📊 Export/Import Routes (Authenticated users)
+app.use('/api/export', require('./routes/exportRoutes'));
+
+// 📈 Analytics Routes (Authenticated users)
+app.use('/api/analytics', require('./routes/analyticsRoutes'));
+
+// 🔔 Push Notification Routes (Authenticated users)
+app.use('/api/notifications', require('./routes/pushNotificationRoutes'));
 
 // Seeding Routes (Admin only - for development/testing)
 // app.use('/api/seed', require('./routes/seedingRoutes'));
@@ -255,9 +316,19 @@ app.use((req, res) => {
 // Error Handler Middleware (must be last)
 app.use(errorHandler);
 
+// Initialize WebSocket Service
+const webSocketService = require('./services/webSocketService')(io);
+
+// Set WebSocket service for controllers that need real-time updates
+require('./controllers/productController').setWebSocketService(webSocketService);
+require('./controllers/orderController').setWebSocketService && require('./controllers/orderController').setWebSocketService(webSocketService);
+require('./controllers/userController').setWebSocketService && require('./controllers/userController').setWebSocketService(webSocketService);
+require('./controllers/messageController').setWebSocketService && require('./controllers/messageController').setWebSocketService(webSocketService);
+
+
 // Start Server
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`
 ╔═══════════════════════════════════════════════════════╗
 ║                                                       ║

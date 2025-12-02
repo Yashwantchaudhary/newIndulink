@@ -5,10 +5,13 @@ import 'dart:io';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/widgets/multi_image_upload_widget.dart';
 import '../../../models/product.dart';
 import '../../../models/category.dart';
 import '../../../services/api_service.dart';
 import '../../../services/product_service.dart';
+import '../../../services/image_service.dart';
+import '../../../routes/navigation_service.dart';
 
 /// ✏️ Supplier Product Add/Edit Screen
 /// Comprehensive form for creating/editing products
@@ -28,7 +31,7 @@ class _SupplierProductAddEditScreenState
   final _formKey = GlobalKey<FormState>();
   final ApiService _apiService = ApiService();
   final ProductService _productService = ProductService();
-  final ImagePicker _imagePicker = ImagePicker();
+  final ImageService _imageService = ImageService();
 
   bool _isLoading = false;
   bool _isCategoriesLoading = false;
@@ -42,7 +45,11 @@ class _SupplierProductAddEditScreenState
   final _stockController = TextEditingController();
   final _skuController = TextEditingController();
 
-  final List<XFile> _selectedImages = [];
+  // Image management
+  final List<File> _selectedImages = [];
+  final List<String> _uploadedImageUrls = [];
+  late final MultiImageUploadWidget _imageUploadWidget;
+
   final List<Category> _categories = [];
   String _selectedCategoryId = '';
   bool _isFeatured = false;
@@ -66,6 +73,9 @@ class _SupplierProductAddEditScreenState
     _skuController.text = product.sku ?? '';
     _selectedCategoryId = product.categoryId;
     _isFeatured = product.isFeatured;
+
+    // Populate existing images
+    _uploadedImageUrls.addAll(product.images.map((img) => img.url));
   }
 
   Future<void> _loadCategories() async {
@@ -103,17 +113,18 @@ class _SupplierProductAddEditScreenState
     super.dispose();
   }
 
-  Future<void> _pickImages() async {
-    try {
-      final List<XFile> images = await _imagePicker.pickMultiImage();
-      setState(() {
-        _selectedImages.addAll(images);
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking images: $e')),
-      );
-    }
+  void _onImagesSelected(List<File> images) {
+    setState(() {
+      _selectedImages.clear();
+      _selectedImages.addAll(images);
+    });
+  }
+
+  void _onImagesUploaded(List<String> urls) {
+    setState(() {
+      _uploadedImageUrls.clear();
+      _uploadedImageUrls.addAll(urls);
+    });
   }
 
   Future<void> _saveProduct() async {
@@ -124,6 +135,16 @@ class _SupplierProductAddEditScreenState
     });
 
     try {
+      // Upload images first if any new images selected
+      List<String> imageUrls = List.from(_uploadedImageUrls);
+      if (_selectedImages.isNotEmpty) {
+        final uploadedUrls = await _imageService.uploadMultipleImagesToBackend(
+          _selectedImages,
+          folder: 'products',
+        );
+        imageUrls.addAll(uploadedUrls);
+      }
+
       final productData = {
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
@@ -135,6 +156,7 @@ class _SupplierProductAddEditScreenState
         'sku': _skuController.text.trim(),
         'category': _selectedCategoryId,
         'isFeatured': _isFeatured,
+        'images': imageUrls,
       };
 
       // If editing, include product ID
@@ -155,7 +177,7 @@ class _SupplierProductAddEditScreenState
                 : 'Product created successfully'),
           ),
         );
-        Navigator.pop(context, true);
+        NavigationService().pop(true);
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -202,7 +224,13 @@ class _SupplierProductAddEditScreenState
           children: [
             // Product Images Section
             _buildSectionTitle('Product Images'),
-            _buildImagePicker(),
+            MultiImageUploadWidget(
+              initialImages: _uploadedImageUrls,
+              maxImages: 10,
+              onImagesSelected: _onImagesSelected,
+              onImagesUploaded: _onImagesUploaded,
+              uploadFolder: 'products',
+            ),
             const SizedBox(height: 24),
 
             // Basic Information
@@ -386,72 +414,6 @@ class _SupplierProductAddEditScreenState
     );
   }
 
-  Widget _buildImagePicker() {
-    return Column(
-      children: [
-        if (_selectedImages.isNotEmpty)
-          SizedBox(
-            height: 120,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _selectedImages.length,
-              itemBuilder: (context, index) {
-                return Stack(
-                  children: [
-                    Container(
-                      width: 120,
-                      height: 120,
-                      margin: const EdgeInsets.only(right: 12),
-                      decoration: BoxDecoration(
-                        borderRadius:
-                            BorderRadius.circular(AppDimensions.radiusM),
-                        image: DecorationImage(
-                          image: FileImage(File(_selectedImages[index].path)),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 4,
-                      right: 16,
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            _selectedImages.removeAt(index);
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: AppColors.error,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: _pickImages,
-          icon: const Icon(Icons.add_photo_alternate),
-          label:
-              Text(_selectedImages.isEmpty ? 'Add Images' : 'Add More Images'),
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 48),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildCategorySelector() {
     if (_isCategoriesLoading) {

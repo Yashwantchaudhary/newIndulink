@@ -148,10 +148,17 @@ class AdminDashboardData {
   });
 
   factory AdminDashboardData.fromJson(Map<String, dynamic> json) {
+    // Extract from usersByRole array
+    final usersByRoleArray = json['usersByRole'] as List<dynamic>? ?? [];
+    final usersByRole = <String, int>{};
+    for (final role in usersByRoleArray) {
+      usersByRole[role['_id']] = role['count'];
+    }
+
     return AdminDashboardData(
       totalUsers: json['totalUsers'] ?? 0,
-      totalSuppliers: json['totalSuppliers'] ?? 0,
-      totalCustomers: json['totalCustomers'] ?? 0,
+      totalSuppliers: usersByRole['supplier'] ?? 0,
+      totalCustomers: usersByRole['customer'] ?? 0,
       totalProducts: json['totalProducts'] ?? 0,
       totalOrders: json['totalOrders'] ?? 0,
       totalRevenue: (json['totalRevenue'] ?? 0).toDouble(),
@@ -167,9 +174,7 @@ class AdminDashboardData {
       topSuppliers: json['topSuppliers'] != null
           ? List<Map<String, dynamic>>.from(json['topSuppliers'])
           : [],
-      usersByRole: json['usersByRole'] != null
-          ? Map<String, int>.from(json['usersByRole'])
-          : {},
+      usersByRole: usersByRole,
     );
   }
 

@@ -1,39 +1,93 @@
 const User = require('../models/User');
-const FirebaseMessageService = require('../services/firebaseMessageService');
+const Message = require('../models/Message');
+const { createAndSendNotification } = require('../services/notificationService');
 
 // @desc    Get conversations
 // @route   GET /api/messages/conversations
 // @access  Private
 exports.getConversations = async (req, res, next) => {
     try {
-        const firebaseService = new FirebaseMessageService();
-        const conversations = await firebaseService.getConversations(req.user.id);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        // Get all conversations for the user
+        const conversations = await Message.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { sender: req.user._id },
+                        { receiver: req.user._id }
+                    ]
+                }
+            },
+            {
+                $sort: { createdAt: -1 }
+            },
+            {
+                $group: {
+                    _id: '$conversationId',
+                    lastMessage: { $first: '$$ROOT' },
+                    messageCount: { $sum: 1 },
+                    unreadCount: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        { $eq: ['$receiver', req.user._id] },
+                                        { $eq: ['$isRead', false] }
+                                    ]
+                                },
+                                1,
+                                0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                $sort: { 'lastMessage.createdAt': -1 }
+            },
+            {
+                $skip: skip
+            },
+            {
+                $limit: limit
+            }
+        ]);
 
         // Populate user details for each conversation
         const populatedConversations = await Promise.all(
             conversations.map(async (conversation) => {
-                if (conversation.lastMessage) {
-                    const [sender, receiver] = await Promise.all([
-                        User.findById(conversation.lastMessage.senderId).select('firstName lastName profileImage businessName role'),
-                        User.findById(conversation.participants.find(p => p !== conversation.lastMessage.senderId)).select('firstName lastName profileImage businessName role'),
-                    ]);
+                const otherUserId = conversation.lastMessage.sender.toString() === req.user._id.toString()
+                    ? conversation.lastMessage.receiver
+                    : conversation.lastMessage.sender;
 
-                    return {
-                        ...conversation,
-                        lastMessage: {
-                            ...conversation.lastMessage,
-                            sender,
-                            receiver,
-                        },
-                    };
-                }
-                return conversation;
+                const otherUser = await User.findById(otherUserId)
+                    .select('firstName lastName profileImage businessName role')
+                    .lean();
+
+                return {
+                    conversationId: conversation._id,
+                    otherUser,
+                    lastMessage: {
+                        id: conversation.lastMessage._id,
+                        content: conversation.lastMessage.content,
+                        createdAt: conversation.lastMessage.createdAt,
+                        isRead: conversation.lastMessage.isRead,
+                        attachments: conversation.lastMessage.attachments,
+                    },
+                    messageCount: conversation.messageCount,
+                    unreadCount: conversation.unreadCount,
+                };
             })
         );
 
         res.status(200).json({
             success: true,
             count: populatedConversations.length,
+            page,
+            pages: Math.ceil(conversations.length / limit), // This is approximate
             data: populatedConversations,
         });
     } catch (error) {
@@ -49,40 +103,46 @@ exports.getMessages = async (req, res, next) => {
         const otherUserId = req.params.userId;
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 50;
+        const skip = (page - 1) * limit;
 
         // Generate conversation ID
-        const firebaseService = new FirebaseMessageService();
-        const ids = [req.user.id, otherUserId].sort();
+        const ids = [req.user._id.toString(), otherUserId].sort();
         const conversationId = `${ids[0]}_${ids[1]}`;
 
-        const result = await firebaseService.getMessages(conversationId, page, limit);
+        // Get messages for this conversation
+        const messages = await Message.find({ conversationId })
+            .populate('sender', 'firstName lastName profileImage businessName role')
+            .populate('receiver', 'firstName lastName profileImage businessName role')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
 
-        // Populate user details
-        const populatedMessages = await Promise.all(
-            result.messages.map(async (message) => {
-                const [sender, receiver] = await Promise.all([
-                    User.findById(message.senderId).select('firstName lastName profileImage businessName role'),
-                    User.findById(message.receiverId).select('firstName lastName profileImage businessName role'),
-                ]);
+        const total = await Message.countDocuments({ conversationId });
 
-                return {
-                    ...message,
-                    sender,
-                    receiver,
-                };
-            })
+        // Mark messages as read (only messages received by current user)
+        await Message.updateMany(
+            {
+                conversationId,
+                receiver: req.user._id,
+                isRead: false
+            },
+            {
+                isRead: true,
+                readAt: new Date()
+            }
         );
 
-        // Mark messages as read
-        await firebaseService.markAsRead(conversationId, req.user.id);
+        // Reverse to show chronological order (oldest first)
+        const reversedMessages = messages.reverse();
 
         res.status(200).json({
             success: true,
-            count: populatedMessages.length,
-            total: result.pagination.total,
-            page: result.pagination.page,
-            pages: result.pagination.pages,
-            data: populatedMessages,
+            count: reversedMessages.length,
+            total,
+            page,
+            pages: Math.ceil(total / limit),
+            data: reversedMessages,
         });
     } catch (error) {
         next(error);
@@ -94,29 +154,64 @@ exports.getMessages = async (req, res, next) => {
 // @access  Private
 exports.sendMessage = async (req, res, next) => {
     try {
-        const { receiver, content } = req.body;
-        const firebaseService = new FirebaseMessageService();
+        const { receiver, content, attachments } = req.body;
 
-        // Validate message recipients
-        await firebaseService.validateMessage(req.user.id, receiver);
+        // Validate required fields
+        if (!receiver || (!content && (!attachments || attachments.length === 0))) {
+            return res.status(400).json({
+                success: false,
+                message: 'Message must have content or attachments',
+            });
+        }
 
-        const message = await firebaseService.sendMessage(req.user.id, receiver, content);
+        // Validate receiver exists
+        const receiverUser = await User.findById(receiver);
+        if (!receiverUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'Receiver not found',
+            });
+        }
+
+        // Create message
+        const message = await Message.create({
+            sender: req.user._id,
+            receiver: receiver,
+            content: content || '',
+            attachments: attachments || [],
+        });
 
         // Populate user details
-        const [sender, receiverUser] = await Promise.all([
-            User.findById(message.senderId).select('firstName lastName profileImage businessName role'),
-            User.findById(message.receiverId).select('firstName lastName profileImage businessName role'),
-        ]);
+        const populatedMessage = await Message.findById(message._id)
+            .populate('sender', 'firstName lastName profileImage businessName role')
+            .populate('receiver', 'firstName lastName profileImage businessName role');
 
-        const populatedMessage = {
-            ...message,
-            sender,
-            receiver: receiverUser,
-        };
+        // Send push notification to receiver
+        try {
+            const notificationMessage = content
+                ? (content.length > 50 ? content.substring(0, 50) + '...' : content)
+                : '📎 New attachment';
+
+            await createAndSendNotification({
+                userId: receiver,
+                title: `${req.user.firstName} ${req.user.lastName}`,
+                message: notificationMessage,
+                type: 'message',
+                data: {
+                    senderId: req.user._id.toString(),
+                    conversationId: message.conversationId,
+                    messageId: message._id.toString(),
+                },
+                sendPush: true,
+            });
+        } catch (notificationError) {
+            console.error('Failed to send message notification:', notificationError);
+            // Don't fail the message send if notification fails
+        }
 
         res.status(201).json({
             success: true,
-            message: 'Message sent',
+            message: 'Message sent successfully',
             data: populatedMessage,
         });
     } catch (error) {
@@ -129,12 +224,25 @@ exports.sendMessage = async (req, res, next) => {
 // @access  Private
 exports.markAsRead = async (req, res, next) => {
     try {
-        const firebaseService = new FirebaseMessageService();
-        await firebaseService.markAsRead(req.params.conversationId, req.user.id);
+        const { conversationId } = req.params;
+
+        // Mark all unread messages in this conversation as read for current user
+        const result = await Message.updateMany(
+            {
+                conversationId,
+                receiver: req.user._id,
+                isRead: false
+            },
+            {
+                isRead: true,
+                readAt: new Date()
+            }
+        );
 
         res.status(200).json({
             success: true,
-            message: 'Messages marked as read',
+            message: `${result.modifiedCount} messages marked as read`,
+            data: { modifiedCount: result.modifiedCount },
         });
     } catch (error) {
         next(error);
@@ -230,16 +338,14 @@ exports.deleteMessage = async (req, res, next) => {
 // @access  Private
 exports.getUnreadCount = async (req, res, next) => {
     try {
-        const firebaseService = new FirebaseMessageService();
-        const conversations = await firebaseService.getConversations(req.user.id);
-
-        const totalUnread = conversations.reduce((sum, conv) => {
-            return sum + (conv.unreadCount?.count ?? 0);
-        }, 0);
+        const unreadCount = await Message.countDocuments({
+            receiver: req.user._id,
+            isRead: false
+        });
 
         res.status(200).json({
             success: true,
-            data: { unreadCount: totalUnread },
+            data: { unreadCount },
         });
     } catch (error) {
         next(error);

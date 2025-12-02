@@ -2,6 +2,13 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const cdnConfig = require('../config/cdn');
 
+// Get WebSocket service instance (will be set by server.js)
+let webSocketService = null;
+
+const setWebSocketService = (service) => {
+    webSocketService = service;
+};
+
 // @desc    Get all products with filters and pagination
 // @route   GET /api/products
 // @access  Public
@@ -129,6 +136,11 @@ exports.createProduct = async (req, res, next) => {
             // Don't fail the product creation if notification fails
         }
 
+        // Send real-time update via WebSocket
+        if (webSocketService) {
+            webSocketService.notifyProductUpdate(product._id, 'created', product, req.user.id);
+        }
+
         res.status(201).json({
             success: true,
             message: 'Product created successfully',
@@ -138,6 +150,9 @@ exports.createProduct = async (req, res, next) => {
         next(error);
     }
 };
+
+// Export WebSocket service setter
+module.exports.setWebSocketService = setWebSocketService;
 
 // @desc    Update product
 // @route   PUT /api/products/:id
@@ -186,6 +201,11 @@ exports.updateProduct = async (req, res, next) => {
                 console.error('Failed to purge CDN cache:', cacheError);
                 // Don't fail the update if cache purging fails
             }
+        }
+
+        // Send real-time update via WebSocket
+        if (webSocketService) {
+            webSocketService.notifyProductUpdate(product._id, 'updated', product, req.user.id);
         }
 
         res.status(200).json({
@@ -238,6 +258,11 @@ exports.deleteProduct = async (req, res, next) => {
         }
 
         await product.remove();
+
+        // Send real-time update via WebSocket
+        if (webSocketService) {
+            webSocketService.notifyProductUpdate(product._id, 'deleted', product, req.user.id);
+        }
 
         res.status(200).json({
             success: true,

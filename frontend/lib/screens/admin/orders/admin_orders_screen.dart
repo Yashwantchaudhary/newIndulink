@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../services/api_service.dart';
-import '../../../models/order.dart';
+import '../widgets/admin_layout.dart';
 
-/// 📋 Admin Orders Screen
+/// 📦 Admin Orders Screen
 class AdminOrdersScreen extends StatefulWidget {
   const AdminOrdersScreen({super.key});
 
@@ -16,7 +16,7 @@ class AdminOrdersScreen extends StatefulWidget {
 class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
   final ApiService _apiService = ApiService();
   bool _isLoading = true;
-  List<Order> _orders = [];
+  List<Map<String, dynamic>> _orders = [];
 
   @override
   void initState() {
@@ -29,11 +29,8 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     try {
       final response = await _apiService.get('/api/orders');
       if (response.isSuccess && response.data != null) {
-        final List<dynamic> ordersJson = response.data is List
-            ? response.data
-            : response.data['orders'] ?? [];
         setState(() {
-          _orders = ordersJson.map((json) => Order.fromJson(json)).toList();
+          _orders = List<Map<String, dynamic>>.from(response.data['data'] ?? []);
           _isLoading = false;
         });
       }
@@ -44,14 +41,10 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('All Orders'),
-        actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.filter_list)),
-        ],
-      ),
-      body: _isLoading
+    return AdminLayout(
+      title: 'Orders',
+      currentIndex: 4,
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _loadOrders,
@@ -74,7 +67,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Order #${order.orderNumber}',
+                              'Order #${order['orderNumber'] ?? order['id']}',
                               style: AppTypography.labelLarge
                                   .copyWith(fontWeight: FontWeight.bold),
                             ),
@@ -82,14 +75,14 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: _getStatusColor(order.status)
+                                color: _getStatusColor(order['status'] ?? 'pending')
                                     .withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
-                                order.status.displayName,
+                                order['status'] ?? 'pending',
                                 style: TextStyle(
-                                  color: _getStatusColor(order.status),
+                                  color: _getStatusColor(order['status'] ?? 'pending'),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -102,11 +95,11 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              order.user?.fullName ?? 'Customer',
+                              order['user']?['fullName'] ?? 'Customer',
                               style: AppTypography.bodyMedium,
                             ),
                             Text(
-                              '₹${order.total.toStringAsFixed(2)}',
+                              '₹${order['total']?.toStringAsFixed(2) ?? '0.00'}',
                               style: AppTypography.labelLarge.copyWith(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.bold,
@@ -123,18 +116,18 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     );
   }
 
-  Color _getStatusColor(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.delivered:
-        return AppColors.statusDelivered;
-      case OrderStatus.shipped:
-        return AppColors.statusShipped;
-      case OrderStatus.processing:
-        return AppColors.statusProcessing;
-      case OrderStatus.cancelled:
-        return AppColors.statusCancelled;
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'delivered':
+        return AppColors.success;
+      case 'shipped':
+        return AppColors.warning;
+      case 'processing':
+        return AppColors.primary;
+      case 'cancelled':
+        return AppColors.error;
       default:
-        return AppColors.statusPending;
+        return AppColors.textSecondary;
     }
   }
 }

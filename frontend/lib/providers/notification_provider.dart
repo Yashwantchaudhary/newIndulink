@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
+import '../core/constants/app_config.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 
 /// 🔔 Notification Provider
 /// Manages notifications list and read/unread states
 class NotificationProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
+  final NotificationService _notificationService = NotificationService();
 
   // State
   List<AppNotification> _notifications = [];
@@ -30,8 +33,29 @@ class NotificationProvider with ChangeNotifier {
     // Load notifications from local storage if needed
   }
 
-  Future<void> requestPermissions() async {
-    // Request push permissions if needed
+  /// Request push notification permissions
+  Future<bool> requestPermissions() async {
+    return await _notificationService.requestPermissions();
+  }
+
+  /// Check if notifications are enabled
+  Future<bool> areNotificationsEnabled() async {
+    return await _notificationService.areNotificationsEnabled();
+  }
+
+  /// Send test notification (for development)
+  Future<void> sendTestNotification({
+    required String title,
+    required String body,
+    String? type,
+    String? id,
+  }) async {
+    await _notificationService.sendTestNotification(
+      title: title,
+      body: body,
+      type: type,
+      id: id,
+    );
   }
 
   /// Fetch all notifications
@@ -40,7 +64,7 @@ class NotificationProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _apiService.get('/notifications');
+      final response = await _apiService.get(AppConfig.notificationsEndpoint);
 
       if (response.success) {
         final List<dynamic> items = response.data['notifications'] ?? [];
@@ -63,9 +87,11 @@ class NotificationProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _apiService.put(
-        '/notifications/$notificationId/read',
+      final endpoint = AppConfig.replaceParams(
+        AppConfig.markNotificationReadEndpoint,
+        {'id': notificationId},
       );
+      final response = await _apiService.put(endpoint);
 
       if (response.success) {
         // Update local state
@@ -92,7 +118,7 @@ class NotificationProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _apiService.put('/notifications/read-all');
+      final response = await _apiService.put(AppConfig.markAllNotificationsReadEndpoint);
 
       if (response.success) {
         // Update all notifications to read
@@ -117,9 +143,11 @@ class NotificationProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _apiService.delete(
-        '/notifications/$notificationId',
+      final endpoint = AppConfig.replaceParams(
+        '/notifications/:id',
+        {'id': notificationId},
       );
+      final response = await _apiService.delete(endpoint);
 
       if (response.success) {
         _notifications.removeWhere((n) => n.id == notificationId);

@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/widgets/error_widget.dart';
+import '../../../core/widgets/loading_widgets.dart';
 
 import '../../../models/order.dart';
-import '../../../services/api_service.dart';
+import '../../../providers/order_provider.dart';
 
 /// 📋 Supplier Order Detail Screen
 class SupplierOrderDetailScreen extends StatefulWidget {
-  final Order order;
+  final String orderId;
 
-  const SupplierOrderDetailScreen({super.key, required this.order});
+  const SupplierOrderDetailScreen({super.key, required this.orderId});
 
   @override
   State<SupplierOrderDetailScreen> createState() =>
@@ -18,40 +21,68 @@ class SupplierOrderDetailScreen extends StatefulWidget {
 }
 
 class _SupplierOrderDetailScreenState extends State<SupplierOrderDetailScreen> {
-  final ApiService _apiService = ApiService();
-  bool _isUpdating = false;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OrderProvider>().fetchOrderDetails(widget.orderId);
+    });
+  }
 
   Future<void> _updateStatus(OrderStatus newStatus) async {
-    setState(() => _isUpdating = true);
+    final provider = context.read<OrderProvider>();
+    final success = await provider.updateOrderStatus(widget.orderId, newStatus);
 
-    try {
-      final response = await _apiService.put(
-        '/api/orders/${widget.order.id}/status',
-        body: {'status': newStatus.value},
-      );
-
-      if (response.isSuccess) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Status updated to ${newStatus.displayName}')),
-        );
-        Navigator.pop(context, true);
-      } else {
-        throw Exception(response.message ?? 'Failed to update');
-      }
-    } catch (e) {
-      if (!mounted) return;
+    if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(content: Text('Status updated to ${newStatus.displayName}')),
       );
-    } finally {
-      if (mounted) setState(() => _isUpdating = false);
+      Navigator.pop(context, true);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(provider.errorMessage ?? 'Failed to update status')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final order = widget.order;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Order Details'),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.share),
+          ),
+        ],
+      ),
+      body: Consumer<OrderProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(child: LoadingSpinner());
+          }
+
+          if (provider.errorMessage != null) {
+            return ErrorStateWidget(
+              message: provider.errorMessage!,
+              onRetry: () => provider.fetchOrderDetails(widget.orderId),
+            );
+          }
+
+          final order = provider.selectedOrder;
+
+          if (order == null) {
+            return const ErrorStateWidget(message: 'Order not found');
+          }
+
+          return _buildOrderContent(order, provider.isLoading);
+        },
+      ),
+    );
+  }
+
+  Widget _buildOrderContent(Order order, bool isUpdating) {
     final userName = order.user?.fullName ?? 'Customer';
 
     return Scaffold(
@@ -187,14 +218,14 @@ class _SupplierOrderDetailScreenState extends State<SupplierOrderDetailScreen> {
           // Actions
           if (order.status == OrderStatus.pending) ...[
             ElevatedButton(
-              onPressed: _isUpdating
+              onPressed: isUpdating
                   ? null
                   : () => _updateStatus(OrderStatus.processing),
               child: const Text('Start Processing'),
             ),
             const SizedBox(height: 12),
             OutlinedButton(
-              onPressed: _isUpdating
+              onPressed: isUpdating
                   ? null
                   : () => _updateStatus(OrderStatus.cancelled),
               style: OutlinedButton.styleFrom(foregroundColor: AppColors.error),
@@ -203,12 +234,12 @@ class _SupplierOrderDetailScreenState extends State<SupplierOrderDetailScreen> {
           ] else if (order.status == OrderStatus.processing) ...[
             ElevatedButton(
               onPressed:
-                  _isUpdating ? null : () => _updateStatus(OrderStatus.shipped),
+                  isUpdating ? null : () => _updateStatus(OrderStatus.shipped),
               child: const Text('Mark as Shipped'),
             ),
           ] else if (order.status == OrderStatus.shipped) ...[
             ElevatedButton(
-              onPressed: _isUpdating
+              onPressed: isUpdating
                   ? null
                   : () => _updateStatus(OrderStatus.delivered),
               child: const Text('Mark as Delivered'),

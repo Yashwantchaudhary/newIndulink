@@ -4,6 +4,8 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/constants/app_config.dart';
+import '../../../routes/app_routes.dart';
 import '../../../models/dashboard.dart';
 import '../../../services/api_service.dart';
 
@@ -40,7 +42,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
     });
 
     try {
-      final response = await _apiService.get('/api/dashboard/supplier');
+      final response = await _apiService.get(AppConfig.supplierDashboardEndpoint);
 
       if (response.isSuccess && response.data != null) {
         setState(() {
@@ -465,6 +467,11 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
         'color': AppColors.success
       },
       {'title': 'Messages', 'icon': Icons.message, 'color': AppColors.info},
+      {
+        'title': 'Business Data',
+        'icon': Icons.storage,
+        'color': AppColors.warning
+      },
     ];
 
     return Padding(
@@ -499,7 +506,23 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                 icon: action['icon'] as IconData,
                 color: action['color'] as Color,
                 onTap: () {
-                  // Handle action
+                  switch (action['title']) {
+                    case 'Add Product':
+                      Navigator.pushNamed(context, '/supplier/products/add');
+                      break;
+                    case 'View Orders':
+                      Navigator.pushNamed(context, '/supplier/orders');
+                      break;
+                    case 'Analytics':
+                      // TODO: Navigate to analytics screen
+                      break;
+                    case 'Messages':
+                      // TODO: Navigate to messages screen
+                      break;
+                    case 'Business Data':
+                      Navigator.pushNamed(context, AppRoutes.supplierDataManagement);
+                      break;
+                  }
                 },
               );
             },
@@ -577,7 +600,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
               ),
               TextButton(
                 onPressed: () {
-                  // Navigate to all orders
+                  Navigator.pushNamed(context, '/supplier/orders');
                 },
                 child: const Text('View All'),
               ),
@@ -766,6 +789,22 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textSecondary,
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              // Already on dashboard
+              break;
+            case 1:
+              Navigator.pushNamed(context, '/supplier/products');
+              break;
+            case 2:
+              Navigator.pushNamed(context, '/supplier/orders');
+              break;
+            case 3:
+              Navigator.pushNamed(context, '/supplier/profile');
+              break;
+          }
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),

@@ -23,8 +23,8 @@ const registerValidation = [
         .withMessage('Password must be at least 6 characters'),
     body('role')
         .optional()
-        .isIn(['customer', 'supplier'])
-        .withMessage('Role must be customer or supplier'),
+        .isIn(['customer', 'supplier', 'admin'])
+        .withMessage('Role must be customer, supplier, or admin'),
 ];
 
 const loginValidation = [

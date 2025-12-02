@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/constants/app_config.dart';
 
 import '../../../services/api_service.dart';
 
@@ -27,7 +28,7 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
   Future<void> _loadProfile() async {
     setState(() => _isLoading = true);
     try {
-      final response = await _apiService.get('/api/profile');
+      final response = await _apiService.get(AppConfig.userProfileEndpoint);
       if (response.isSuccess && response.data != null) {
         setState(() {
           _profileData = response.data;

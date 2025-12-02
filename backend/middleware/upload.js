@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const imageService = require('../services/imageService');
 
 // Ensure upload directory exists
 const uploadDir = process.env.UPLOAD_DIR || 'uploads';
@@ -79,6 +80,78 @@ const upload = multer({
 exports.uploadSingle = (fieldName) => upload.single(fieldName);
 exports.uploadMultiple = (fieldName, maxCount = 5) => upload.array(fieldName, maxCount);
 exports.uploadFields = (fields) => upload.fields(fields);
+
+// Image compression middleware
+const compressImages = (type = 'products') => {
+    return async (req, res, next) => {
+        if (!req.files || req.files.length === 0) {
+            return next();
+        }
+
+        try {
+            const compressionPromises = [];
+            const processedFiles = [];
+
+            // Process each uploaded file
+            for (const file of req.files) {
+                // Skip non-image files
+                if (!file.mimetype.startsWith('image/')) {
+                    processedFiles.push(file);
+                    continue;
+                }
+
+                const originalPath = file.path;
+                const compressedPath = path.join(
+                    path.dirname(originalPath),
+                    'compressed_' + path.basename(originalPath)
+                );
+
+                // Compress image
+                const compressionPromise = imageService.compressImage(originalPath, compressedPath, type)
+                    .then(result => {
+                        if (result.success) {
+                            // Replace original file with compressed version
+                            fs.unlinkSync(originalPath); // Delete original
+                            fs.renameSync(compressedPath, originalPath); // Rename compressed to original
+
+                            // Update file info
+                            const stats = fs.statSync(originalPath);
+                            file.size = stats.size;
+                            file.compression = result;
+
+                            console.log(`✅ Image compressed: ${file.originalname} (${result.compressionRatio} reduction)`);
+                        } else {
+                            console.warn(`⚠️  Image compression failed: ${file.originalname} - ${result.error}`);
+                        }
+
+                        processedFiles.push(file);
+                    })
+                    .catch(error => {
+                        console.error(`❌ Image compression error: ${file.originalname}`, error);
+                        processedFiles.push(file); // Keep original file
+                    });
+
+                compressionPromises.push(compressionPromise);
+            }
+
+            // Wait for all compressions to complete
+            await Promise.all(compressionPromises);
+
+            // Update req.files with processed files
+            req.files = processedFiles;
+
+            next();
+        } catch (error) {
+            console.error('Image compression middleware error:', error);
+            next(); // Continue without compression on error
+        }
+    };
+};
+
+// Export compression middleware for different image types
+exports.compressProductImages = compressImages('products');
+exports.compressProfileImages = compressImages('profiles');
+exports.compressReviewImages = compressImages('reviews');
 
 // Helper function to delete file
 exports.deleteFile = (filePath) => {

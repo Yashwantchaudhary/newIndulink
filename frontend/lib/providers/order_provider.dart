@@ -114,6 +114,40 @@ class OrderProvider with ChangeNotifier {
     _setLoading(false);
   }
 
+  /// Update order status (supplier/admin only)
+  Future<bool> updateOrderStatus(String orderId, OrderStatus status, {String? notes}) async {
+    _clearError();
+
+    try {
+      final result = await _orderService.updateOrderStatus(
+        orderId: orderId,
+        status: status,
+        notes: notes,
+      );
+
+      if (result.success) {
+        // Update local state
+        final index = _orders.indexWhere((order) => order.id == orderId);
+        if (index != -1 && result.order != null) {
+          _orders[index] = result.order!;
+        }
+
+        if (_selectedOrder?.id == orderId && result.order != null) {
+          _selectedOrder = result.order;
+        }
+
+        notifyListeners();
+        return true;
+      } else {
+        _setError(result.message ?? 'Failed to update order status');
+        return false;
+      }
+    } catch (e) {
+      _setError('An error occurred');
+      return false;
+    }
+  }
+
   /// Cancel order
   Future<bool> cancelOrder(String orderId) async {
     _clearError();

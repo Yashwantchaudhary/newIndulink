@@ -36,6 +36,7 @@ class AppConfig {
   static const String forgotPasswordEndpoint = '/auth/forgot-password';
   static const String resetPasswordEndpoint = '/auth/reset-password';
   static const String changePasswordEndpoint = '/auth/change-password';
+  static const String deleteAccountEndpoint = '/auth/delete-account';
 
   // ==================== User Endpoints ====================
   static const String userProfileEndpoint = '/users/profile';
@@ -97,6 +98,7 @@ class AppConfig {
   // ==================== Notification Endpoints ====================
   static const String notificationsEndpoint = '/notifications';
   static const String markNotificationReadEndpoint = '/notifications/:id/read';
+  static const String markAllNotificationsReadEndpoint = '/notifications/read-all';
   static const String fcmTokenEndpoint = '/notifications/fcm-token';
 
   // ==================== Message/Chat Endpoints ====================

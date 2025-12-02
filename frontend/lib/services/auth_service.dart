@@ -1,4 +1,3 @@
-import 'package:google_sign_in/google_sign_in.dart';
 import '../core/constants/app_config.dart';
 import '../models/user.dart';
 import 'api_service.dart';
@@ -13,13 +12,6 @@ class AuthService {
 
   final ApiService _api = ApiService();
   final StorageService _storage = StorageService();
-  late final GoogleSignIn _googleSignIn;
-
-  // Initialize GoogleSignIn instance (v7.x)
-  Future<void> _initializeGoogleSignIn() async {
-    _googleSignIn = GoogleSignIn.instance;
-    await _googleSignIn.initialize();
-  }
 
   // ==================== Login Methods ====================
 
@@ -35,7 +27,6 @@ class AuthService {
         body: {
           'email': email,
           'password': password,
-          'role': role.value,
         },
         requiresAuth: false,
       );
@@ -56,59 +47,6 @@ class AuthService {
     }
   }
 
-  /// Login with Google
-  Future<AuthResult> loginWithGoogle({required UserRole role}) async {
-    try {
-      // Initialize GoogleSignIn if not already done
-      await _initializeGoogleSignIn();
-
-      // Trigger Google Sign-In flow (authenticate in v7.x)
-      final GoogleSignInAccount googleUser =
-          await _googleSignIn.authenticate();
-
-      if (googleUser == null) {
-        return AuthResult(
-          success: false,
-          message: 'Google Sign-In cancelled',
-        );
-      }
-
-      // Get authentication details (no await needed, synchronous in v7.x)
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
-
-      // In v7.x, we only have idToken directly available
-      // accessToken requires additional authorization flow
-      // For backend auth, idToken is sufficient
-      final response = await _api.post(
-        AppConfig.googleLoginEndpoint,
-        body: {
-          'idToken': googleAuth.idToken,
-          'role': role.value,
-        },
-        requiresAuth: false,
-      );
-
-      if (response.isSuccess && response.data != null) {
-        return await _handleAuthSuccess(response.data);
-      } else {
-        await _googleSignIn.signOut();
-        return AuthResult(
-          success: false,
-          message: response.message ?? 'Google Sign-In failed',
-        );
-      }
-    } catch (e) {
-      try {
-        await _googleSignIn.signOut();
-      } catch (_) {
-        // Ignore sign-out errors
-      }
-      return AuthResult(
-        success: false,
-        message: 'Google Sign-In error: ${e.toString()}',
-      );
-    }
-  }
 
   // ==================== Registration ====================
 
@@ -237,12 +175,6 @@ class AuthService {
       // Continue with logout even if API call fails
     }
 
-    // Sign out from Google
-    try {
-      await _googleSignIn.signOut();
-    } catch (e) {
-      // Ignore Google sign-out errors
-    }
 
     // Clear local storage
     await _storage.clearUserData();
@@ -324,6 +256,34 @@ class AuthService {
             (response.isSuccess
                 ? 'Password changed successfully'
                 : 'Failed to change password'),
+      );
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        message: 'An error occurred',
+      );
+    }
+  }
+
+  /// Delete user account
+  Future<AuthResult> deleteAccount({required String password}) async {
+    try {
+      final response = await _api.post(
+        AppConfig.deleteAccountEndpoint,
+        body: {'password': password},
+      );
+
+      if (response.isSuccess) {
+        // Clear local storage after successful deletion
+        await _storage.clearUserData();
+      }
+
+      return AuthResult(
+        success: response.isSuccess,
+        message: response.message ??
+            (response.isSuccess
+                ? 'Account deleted successfully'
+                : 'Failed to delete account'),
       );
     } catch (e) {
       return AuthResult(

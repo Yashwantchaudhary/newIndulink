@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../services/api_service.dart';
+import '../widgets/admin_layout.dart';
 
 /// 👥 Admin Users Screen
 class AdminUsersScreen extends StatefulWidget {
@@ -47,9 +48,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Users')),
-      body: Column(
+    return AdminLayout(
+      title: 'Users',
+      currentIndex: 1,
+      child: Column(
         children: [
           // Filter Tabs
           SingleChildScrollView(

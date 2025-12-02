@@ -414,7 +414,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
-                                // TODO: Show terms and conditions
+                                Navigator.pushNamed(context, '/terms-of-service');
                               },
                           ),
                           TextSpan(
@@ -431,7 +431,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
-                                // TODO: Show privacy policy
+                                Navigator.pushNamed(context, '/privacy-policy');
                               },
                           ),
                         ],

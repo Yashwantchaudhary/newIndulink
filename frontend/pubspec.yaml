@@ -60,38 +60,8 @@ dependencies:
   # Google Maps integration
   google_maps_flutter: ^2.5.3
 
-  # Firebase core
-  firebase_core: ^4.1.0
-
-  # Firebase authentication
-  firebase_auth: ^6.0.2
-
-  # Push notifications
-  firebase_messaging: ^16.0.1
-
-  # Local notifications for background messages
+  # Local notifications
   flutter_local_notifications: ^19.5.0
-
-  # Cloud Firestore
-  cloud_firestore: ^6.0.1
-
-  # Firebase Realtime Database
-  firebase_database: ^12.0.4
-
-  # Cloud Storage
-  firebase_storage: ^13.0.4
-
-  # Firebase Analytics
-  firebase_analytics: ^12.0.4
-
-  # Firebase Crashlytics
-  firebase_crashlytics: ^5.0.4
-
-  # Firebase Performance
-  firebase_performance: ^0.11.1+2
-
-  # Firebase Remote Config
-  firebase_remote_config: ^6.1.1
 
   # Date formatting
   intl: ^0.20.2
@@ -105,13 +75,6 @@ dependencies:
   # Cached network image
   cached_network_image: ^3.3.0
 
-  # Google sign in
-  google_sign_in: ^7.2.0
-
-  # Additional dependencies for Google Sign-In
-  google_sign_in_android: ^7.1.0
-  google_sign_in_ios: ^6.2.1
-  google_sign_in_web: ^1.1.0
 
   # Connectivity check
   connectivity_plus: ^7.0.0
@@ -165,6 +128,9 @@ dependencies:
   # flutter_stripe: ^12.0.2  # Temporarily removed due to Android build conflicts
   http_parser: ^4.1.2
   image_cropper: ^11.0.0
+
+  # WebSocket for real-time updates
+  socket_io_client: ^2.0.3
 
   # eSewa Payment SDK - Integrated directly in the project
 

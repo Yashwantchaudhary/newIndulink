@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-
-import 'firebase_options.dart';
 
 // Core
 import 'core/theme/app_theme.dart';
 
 // Services
 import 'services/storage_service.dart';
+import 'services/notification_service.dart';
+import 'services/cached_api_service.dart';
 
 // Providers
 import 'providers/auth_provider.dart';
@@ -24,6 +24,10 @@ import 'providers/message_provider.dart';
 import 'providers/language_provider.dart';
 import 'providers/address_provider.dart';
 import 'providers/rfq_provider.dart';
+import 'providers/review_provider.dart';
+import 'providers/websocket_provider.dart';
+import 'providers/export_provider.dart';
+import 'providers/analytics_provider.dart';
 
 // Routes
 import 'routes/app_router.dart';
@@ -36,14 +40,21 @@ void main() async {
   // Initialize Storage Service first
   await StorageService().init();
 
-  // Initialize Firebase
+
+  // Initialize Notification Service
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    debugPrint('Firebase initialized successfully');
+    await NotificationService().initialize();
+    debugPrint('Notification service initialized successfully');
   } catch (e) {
-    debugPrint('Firebase initialization error: $e');
+    debugPrint('Notification service initialization error: $e');
+  }
+
+  // Initialize Cached API Service
+  try {
+    await CachedApiService().initialize();
+    debugPrint('Cached API service initialized successfully');
+  } catch (e) {
+    debugPrint('Cached API service initialization error: $e');
   }
 
   // Set system UI overlay style
@@ -77,7 +88,11 @@ class _IndulinkAppState extends State<IndulinkApp> {
   @override
   void initState() {
     super.initState();
-    // Provider initialization will happen in build method via _AppInitializer
+    // Initialize auth provider after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      authProvider.init();
+    });
   }
 
   @override
@@ -93,6 +108,7 @@ class _IndulinkAppState extends State<IndulinkApp> {
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => SearchProvider()),
         ChangeNotifierProvider(create: (_) => WishlistProvider()),
+        ChangeNotifierProvider(create: (_) => ReviewProvider()),
 
         // Shopping Providers
         ChangeNotifierProvider(create: (_) => CartProvider()),
@@ -105,6 +121,18 @@ class _IndulinkAppState extends State<IndulinkApp> {
         // User Data Providers
         ChangeNotifierProvider(create: (_) => AddressProvider()),
         ChangeNotifierProvider(create: (_) => RFQProvider()),
+
+        // Real-time Updates
+        ChangeNotifierProxyProvider<AuthProvider, WebSocketProvider>(
+          create: (context) => WebSocketProvider(Provider.of<AuthProvider>(context, listen: false)),
+          update: (context, authProvider, previous) => previous ?? WebSocketProvider(authProvider),
+        ),
+
+        // Data Export/Import
+        ChangeNotifierProvider(create: (_) => ExportProvider()),
+
+        // Analytics and Reporting
+        ChangeNotifierProvider(create: (_) => AnalyticsProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -131,3 +159,4 @@ class _IndulinkAppState extends State<IndulinkApp> {
     );
   }
 }
+

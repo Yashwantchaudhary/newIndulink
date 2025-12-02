@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../services/api_service.dart';
+import '../widgets/admin_layout.dart';
 
 /// 📂 Admin Categories Screen
 class AdminCategoriesScreen extends StatefulWidget {
@@ -29,9 +30,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
       final response = await _apiService.get('/api/categories');
       if (response.isSuccess && response.data != null) {
         setState(() {
-          _categories = List<Map<String, dynamic>>.from(response.data is List
-              ? response.data
-              : response.data['categories'] ?? []);
+          _categories = List<Map<String, dynamic>>.from(response.data['data'] ?? []);
           _isLoading = false;
         });
       }
@@ -42,9 +41,10 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Categories')),
-      body: _isLoading
+    return AdminLayout(
+      title: 'Categories',
+      currentIndex: 3,
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _loadCategories,
@@ -99,10 +99,6 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
                 },
               ),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: const Icon(Icons.add),
-      ),
     );
   }
 }

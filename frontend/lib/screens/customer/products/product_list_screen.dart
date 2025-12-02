@@ -9,6 +9,7 @@ import '../../../core/widgets/error_widget.dart';
 import '../../../core/widgets/empty_state_widget.dart';
 import '../../../core/widgets/product_card_widget.dart';
 import '../../../providers/product_provider.dart';
+import '../search/search_screen.dart';
 
 class ProductListScreen extends StatefulWidget {
   final String? initialCategory;
@@ -85,12 +86,25 @@ class _ProductListScreenState extends State<ProductListScreen> {
       appBar: AppBar(
         title: Text(
           widget.title ?? 'Products',
-          style: AppTypography.h6.copyWith(fontWeight: AppTypography.bold),
+          style: AppTypography.h6.copyWith(
+            fontWeight: AppTypography.bold,
+            color: Colors.white,
+          ),
         ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.primaryGradient,
+          ),
+        ),
+        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
             onPressed: () {
-              // TODO: Navigate to search
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SearchScreen()),
+              );
             },
             icon: const Icon(Icons.search),
           ),

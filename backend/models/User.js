@@ -119,6 +119,15 @@ const userSchema = new mongoose.Schema(
             type: String,
             select: false,
         },
+        // Password reset fields
+        resetPasswordToken: {
+            type: String,
+            select: false,
+        },
+        resetPasswordExpiry: {
+            type: Date,
+            select: false,
+        },
         // FCM tokens for push notifications
         fcmTokens: [{
             type: String,
@@ -150,6 +159,12 @@ const userSchema = new mongoose.Schema(
                 type: Boolean,
                 default: true,
             },
+        },
+        // Language preference
+        language: {
+            type: String,
+            enum: ['en', 'ne', 'hi'], // English, Nepali, Hindi
+            default: 'en',
         },
     });
 

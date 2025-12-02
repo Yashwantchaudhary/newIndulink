@@ -54,6 +54,12 @@ class AppRoutes {
   static const String conversation = '/customer/messages/conversation';
   static const String notifications = '/customer/notifications';
 
+  // Supplier Profiles
+  static const String supplierProfileView = '/customer/supplier/profile';
+
+  // Reviews
+  static const String fullReviews = '/customer/products/reviews';
+
   // RFQ (Request for Quote)
   static const String rfqList = '/customer/rfq';
   static const String rfqDetail = '/customer/rfq/detail';
@@ -106,8 +112,35 @@ class AppRoutes {
   static const String adminAnalytics = '/admin/analytics';
   static const String adminReports = '/admin/reports';
 
+  // ==================== Data Management Routes ====================
+  // Admin Data Management
+  static const String adminDataManagement = '/admin/data-management';
+  static const String adminDataUsers = '/admin/data/users';
+  static const String adminDataProducts = '/admin/data/products';
+  static const String adminDataCategories = '/admin/data/categories';
+  static const String adminDataOrders = '/admin/data/orders';
+  static const String adminDataReviews = '/admin/data/reviews';
+  static const String adminDataRfqs = '/admin/data/rfqs';
+  static const String adminDataMessages = '/admin/data/messages';
+  static const String adminDataNotifications = '/admin/data/notifications';
+  static const String adminDataBadges = '/admin/data/badges';
+
+  // Customer Data Management
+  static const String customerDataManagement = '/customer/data-management';
+  static const String customerDataCart = '/customer/data/cart';
+  static const String customerDataWishlist = '/customer/data/wishlist';
+  static const String customerDataAddresses = '/customer/data/addresses';
+  static const String customerDataReviews = '/customer/data/reviews';
+
+  // Supplier Data Management
+  static const String supplierDataManagement = '/supplier/data-management';
+  static const String supplierDataProducts = '/supplier/data/products';
+  static const String supplierDataOrders = '/supplier/data/orders';
+  static const String supplierDataRfqs = '/supplier/data/rfqs';
+
   // ==================== Common Routes ====================
   static const String settings = '/settings';
+  static const String notificationSettings = '/settings/notifications';
   static const String help = '/help';
   static const String about = '/about';
   static const String termsOfService = '/terms-of-service';

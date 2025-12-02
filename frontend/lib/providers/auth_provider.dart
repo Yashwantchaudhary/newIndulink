@@ -14,6 +14,7 @@ class AuthProvider with ChangeNotifier {
   bool _isAuthenticated = false;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _isInitialized = false;
 
   // Getters
   User? get user => _user;
@@ -25,8 +26,14 @@ class AuthProvider with ChangeNotifier {
   bool get isSupplier => _user?.role == UserRole.supplier;
   bool get isAdmin => _user?.role == UserRole.admin;
 
+  /// Get access token
+  Future<String?> getToken() async {
+    return await _storage.getAccessToken();
+  }
+
   /// Initialize auth state on app start
   Future<void> init() async {
+    if (_isInitialized) return;
     _setLoading(true);
 
     try {
@@ -97,31 +104,6 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  /// Login with Google
-  Future<bool> loginWithGoogle({required UserRole role}) async {
-    _setLoading(true);
-    _clearError();
-
-    try {
-      final result = await _authService.loginWithGoogle(role: role);
-
-      if (result.success && result.user != null) {
-        _user = result.user;
-        _isAuthenticated = true;
-        _setLoading(false);
-        notifyListeners();
-        return true;
-      } else {
-        _setError(result.message);
-        _setLoading(false);
-        return false;
-      }
-    } catch (e) {
-      _setError('Google Sign-In failed');
-      _setLoading(false);
-      return false;
-    }
-  }
 
   /// Register new user
   Future<bool> register({
@@ -180,6 +162,7 @@ class AuthProvider with ChangeNotifier {
     }
 
     _setLoading(false);
+    _isInitialized = true;
   }
 
   /// Refresh current user data
@@ -261,6 +244,30 @@ class AuthProvider with ChangeNotifier {
       }
     } catch (e) {
       _setError('Failed to send reset email');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  /// Delete account
+  Future<bool> deleteAccount({required String password}) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final result = await _authService.deleteAccount(password: password);
+
+      if (result.success) {
+        await _clearAuthState();
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(result.message);
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError('Failed to delete account');
       _setLoading(false);
       return false;
     }

@@ -8,6 +8,7 @@ import '../../../core/widgets/product_card_widget.dart';
 import '../../../models/product.dart';
 import '../../../services/api_service.dart';
 import '../../../providers/cart_provider.dart';
+import '../../../providers/wishlist_provider.dart';
 
 /// ❤️ Customer Wishlist Screen
 /// Manage saved products with grid view and quick add to cart
@@ -82,18 +83,27 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
 
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Removed from wishlist')),
+          const SnackBar(
+            content: Text('Removed from wishlist'),
+            backgroundColor: AppColors.primary,
+          ),
         );
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.message ?? 'Failed to remove item')),
+          SnackBar(
+            content: Text(response.message ?? 'Failed to remove item'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppColors.error,
+        ),
       );
     }
   }
@@ -109,8 +119,10 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${product.title} added to cart'),
+          backgroundColor: AppColors.success,
           action: SnackBarAction(
             label: 'View Cart',
+            textColor: Colors.white,
             onPressed: () {
               // Navigate to cart
             },
@@ -120,21 +132,69 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppColors.error,
+        ),
       );
+    }
+  }
+
+  Future<void> _clearAllWishlist() async {
+    try {
+      final success = await context.read<WishlistProvider>().clearWishlist();
+
+      if (success && mounted) {
+        setState(() {
+          _wishlistProducts.clear();
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Wishlist cleared successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.read<WishlistProvider>().errorMessage ?? 'Failed to clear wishlist'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error clearing wishlist: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('My Wishlist'),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.primaryGradient,
+          ),
+        ),
+        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           if (_wishlistProducts.isNotEmpty)
             TextButton(
               onPressed: _showClearConfirmation,
-              child: const Text('Clear All'),
+              child: const Text(
+                'Clear All',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
         ],
       ),
@@ -157,7 +217,15 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.error_outline,
+                  size: 48, color: AppColors.error),
+            ),
             const SizedBox(height: 16),
             Text(
               _error!,
@@ -171,6 +239,13 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
               onPressed: _loadWishlist,
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
             ),
           ],
         ),
@@ -182,16 +257,24 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.favorite_border,
-              size: 80,
-              color: AppColors.textTertiary,
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLightest,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.favorite_border,
+                size: 80,
+                color: AppColors.primary.withOpacity(0.5),
+              ),
             ),
             const SizedBox(height: 24),
             Text(
               'Your wishlist is empty',
-              style: AppTypography.h4.copyWith(
-                fontWeight: AppTypography.bold,
+              style: AppTypography.h5.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -206,8 +289,21 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
               onPressed: () {
                 Navigator.pop(context);
               },
-              icon: const Icon(Icons.shopping_bag),
+              icon: const Icon(Icons.shopping_bag_outlined),
               label: const Text('Continue Shopping'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                elevation: 4,
+                shadowColor: AppColors.primary.withOpacity(0.4),
+              ),
             ),
           ],
         ),
@@ -247,7 +343,7 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  color: Colors.black.withOpacity(0.1),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -265,19 +361,29 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
 
         // Add to cart button
         Positioned(
-          bottom: 8,
-          left: 8,
-          right: 8,
-          child: ElevatedButton.icon(
-            onPressed: product.inStock ? () => _addToCart(product) : null,
-            icon: const Icon(Icons.shopping_cart, size: 18),
-            label: Text(
-              product.inStock ? 'Add to Cart' : 'Out of Stock',
-              style: const TextStyle(fontSize: 12),
-            ),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              minimumSize: Size.zero,
+          bottom: 12,
+          left: 12,
+          right: 12,
+          child: SizedBox(
+            height: 36,
+            child: ElevatedButton.icon(
+              onPressed: product.inStock ? () => _addToCart(product) : null,
+              icon: const Icon(Icons.shopping_cart, size: 16),
+              label: Text(
+                product.inStock ? 'Add to Cart' : 'Out of Stock',
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    product.inStock ? AppColors.primary : Colors.grey,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                elevation: 2,
+              ),
             ),
           ),
         ),
@@ -292,6 +398,7 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
         title: const Text('Clear Wishlist'),
         content: const Text(
             'Are you sure you want to remove all items from your wishlist?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -299,23 +406,21 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('Clear All'),
           ),
         ],
       ),
     );
 
-    if (confirmed != true) return;
-
-    // TODO: Implement clear all API call
-    setState(() {
-      _wishlistProducts.clear();
-    });
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Wishlist cleared')),
-    );
+    if (confirmed == true) {
+      await _clearAllWishlist();
+    }
   }
 }

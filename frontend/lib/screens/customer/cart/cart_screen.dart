@@ -10,7 +10,7 @@ import '../../../core/widgets/empty_state_widget.dart';
 import '../../../core/widgets/error_widget.dart';
 import '../../../models/cart.dart';
 import '../../../providers/cart_provider.dart';
-import 'checkout_screen.dart'; // Will be created next
+import 'checkout_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -33,10 +33,14 @@ class _CartScreenState extends State<CartScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(
-          'Shopping Cart',
-          style: AppTypography.h6.copyWith(fontWeight: AppTypography.bold),
+        title: const Text('Shopping Cart'),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.primaryGradient,
+          ),
         ),
+        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           Consumer<CartProvider>(
             builder: (context, cart, _) {
@@ -89,7 +93,7 @@ class _CartScreenState extends State<CartScreen> {
                   padding: const EdgeInsets.all(AppDimensions.paddingM),
                   itemCount: cart.items.length,
                   separatorBuilder: (context, index) =>
-                      const SizedBox(height: AppDimensions.space16),
+                      const SizedBox(height: 16),
                   itemBuilder: (context, index) {
                     return CartItemWidget(item: cart.items[index]);
                   },
@@ -107,15 +111,15 @@ class _CartScreenState extends State<CartScreen> {
 
   Widget _buildBottomSection(BuildContext context, CartProvider cart) {
     return Container(
-      padding: const EdgeInsets.all(AppDimensions.paddingL),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
           ),
         ],
       ),
@@ -123,11 +127,11 @@ class _CartScreenState extends State<CartScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildSummaryRow('Subtotal', cart.subtotal),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           _buildSummaryRow('Tax (13%)', cart.tax),
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(),
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Divider(height: 1),
           ),
           _buildSummaryRow('Total', cart.total, isTotal: true),
           const SizedBox(height: 24),
@@ -145,6 +149,12 @@ class _CartScreenState extends State<CartScreen> {
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 4,
+                shadowColor: AppColors.primary.withOpacity(0.4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: const Text(
                 'Proceed to Checkout',
@@ -168,8 +178,10 @@ class _CartScreenState extends State<CartScreen> {
           label,
           style: isTotal
               ? AppTypography.h6.copyWith(fontWeight: AppTypography.bold)
-              : AppTypography.bodyMedium
-                  .copyWith(color: AppColors.textSecondary),
+              : AppTypography.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
         ),
         Text(
           'Rs. ${amount.toStringAsFixed(2)}',
@@ -178,8 +190,10 @@ class _CartScreenState extends State<CartScreen> {
                   fontWeight: AppTypography.bold,
                   color: AppColors.primary,
                 )
-              : AppTypography.bodyMedium
-                  .copyWith(fontWeight: AppTypography.bold),
+              : AppTypography.bodyMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
         ),
       ],
     );
@@ -191,17 +205,24 @@ class _CartScreenState extends State<CartScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Clear Cart?'),
         content: const Text('Are you sure you want to remove all items?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               context.read<CartProvider>().clearCart();
               Navigator.pop(context);
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('Clear'),
           ),
         ],
@@ -222,12 +243,12 @@ class CartItemWidget extends StatelessWidget {
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
+        padding: const EdgeInsets.only(right: 24),
         decoration: BoxDecoration(
           color: AppColors.error,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: const Icon(Icons.delete, color: Colors.white),
+        child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
       ),
       confirmDismiss: (direction) async {
         return await showDialog(
@@ -235,14 +256,22 @@ class CartItemWidget extends StatelessWidget {
           builder: (context) => AlertDialog(
             title: const Text('Remove Item?'),
             content: Text('Remove ${item.product.title} from cart?'),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
                 child: const Text('Cancel'),
               ),
-              TextButton(
+              ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
-                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
                 child: const Text('Remove'),
               ),
             ],
@@ -256,12 +285,12 @@ class CartItemWidget extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -269,10 +298,10 @@ class CartItemWidget extends StatelessWidget {
           children: [
             // Product Image
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(16),
               child: Container(
-                width: 80,
-                height: 80,
+                width: 90,
+                height: 90,
                 color: AppColors.background,
                 child: CachedNetworkImage(
                   imageUrl: item.product.primaryImageUrl,
@@ -297,55 +326,63 @@ class CartItemWidget extends StatelessWidget {
                   Text(
                     item.product.title,
                     style: AppTypography.bodyLarge.copyWith(
-                      fontWeight: AppTypography.bold,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Rs. ${item.priceAtAddition.toStringAsFixed(0)}',
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: AppTypography.bold,
-                    ),
-                  ),
                   const SizedBox(height: 8),
-
-                  // Quantity Controls
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.textTertiary),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildQtyBtn(
-                          icon: Icons.remove,
-                          onTap: () {
-                            context
-                                .read<CartProvider>()
-                                .decrementQuantity(item.productId);
-                          },
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Rs. ${item.priceAtAddition.toStringAsFixed(0)}',
+                        style: AppTypography.bodyLarge.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text(
-                            item.quantity.toString(),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
+                      ),
+                      // Quantity Controls
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        _buildQtyBtn(
-                          icon: Icons.add,
-                          onTap: () {
-                            context
-                                .read<CartProvider>()
-                                .incrementQuantity(item.productId);
-                          },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildQtyBtn(
+                              icon: Icons.remove,
+                              onTap: () {
+                                context
+                                    .read<CartProvider>()
+                                    .decrementQuantity(item.productId);
+                              },
+                            ),
+                            Container(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              child: Text(
+                                item.quantity.toString(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            _buildQtyBtn(
+                              icon: Icons.add,
+                              onTap: () {
+                                context
+                                    .read<CartProvider>()
+                                    .incrementQuantity(item.productId);
+                              },
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -359,9 +396,10 @@ class CartItemWidget extends StatelessWidget {
   Widget _buildQtyBtn({required IconData icon, required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Icon(icon, size: 16, color: AppColors.textSecondary),
+        padding: const EdgeInsets.all(8),
+        child: Icon(icon, size: 18, color: AppColors.textPrimary),
       ),
     );
   }

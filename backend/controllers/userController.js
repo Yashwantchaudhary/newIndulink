@@ -446,3 +446,51 @@ exports.getNotificationPreferences = async (req, res, next) => {
         next(error);
     }
 };
+
+// @desc    Update language preference
+// @route   PUT /api/users/language
+// @access  Private
+exports.updateLanguage = async (req, res, next) => {
+    try {
+        const { language } = req.body;
+
+        // Validate language
+        const validLanguages = ['en', 'ne', 'hi'];
+        if (!validLanguages.includes(language)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid language. Supported languages: en, ne, hi',
+            });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { language },
+            { new: true, runValidators: true }
+        ).select('language');
+
+        res.status(200).json({
+            success: true,
+            message: 'Language preference updated successfully',
+            data: { language: user.language },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get language preference
+// @route   GET /api/users/language
+// @access  Private
+exports.getLanguage = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id).select('language');
+
+        res.status(200).json({
+            success: true,
+            data: { language: user.language },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
