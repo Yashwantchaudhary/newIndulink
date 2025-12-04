@@ -8,6 +8,7 @@ import '../../../core/constants/app_dimensions.dart';
 import '../../../core/widgets/error_widget.dart';
 import '../../../core/widgets/loading_widgets.dart';
 
+import '../../../models/rfq.dart';
 import '../../../providers/rfq_provider.dart';
 
 /// 📋 Customer RFQ List Screen
@@ -220,11 +221,11 @@ class _CustomerRFQListScreenState extends State<CustomerRFQListScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.1),
+                    color: AppColors.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    '${rfq.quotes?.length ?? 0} quote${rfq.quotes?.length == 1 ? '' : 's'} received',
+                    '${rfq.quotes.length ?? 0} quote${rfq.quotes.length == 1 ? '' : 's'} received',
                     style: AppTypography.labelSmall.copyWith(
                       color: AppColors.success,
                       fontWeight: FontWeight.bold,
@@ -272,7 +273,7 @@ class _CustomerRFQListScreenState extends State<CustomerRFQListScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

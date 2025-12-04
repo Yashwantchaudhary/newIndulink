@@ -251,7 +251,6 @@ async function runAllTests() {
     }
 
     log('\n🔗 API Documentation: http://localhost:5000/api', 'blue');
-    log('📊 Monitoring Dashboard: http://localhost:5000/monitoring', 'blue');
 }
 
 // Handle command line execution

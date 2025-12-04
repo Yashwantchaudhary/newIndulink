@@ -24,7 +24,6 @@ const wishlistSchema = new mongoose.Schema(
     }
 );
 
-// Indexes for performance
-wishlistSchema.index({ userId: 1 });
+// No additional indexes needed as userId has unique constraint
 
 module.exports = mongoose.model('Wishlist', wishlistSchema);

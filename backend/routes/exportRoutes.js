@@ -8,6 +8,7 @@ const {
     exportUserData,
     exportCollection,
     importCollection,
+    importProducts,
     getExportHistory,
     deleteExportFile,
     getSupportedFormats
@@ -75,6 +76,12 @@ router.use(authorize('admin'));
 router.post('/collection/:collection',
     upload.single('file'),
     importCollection
+);
+
+// Product import (Admin and Supplier)
+router.post('/products',
+    upload.single('file'),
+    importProducts
 );
 
 // Export history management

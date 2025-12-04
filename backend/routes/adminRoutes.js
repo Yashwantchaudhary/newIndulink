@@ -21,6 +21,8 @@ const {
   getAllSuppliers,
   approveSupplier,
   suspendSupplier,
+  // Category Management
+  getAllCategories,
   // System Stats
   getSystemStats,
 } = require('../controllers/adminController');
@@ -87,6 +89,9 @@ router.post('/messages/:id/attachments', uploads.uploadMultiple('attachments', 1
 router.get('/suppliers', getAllSuppliers);
 router.put('/suppliers/:id/approve', approveSupplier);
 router.put('/suppliers/:id/suspend', suspendSupplier);
+
+// ==================== CATEGORY MANAGEMENT ROUTES ====================
+router.get('/categories', getAllCategories);
 
 // Optionally allow supplier document uploads (e.g., licenses)
 router.post('/suppliers/:id/documents', uploads.uploadMultiple('documents', 5), (req, res, next) => {

@@ -13,6 +13,7 @@ const { protect } = require('../middleware/authMiddleware');
 wishlistRouter.get('/', protect, getWishlist);
 wishlistRouter.get('/check/:productId', protect, checkWishlist);
 wishlistRouter.post('/:productId', protect, addToWishlist);
+wishlistRouter.post('/', protect, addToWishlist);
 wishlistRouter.delete('/:productId', protect, removeFromWishlist);
 wishlistRouter.delete('/', protect, clearWishlist);
 

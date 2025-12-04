@@ -268,3 +268,74 @@ exports.addSupplierResponse = async (req, res, next) => {
         next(error);
     }
 };
+
+// @desc    Get review statistics
+// @route   GET /api/reviews/stats
+// @access  Public
+exports.getReviewStats = async (req, res, next) => {
+    try {
+        const totalReviews = await Review.countDocuments();
+        const approvedReviews = await Review.countDocuments({ status: 'approved' });
+        const pendingReviews = await Review.countDocuments({ status: 'pending' });
+
+        // Get average rating
+        const ratingData = await Review.aggregate([
+            { $group: { _id: null, averageRating: { $avg: '$rating' } } }
+        ]);
+
+        const averageRating = ratingData[0]?.averageRating || 0;
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalReviews,
+                approvedReviews,
+                pendingReviews,
+                averageRating,
+                count: totalReviews
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get user review statistics
+// @route   GET /api/reviews/stats/user/:userId
+// @access  Private
+exports.getUserReviewStats = async (req, res, next) => {
+    try {
+        const userId = req.params.userId;
+
+        // Check if user is authorized to access this user's data
+        if (req.user.role !== 'admin' && req.user.id !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to access this user data',
+            });
+        }
+
+        const totalReviews = await Review.countDocuments({ customer: userId });
+        const approvedReviews = await Review.countDocuments({ customer: userId, status: 'approved' });
+
+        // Get average rating for user
+        const ratingData = await Review.aggregate([
+            { $match: { customer: userId } },
+            { $group: { _id: null, averageRating: { $avg: '$rating' } } }
+        ]);
+
+        const averageRating = ratingData[0]?.averageRating || 0;
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalReviews,
+                approvedReviews,
+                averageRating,
+                count: totalReviews
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};

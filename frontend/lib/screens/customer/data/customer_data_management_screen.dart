@@ -4,12 +4,11 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/constants/app_config.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/api_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/cart_provider.dart';
-import '../../../providers/wishlist_provider.dart';
-import '../../../providers/address_provider.dart';
 
 /// 📊 Customer Data Management Screen
 /// Allows customers to manage their personal data collections
@@ -39,8 +38,8 @@ class _CustomerDataManagementScreenState extends State<CustomerDataManagementScr
 
       // Load stats for customer collections
       final responses = await Future.wait([
-        _apiService.get('/api/cart/stats/$userId'),
-        _apiService.get('/api/wishlist/stats/$userId'),
+        _apiService.get('${AppConfig.cartEndpoint}/stats/$userId'),
+        _apiService.get('${AppConfig.wishlistEndpoint}/stats/$userId'),
         _apiService.get('/api/addresses/stats/$userId'),
         _apiService.get('/api/reviews/stats/user/$userId'),
       ]);

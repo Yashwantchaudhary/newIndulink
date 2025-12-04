@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_typography.dart';
-import '../../../core/widgets/error_widget.dart';
-import '../../../core/widgets/loading_widgets.dart';
 import '../../../core/widgets/report_dialog.dart';
-import '../../../core/widgets/review_card_widget.dart';
 
 /// 📝 Full Reviews Screen
 /// Shows all reviews for a specific product with filtering and sorting
@@ -253,13 +249,13 @@ class _FullReviewsScreenState extends State<FullReviewsScreen> {
     var filteredReviews = mockReviews;
     if (_ratingFilter > 0) {
       filteredReviews = filteredReviews.where((review) =>
-          (review as Map<String, dynamic>)['rating'] == _ratingFilter).toList();
+          (review)['rating'] == _ratingFilter).toList();
     }
 
     // Apply sorting
     filteredReviews.sort((a, b) {
-      final reviewA = a as Map<String, dynamic>;
-      final reviewB = b as Map<String, dynamic>;
+      final reviewA = a;
+      final reviewB = b;
 
       switch (_sortBy) {
         case 'oldest':
@@ -287,7 +283,7 @@ class _FullReviewsScreenState extends State<FullReviewsScreen> {
             const SizedBox(height: 16),
             Text(
               _ratingFilter > 0
-                  ? 'No ${_ratingFilter}-star reviews yet'
+                  ? 'No $_ratingFilter-star reviews yet'
                   : 'No reviews found',
               style: AppTypography.h6.copyWith(
                 color: AppColors.textSecondary,
@@ -310,7 +306,7 @@ class _FullReviewsScreenState extends State<FullReviewsScreen> {
       itemCount: filteredReviews.length,
       separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
-        final review = filteredReviews[index] as Map<String, dynamic>;
+        final review = filteredReviews[index];
         return _buildMockReviewCard(review);
       },
     );
@@ -461,15 +457,15 @@ class _FullReviewsScreenState extends State<FullReviewsScreen> {
                     // Could update UI to show report submitted state
                   }
                 },
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
                 child: Text(
                   'Report',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.error,
                   ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 ),
               ),
             ],

@@ -1,802 +1,773 @@
+// controllers/adminController.js
+
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const Category = require('../models/Category');
 
-/**
- * Admin Controller
- * Handles all admin-specific operations including user, product, category, order, and supplier management
- */
+const MAX_LIMIT = 100;
 
-// ==================== USER MANAGEMENT ====================
+// -------------------- Helpers --------------------
+
+const respond = (res, data = {}, message = 'OK', status = 200) =>
+  res.status(status).json({ success: status < 400, message, data });
+
+const isValidId = (id) => mongoose.Types.ObjectId.isValid(String(id));
+
+const parsePageLimit = (page = 1, limit = 20) => {
+  const p = Math.max(parseInt(page, 10) || 1, 1);
+  let l = Math.max(parseInt(limit, 10) || 20, 1);
+  l = Math.min(l, MAX_LIMIT);
+  const skip = (p - 1) * l;
+  return { page: p, limit: l, skip };
+};
+
+const ensureAdmin = (req, res) => {
+  if (!req.user || req.user.role !== 'admin') {
+    respond(res, {}, 'Admin role required', 403);
+    return false;
+  }
+  return true;
+};
+
+// Whitelist for bulk product updates
+const ALLOWED_BULK_PRODUCT_FIELDS = [
+  'status',
+  'isFeatured',
+  'price',
+  'stock',
+  'category',
+  'tags',
+];
+
+// -------------------- USER MANAGEMENT --------------------
 
 /**
- * Get all users with pagination and filters
- * @route GET /api/admin/users
- * @access Admin
+ * GET /api/admin/users
+ * Admin only
  */
 exports.getAllUsers = async (req, res, next) => {
-    try {
-        const {
-            page = 1,
-            limit = 20,
-            role,
-            isActive,
-            search,
-            sortBy = 'createdAt',
-            sortOrder = 'desc',
-        } = req.query;
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        // Build filter query
-        const filter = {};
+    const {
+      page = 1,
+      limit = 20,
+      role,
+      isActive,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = req.query;
 
-        if (role) filter.role = role;
-        if (isActive !== undefined) filter.isActive = isActive === 'true';
-        if (search) {
-            filter.$or = [
-                { firstName: { $regex: search, $options: 'i' } },
-                { lastName: { $regex: search, $options: 'i' } },
-                { email: { $regex: search, $options: 'i' } },
-            ];
-        }
+    const { page: p, limit: l, skip } = parsePageLimit(page, limit);
+    const sortOptions = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-        // Calculate pagination
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-        const sortOptions = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
-
-        // Execute query
-        const [users, total] = await Promise.all([
-            User.find(filter)
-                .select('-password -refreshToken')
-                .sort(sortOptions)
-                .limit(parseInt(limit))
-                .skip(skip)
-                .lean(),
-            User.countDocuments(filter),
-        ]);
-
-        res.status(200).json({
-            success: true,
-            data: users,
-            pagination: {
-                total,
-                page: parseInt(page),
-                limit: parseInt(limit),
-                pages: Math.ceil(total / parseInt(limit)),
-            },
-        });
-    } catch (error) {
-        next(error);
+    const filter = {};
+    if (role) filter.role = role;
+    if (isActive !== undefined) filter.isActive = String(isActive) === 'true';
+    if (search) {
+      const q = search.trim();
+      filter.$or = [
+        { firstName: { $regex: q, $options: 'i' } },
+        { lastName: { $regex: q, $options: 'i' } },
+        { email: { $regex: q, $options: 'i' } },
+        { businessName: { $regex: q, $options: 'i' } },
+      ];
     }
+
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select('-password -refreshToken')
+        .sort(sortOptions)
+        .limit(l)
+        .skip(skip)
+        .lean(),
+      User.countDocuments(filter),
+    ]);
+
+    respond(res, {
+      data: users,
+      pagination: {
+        total,
+        page: p,
+        limit: l,
+        pages: Math.ceil(total / l),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**
- * Get user details by ID
- * @route GET /api/admin/users/:id
- * @access Admin
+ * GET /api/admin/users/:id
  */
 exports.getUserDetails = async (req, res, next) => {
-    try {
-        const user = await User.findById(req.params.id)
-            .select('-password -refreshToken')
-            .lean();
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found',
-            });
-        }
+    const { id } = req.params;
+    if (!isValidId(id)) return respond(res, {}, 'Invalid user ID', 400);
 
-        // Get additional stats
-        const [orderCount, totalSpent] = await Promise.all([
-            Order.countDocuments({ customer: req.params.id }),
-            Order.aggregate([
-                { $match: { customer: req.params.id, status: 'delivered' } },
-                { $group: { _id: null, total: { $sum: '$total' } } },
-            ]),
-        ]);
+    const user = await User.findById(id).select('-password -refreshToken').lean();
+    if (!user) return respond(res, {}, 'User not found', 404);
 
-        res.status(200).json({
-            success: true,
-            data: {
-                ...user,
-                stats: {
-                    orderCount,
-                    totalSpent: totalSpent[0]?.total || 0,
-                },
-            },
-        });
-    } catch (error) {
-        next(error);
-    }
+    const [orderCount, totalSpentAgg] = await Promise.all([
+      Order.countDocuments({ customer: id }),
+      Order.aggregate([
+        { $match: { customer: mongoose.Types.ObjectId(id), status: 'delivered' } },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]),
+    ]);
+
+    const totalSpent = totalSpentAgg[0]?.total || 0;
+
+    respond(res, {
+      data: {
+        ...user,
+        stats: { orderCount, totalSpent },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**
- * Create new user (any role)
- * @route POST /api/admin/users
- * @access Admin
+ * POST /api/admin/users
  */
 exports.createUser = async (req, res, next) => {
-    try {
-        const {
-            firstName,
-            lastName,
-            email,
-            password,
-            phone,
-            role,
-            businessName,
-            businessDescription,
-        } = req.body;
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        // Check if user exists
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({
-                success: false,
-                message: 'User with this email already exists',
-            });
-        }
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      phone,
+      role = 'customer',
+      businessName,
+      businessDescription,
+    } = req.body;
 
-        // Create user
-        const userData = {
-            firstName,
-            lastName,
-            email,
-            password,
-            phone,
-            role: role || 'customer',
-            isActive: true,
-        };
+    if (!email || !password) return respond(res, {}, 'Email and password are required', 400);
 
-        // Add supplier-specific fields if role is supplier
-        if (role === 'supplier' && businessName) {
-            userData.businessName = businessName;
-            userData.businessDescription = businessDescription;
-        }
+    const existing = await User.findOne({ email });
+    if (existing) return respond(res, {}, 'User with this email already exists', 400);
 
-        const user = await User.create(userData);
+    const userData = {
+      firstName,
+      lastName,
+      email,
+      password,
+      phone,
+      role,
+      isActive: true,
+    };
 
-        // Remove sensitive data
-        user.password = undefined;
-        user.refreshToken = undefined;
-
-        res.status(201).json({
-            success: true,
-            message: 'User created successfully',
-            data: user,
-        });
-    } catch (error) {
-        next(error);
+    if (role === 'supplier' && businessName) {
+      userData.businessName = businessName;
+      userData.businessDescription = businessDescription;
     }
+
+    const user = await User.create(userData);
+    const safeUser = await User.findById(user._id).select('-password -refreshToken').lean();
+
+    respond(res, { data: safeUser }, 'User created successfully', 201);
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**
- * Update user
- * @route PUT /api/admin/users/:id
- * @access Admin
+ * PUT /api/admin/users/:id
  */
 exports.updateUser = async (req, res, next) => {
-    try {
-        const {
-            firstName,
-            lastName,
-            phone,
-            role,
-            isActive,
-            businessName,
-            businessDescription,
-        } = req.body;
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        // Build update object
-        const updateData = {};
-        if (firstName) updateData.firstName = firstName;
-        if (lastName) updateData.lastName = lastName;
-        if (phone) updateData.phone = phone;
-        if (role) updateData.role = role;
-        if (isActive !== undefined) updateData.isActive = isActive;
-        if (businessName) updateData.businessName = businessName;
-        if (businessDescription) updateData.businessDescription = businessDescription;
+    const { id } = req.params;
+    if (!isValidId(id)) return respond(res, {}, 'Invalid user ID', 400);
 
-        const user = await User.findByIdAndUpdate(
-            req.params.id,
-            updateData,
-            { new: true, runValidators: true }
-        ).select('-password -refreshToken');
+    const allowed = [
+      'firstName',
+      'lastName',
+      'phone',
+      'role',
+      'isActive',
+      'businessName',
+      'businessDescription',
+    ];
 
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found',
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: 'User updated successfully',
-            data: user,
-        });
-    } catch (error) {
-        next(error);
+    const updateData = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) updateData[key] = req.body[key];
     }
+
+    const user = await User.findByIdAndUpdate(id, updateData, { new: true, runValidators: true })
+      .select('-password -refreshToken');
+
+    if (!user) return respond(res, {}, 'User not found', 404);
+
+    respond(res, { data: user }, 'User updated successfully');
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**
- * Delete user (soft delete)
- * @route DELETE /api/admin/users/:id
- * @access Admin
+ * DELETE /api/admin/users/:id  (soft delete)
  */
 exports.deleteUser = async (req, res, next) => {
-    try {
-        const user = await User.findByIdAndUpdate(
-            req.params.id,
-            { isActive: false },
-            { new: true }
-        ).select('-password -refreshToken');
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found',
-            });
-        }
+    const { id } = req.params;
+    if (!isValidId(id)) return respond(res, {}, 'Invalid user ID', 400);
 
-        res.status(200).json({
-            success: true,
-            message: 'User deactivated successfully',
-            data: user,
-        });
-    } catch (error) {
-        next(error);
-    }
+    const user = await User.findByIdAndUpdate(id, { isActive: false }, { new: true }).select('-password -refreshToken');
+    if (!user) return respond(res, {}, 'User not found', 404);
+
+    respond(res, { data: user }, 'User deactivated successfully');
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**
- * Toggle user active status
- * @route PUT /api/admin/users/:id/toggle-status
- * @access Admin
+ * PUT /api/admin/users/:id/toggle-status
  */
 exports.toggleUserStatus = async (req, res, next) => {
-    try {
-        const user = await User.findById(req.params.id).select('-password -refreshToken');
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found',
-            });
-        }
+    const { id } = req.params;
+    if (!isValidId(id)) return respond(res, {}, 'Invalid user ID', 400);
 
-        user.isActive = !user.isActive;
-        await user.save();
+    const user = await User.findById(id).select('-password -refreshToken');
+    if (!user) return respond(res, {}, 'User not found', 404);
 
-        res.status(200).json({
-            success: true,
-            message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully`,
-            data: user,
-        });
-    } catch (error) {
-        next(error);
-    }
+    user.isActive = !user.isActive;
+    await user.save();
+
+    respond(res, { data: user }, `User ${user.isActive ? 'activated' : 'deactivated'} successfully`);
+  } catch (error) {
+    next(error);
+  }
 };
 
-// ==================== PRODUCT MANAGEMENT ====================
+// -------------------- PRODUCT MANAGEMENT --------------------
 
 /**
- * Get all products with admin view
- * @route GET /api/admin/products
- * @access Admin
+ * GET /api/admin/products
  */
 exports.getAllProducts = async (req, res, next) => {
-    try {
-        const {
-            page = 1,
-            limit = 20,
-            category,
-            supplier,
-            status,
-            search,
-            sortBy = 'createdAt',
-            sortOrder = 'desc',
-        } = req.query;
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        // Build filter query
-        const filter = {};
+    const {
+      page = 1,
+      limit = 20,
+      category,
+      supplier,
+      status,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = req.query;
 
-        if (category) filter.category = category;
-        if (supplier) filter.supplier = supplier;
-        if (status) filter.status = status;
-        if (search) {
-            filter.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } },
-                { sku: { $regex: search, $options: 'i' } },
-            ];
-        }
+    const { page: p, limit: l, skip } = parsePageLimit(page, limit);
+    const sortOptions = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-        // Calculate pagination
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-        const sortOptions = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
-
-        // Execute query
-        const [products, total] = await Promise.all([
-            Product.find(filter)
-                .populate('supplier', 'firstName lastName businessName email')
-                .populate('category', 'name')
-                .sort(sortOptions)
-                .limit(parseInt(limit))
-                .skip(skip)
-                .lean(),
-            Product.countDocuments(filter),
-        ]);
-
-        res.status(200).json({
-            success: true,
-            data: products,
-            pagination: {
-                total,
-                page: parseInt(page),
-                limit: parseInt(limit),
-                pages: Math.ceil(total / parseInt(limit)),
-            },
-        });
-    } catch (error) {
-        next(error);
+    const filter = {};
+    if (category && isValidId(category)) filter.category = category;
+    if (supplier && isValidId(supplier)) filter.supplier = supplier;
+    if (status) filter.status = status;
+    if (search) {
+      const q = search.trim();
+      filter.$or = [
+        { name: { $regex: q, $options: 'i' } },
+        { description: { $regex: q, $options: 'i' } },
+        { sku: { $regex: q, $options: 'i' } },
+      ];
     }
+
+    const [products, total] = await Promise.all([
+      Product.find(filter)
+        .populate('supplier', 'firstName lastName businessName email')
+        .populate('category', 'name')
+        .sort(sortOptions)
+        .limit(l)
+        .skip(skip)
+        .lean(),
+      Product.countDocuments(filter),
+    ]);
+
+    respond(res, {
+      data: products,
+      pagination: { total, page: p, limit: l, pages: Math.ceil(total / l) },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**
- * Approve product
- * @route PUT /api/admin/products/:id/approve
- * @access Admin
+ * PUT /api/admin/products/:id/approve
  */
 exports.approveProduct = async (req, res, next) => {
-    try {
-        const product = await Product.findByIdAndUpdate(
-            req.params.id,
-            { status: 'active' },
-            { new: true }
-        ).populate('supplier', 'firstName lastName businessName');
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        if (!product) {
-            return res.status(404).json({
-                success: false,
-                message: 'Product not found',
-            });
-        }
+    const { id } = req.params;
+    if (!isValidId(id)) return respond(res, {}, 'Invalid product ID', 400);
 
-        res.status(200).json({
-            success: true,
-            message: 'Product approved successfully',
-            data: product,
-        });
-    } catch (error) {
-        next(error);
-    }
+    const product = await Product.findByIdAndUpdate(id, { status: 'active' }, { new: true })
+      .populate('supplier', 'firstName lastName businessName');
+
+    if (!product) return respond(res, {}, 'Product not found', 404);
+
+    respond(res, { data: product }, 'Product approved successfully');
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**
- * Feature product
- * @route PUT /api/admin/products/:id/feature
- * @access Admin
+ * PUT /api/admin/products/:id/feature
  */
 exports.featureProduct = async (req, res, next) => {
-    try {
-        const { isFeatured } = req.body;
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        const product = await Product.findByIdAndUpdate(
-            req.params.id,
-            { isFeatured },
-            { new: true }
-        ).populate('supplier', 'firstName lastName businessName');
+    const { id } = req.params;
+    const { isFeatured } = req.body;
 
-        if (!product) {
-            return res.status(404).json({
-                success: false,
-                message: 'Product not found',
-            });
-        }
+    if (typeof isFeatured !== 'boolean') return respond(res, {}, 'isFeatured must be boolean', 400);
+    if (!isValidId(id)) return respond(res, {}, 'Invalid product ID', 400);
 
-        res.status(200).json({
-            success: true,
-            message: `Product ${isFeatured ? 'featured' : 'unfeatured'} successfully`,
-            data: product,
-        });
-    } catch (error) {
-        next(error);
-    }
+    const product = await Product.findByIdAndUpdate(id, { isFeatured }, { new: true })
+      .populate('supplier', 'firstName lastName businessName');
+
+    if (!product) return respond(res, {}, 'Product not found', 404);
+
+    respond(res, { data: product }, `Product ${isFeatured ? 'featured' : 'unfeatured'} successfully`);
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**
- * Bulk product update
- * @route POST /api/admin/products/bulk-update
- * @access Admin
+ * POST /api/admin/products/bulk-update
  */
 exports.bulkProductUpdate = async (req, res, next) => {
-    try {
-        const { productIds, updates } = req.body;
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Product IDs array is required',
-            });
-        }
-
-        const result = await Product.updateMany(
-            { _id: { $in: productIds } },
-            updates,
-            { runValidators: true }
-        );
-
-        res.status(200).json({
-            success: true,
-            message: 'Products updated successfully',
-            data: {
-                matchedCount: result.matchedCount,
-                modifiedCount: result.modifiedCount,
-            },
-        });
-    } catch (error) {
-        next(error);
+    const { productIds, updates } = req.body;
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return respond(res, {}, 'Product IDs array is required', 400);
     }
+    if (!updates || typeof updates !== 'object') {
+      return respond(res, {}, 'Updates object is required', 400);
+    }
+
+    const invalid = productIds.some((id) => !isValidId(id));
+    if (invalid) return respond(res, {}, 'One or more product IDs are invalid', 400);
+
+    const safeUpdates = {};
+    for (const key of Object.keys(updates)) {
+      if (ALLOWED_BULK_PRODUCT_FIELDS.includes(key)) safeUpdates[key] = updates[key];
+    }
+
+    if (Object.keys(safeUpdates).length === 0) {
+      return respond(res, {}, 'No allowed fields provided for update', 400);
+    }
+
+    const result = await Product.updateMany({ _id: { $in: productIds } }, { $set: safeUpdates }, { runValidators: true });
+
+    respond(res, {
+      data: {
+        matchedCount: result.matchedCount ?? result.n ?? 0,
+        modifiedCount: result.modifiedCount ?? result.nModified ?? 0,
+      },
+    }, 'Products updated successfully');
+  } catch (error) {
+    next(error);
+  }
 };
 
-// ==================== ORDER MANAGEMENT ====================
+// -------------------- ORDER MANAGEMENT --------------------
 
 /**
- * Get all orders
- * @route GET /api/admin/orders
- * @access Admin
+ * GET /api/admin/orders
  */
 exports.getAllOrders = async (req, res, next) => {
-    try {
-        const {
-            page = 1,
-            limit = 20,
-            status,
-            search,
-            startDate,
-            endDate,
-            sortBy = 'createdAt',
-            sortOrder = 'desc',
-        } = req.query;
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        // Build filter query
-        const filter = {};
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      search,
+      startDate,
+      endDate,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = req.query;
 
-        if (status) filter.status = status;
-        if (startDate || endDate) {
-            filter.createdAt = {};
-            if (startDate) filter.createdAt.$gte = new Date(startDate);
-            if (endDate) filter.createdAt.$lte = new Date(endDate);
-        }
-        if (search) {
-            filter.orderNumber = { $regex: search, $options: 'i' };
-        }
+    const { page: p, limit: l, skip } = parsePageLimit(page, limit);
+    const sortOptions = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-        // Calculate pagination
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-        const sortOptions = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
-
-        // Execute query
-        const [orders, total] = await Promise.all([
-            Order.find(filter)
-                .populate('customer', 'firstName lastName email')
-                .populate({
-                    path: 'items.product',
-                    select: 'name images price',
-                })
-                .sort(sortOptions)
-                .limit(parseInt(limit))
-                .skip(skip)
-                .lean(),
-            Order.countDocuments(filter),
-        ]);
-
-        res.status(200).json({
-            success: true,
-            data: orders,
-            pagination: {
-                total,
-                page: parseInt(page),
-                limit: parseInt(limit),
-                pages: Math.ceil(total / parseInt(limit)),
-            },
-        });
-    } catch (error) {
-        next(error);
+    const filter = {};
+    if (status) filter.status = status;
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        const d = new Date(endDate);
+        d.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = d;
+      }
     }
+    if (search) filter.orderNumber = { $regex: search.trim(), $options: 'i' };
+
+    const [orders, total] = await Promise.all([
+      Order.find(filter)
+        .populate('customer', 'firstName lastName email')
+        .populate({ path: 'items.product', select: 'name images price' })
+        .sort(sortOptions)
+        .limit(l)
+        .skip(skip)
+        .lean(),
+      Order.countDocuments(filter),
+    ]);
+
+    respond(res, {
+      data: orders,
+      pagination: { total, page: p, limit: l, pages: Math.ceil(total / l) },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**
- * Get order analytics
- * @route GET /api/admin/orders/analytics
- * @access Admin
+ * GET /api/admin/orders/analytics
  */
 exports.getOrderAnalytics = async (req, res, next) => {
-    try {
-        const { startDate, endDate } = req.query;
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        // Build date filter
-        const dateFilter = {};
-        if (startDate || endDate) {
-            dateFilter.createdAt = {};
-            if (startDate) dateFilter.createdAt.$gte = new Date(startDate);
-            if (endDate) dateFilter.createdAt.$lte = new Date(endDate);
-        }
-
-        // Get analytics
-        const [
-            totalOrders,
-            ordersByStatus,
-            totalRevenue,
-            avgOrderValue,
-        ] = await Promise.all([
-            Order.countDocuments(dateFilter),
-            Order.aggregate([
-                { $match: dateFilter },
-                { $group: { _id: '$status', count: { $sum: 1 } } },
-            ]),
-            Order.aggregate([
-                { $match: { ...dateFilter, status: 'delivered' } },
-                { $group: { _id: null, total: { $sum: '$total' } } },
-            ]),
-            Order.aggregate([
-                { $match: dateFilter },
-                { $group: { _id: null, avg: { $avg: '$total' } } },
-            ]),
-        ]);
-
-        res.status(200).json({
-            success: true,
-            data: {
-                totalOrders,
-                ordersByStatus,
-                totalRevenue: totalRevenue[0]?.total || 0,
-                avgOrderValue: avgOrderValue[0]?.avg || 0,
-            },
-        });
-    } catch (error) {
-        next(error);
+    const { startDate, endDate } = req.query;
+    const dateFilter = {};
+    if (startDate || endDate) {
+      dateFilter.createdAt = {};
+      if (startDate) dateFilter.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        const d = new Date(endDate);
+        d.setHours(23, 59, 59, 999);
+        dateFilter.createdAt.$lte = d;
+      }
     }
+
+    const [
+      totalOrders,
+      ordersByStatus,
+      totalRevenueAgg,
+      avgOrderValueAgg,
+    ] = await Promise.all([
+      Order.countDocuments(dateFilter),
+      Order.aggregate([
+        { $match: dateFilter },
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+      Order.aggregate([
+        { $match: { ...dateFilter, status: 'delivered' } },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]),
+      Order.aggregate([
+        { $match: dateFilter },
+        { $group: { _id: null, avg: { $avg: '$total' } } },
+      ]),
+    ]);
+
+    respond(res, {
+      data: {
+        totalOrders,
+        ordersByStatus,
+        totalRevenue: totalRevenueAgg[0]?.total || 0,
+        avgOrderValue: avgOrderValueAgg[0]?.avg || 0,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**
- * Update order status (admin override)
- * @route PUT /api/admin/orders/:id/status
- * @access Admin
+ * PUT /api/admin/orders/:id/status
+ * Admin override for order status; always logs statusHistory
  */
 exports.updateOrderStatus = async (req, res, next) => {
-    try {
-        const { status, note } = req.body;
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        const order = await Order.findByIdAndUpdate(
-            req.params.id,
-            {
-                status,
-                ...(note && {
-                    $push: {
-                        statusHistory: {
-                            status,
-                            note,
-                            updatedBy: req.user._id,
-                            timestamp: new Date(),
-                        },
-                    },
-                }),
-            },
-            { new: true }
-        ).populate('customer', 'firstName lastName email');
+    const { id } = req.params;
+    const { status, note } = req.body;
 
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: 'Order not found',
-            });
-        }
+    if (!isValidId(id)) return respond(res, {}, 'Invalid order ID', 400);
+    if (!status) return respond(res, {}, 'Status is required', 400);
 
-        res.status(200).json({
-            success: true,
-            message: 'Order status updated successfully',
-            data: order,
-        });
-    } catch (error) {
-        next(error);
-    }
+    const update = {
+      status,
+      $push: {
+        statusHistory: {
+          status,
+          note: note || '',
+          updatedBy: req.user._id,
+          timestamp: new Date(),
+        },
+      },
+    };
+
+    const order = await Order.findByIdAndUpdate(id, update, { new: true }).populate('customer', 'firstName lastName email');
+
+    if (!order) return respond(res, {}, 'Order not found', 404);
+
+    respond(res, { data: order }, 'Order status updated successfully');
+  } catch (error) {
+    next(error);
+  }
 };
 
-// ==================== SUPPLIER MANAGEMENT ====================
+// -------------------- SUPPLIER MANAGEMENT --------------------
 
 /**
- * Get all suppliers with metrics
- * @route GET /api/admin/suppliers
- * @access Admin
+ * GET /api/admin/suppliers
+ * Returns suppliers with aggregated metrics (single aggregation where possible)
  */
 exports.getAllSuppliers = async (req, res, next) => {
-    try {
-        const {
-            page = 1,
-            limit = 20,
-            isActive,
-            search,
-            sortBy = 'createdAt',
-            sortOrder = 'desc',
-        } = req.query;
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        // Build filter query
-        const filter = { role: 'supplier' };
+    const {
+      page = 1,
+      limit = 20,
+      isActive,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = req.query;
 
-        if (isActive !== undefined) filter.isActive = isActive === 'true';
-        if (search) {
-            filter.$or = [
-                { firstName: { $regex: search, $options: 'i' } },
-                { lastName: { $regex: search, $options: 'i' } },
-                { businessName: { $regex: search, $options: 'i' } },
-                { email: { $regex: search, $options: 'i' } },
-            ];
-        }
+    const { page: p, limit: l, skip } = parsePageLimit(page, limit);
+    const sortOptions = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-        // Calculate pagination
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-        const sortOptions = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
-
-        // Execute query
-        const suppliers = await User.find(filter)
-            .select('-password -refreshToken')
-            .sort(sortOptions)
-            .limit(parseInt(limit))
-            .skip(skip)
-            .lean();
-
-        // Get metrics for each supplier
-        const suppliersWithMetrics = await Promise.all(
-            suppliers.map(async (supplier) => {
-                const [productCount, orderCount, totalRevenue] = await Promise.all([
-                    Product.countDocuments({ supplier: supplier._id }),
-                    Order.countDocuments({ 'items.supplier': supplier._id }),
-                    Order.aggregate([
-                        { $unwind: '$items' },
-                        { $match: { 'items.supplier': supplier._id, status: 'delivered' } },
-                        { $group: { _id: null, total: { $sum: { $multiply: ['$items.price', '$items.quantity'] } } } },
-                    ]),
-                ]);
-
-                return {
-                    ...supplier,
-                    metrics: {
-                        productCount,
-                        orderCount,
-                        totalRevenue: totalRevenue[0]?.total || 0,
-                    },
-                };
-            })
-        );
-
-        const total = await User.countDocuments(filter);
-
-        res.status(200).json({
-            success: true,
-            data: suppliersWithMetrics,
-            pagination: {
-                total,
-                page: parseInt(page),
-                limit: parseInt(limit),
-                pages: Math.ceil(total / parseInt(limit)),
-            },
-        });
-    } catch (error) {
-        next(error);
+    const userFilter = { role: 'supplier' };
+    if (isActive !== undefined) userFilter.isActive = String(isActive) === 'true';
+    if (search) {
+      const q = search.trim();
+      userFilter.$or = [
+        { firstName: { $regex: q, $options: 'i' } },
+        { lastName: { $regex: q, $options: 'i' } },
+        { businessName: { $regex: q, $options: 'i' } },
+        { email: { $regex: q, $options: 'i' } },
+      ];
     }
+
+    const suppliers = await User.find(userFilter)
+      .select('-password -refreshToken')
+      .sort(sortOptions)
+      .limit(l)
+      .skip(skip)
+      .lean();
+
+    const supplierIds = suppliers.map((s) => mongoose.Types.ObjectId(s._id));
+
+    // Aggregate order metrics for these suppliers
+    const orderMetrics = await Order.aggregate([
+      { $unwind: '$items' },
+      { $match: { 'items.supplier': { $in: supplierIds }, status: 'delivered' } },
+      {
+        $group: {
+          _id: '$items.supplier',
+          orderCount: { $sum: 1 },
+          totalRevenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+        },
+      },
+    ]);
+
+    const productCounts = await Product.aggregate([
+      { $match: { supplier: { $in: supplierIds } } },
+      { $group: { _id: '$supplier', productCount: { $sum: 1 } } },
+    ]);
+
+    const orderMap = new Map(orderMetrics.map((m) => [String(m._id), m]));
+    const productMap = new Map(productCounts.map((p) => [String(p._id), p.productCount]));
+
+    const suppliersWithMetrics = suppliers.map((s) => {
+      const idStr = String(s._id);
+      const m = orderMap.get(idStr) || { orderCount: 0, totalRevenue: 0 };
+      const productCount = productMap.get(idStr) || 0;
+      return {
+        ...s,
+        metrics: {
+          productCount,
+          orderCount: m.orderCount || 0,
+          totalRevenue: m.totalRevenue || 0,
+        },
+      };
+    });
+
+    const total = await User.countDocuments(userFilter);
+
+    respond(res, {
+      data: suppliersWithMetrics,
+      pagination: { total, page: p, limit: l, pages: Math.ceil(total / l) },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**
- * Approve supplier
- * @route PUT /api/admin/suppliers/:id/approve
- * @access Admin
+ * PUT /api/admin/suppliers/:id/approve
  */
 exports.approveSupplier = async (req, res, next) => {
-    try {
-        const supplier = await User.findOneAndUpdate(
-            { _id: req.params.id, role: 'supplier' },
-            { isActive: true, isEmailVerified: true },
-            { new: true }
-        ).select('-password -refreshToken');
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        if (!supplier) {
-            return res.status(404).json({
-                success: false,
-                message: 'Supplier not found',
-            });
-        }
+    const { id } = req.params;
+    if (!isValidId(id)) return respond(res, {}, 'Invalid supplier ID', 400);
 
-        res.status(200).json({
-            success: true,
-            message: 'Supplier approved successfully',
-            data: supplier,
-        });
-    } catch (error) {
-        next(error);
-    }
+    const supplier = await User.findOneAndUpdate(
+      { _id: id, role: 'supplier' },
+      { isActive: true, isEmailVerified: true },
+      { new: true }
+    ).select('-password -refreshToken');
+
+    if (!supplier) return respond(res, {}, 'Supplier not found', 404);
+
+    respond(res, { data: supplier }, 'Supplier approved successfully');
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**
- * Suspend supplier
- * @route PUT /api/admin/suppliers/:id/suspend
- * @access Admin
+ * PUT /api/admin/suppliers/:id/suspend
  */
 exports.suspendSupplier = async (req, res, next) => {
-    try {
-        const supplier = await User.findOneAndUpdate(
-            { _id: req.params.id, role: 'supplier' },
-            { isActive: false },
-            { new: true }
-        ).select('-password -refreshToken');
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        if (!supplier) {
-            return res.status(404).json({
-                success: false,
-                message: 'Supplier not found',
-            });
-        }
+    const { id } = req.params;
+    if (!isValidId(id)) return respond(res, {}, 'Invalid supplier ID', 400);
 
-        res.status(200).json({
-            success: true,
-            message: 'Supplier suspended successfully',
-            data: supplier,
-        });
-    } catch (error) {
-        next(error);
-    }
+    const supplier = await User.findOneAndUpdate(
+      { _id: id, role: 'supplier' },
+      { isActive: false },
+      { new: true }
+    ).select('-password -refreshToken');
+
+    if (!supplier) return respond(res, {}, 'Supplier not found', 404);
+
+    respond(res, { data: supplier }, 'Supplier suspended successfully');
+  } catch (error) {
+    next(error);
+  }
 };
 
-// ==================== SYSTEM STATS ====================
+// -------------------- CATEGORY MANAGEMENT --------------------
 
 /**
- * Get system statistics
- * @route GET /api/admin/stats
- * @access Admin
+ * GET /api/admin/categories
+ */
+exports.getAllCategories = async (req, res, next) => {
+  try {
+    if (!ensureAdmin(req, res)) return;
+
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = req.query;
+
+    const { page: p, limit: l, skip } = parsePageLimit(page, limit);
+    const sortOptions = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+    const filter = {};
+    if (search) {
+      const q = search.trim();
+      filter.$or = [
+        { name: { $regex: q, $options: 'i' } },
+        { description: { $regex: q, $options: 'i' } },
+      ];
+    }
+
+    const [categories, total] = await Promise.all([
+      Category.find(filter)
+        .sort(sortOptions)
+        .limit(l)
+        .skip(skip)
+        .lean(),
+      Category.countDocuments(filter),
+    ]);
+
+    respond(res, {
+      data: categories,
+      pagination: { total, page: p, limit: l, pages: Math.ceil(total / l) },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// -------------------- SYSTEM STATS --------------------
+
+/**
+ * GET /api/admin/stats
  */
 exports.getSystemStats = async (req, res, next) => {
-    try {
-        const [
-            totalUsers,
-            totalProducts,
-            totalOrders,
-            totalRevenue,
-            usersByRole,
-            recentUsers,
-        ] = await Promise.all([
-            User.countDocuments({ isActive: true }),
-            Product.countDocuments(),
-            Order.countDocuments(),
-            Order.aggregate([
-                { $match: { status: 'delivered' } },
-                { $group: { _id: null, total: { $sum: '$total' } } },
-            ]),
-            User.aggregate([
-                { $group: { _id: '$role', count: { $sum: 1 } } },
-            ]),
-            User.find({ isActive: true })
-                .select('firstName lastName email role createdAt')
-                .sort({ createdAt: -1 })
-                .limit(10)
-                .lean(),
-        ]);
+  try {
+    if (!ensureAdmin(req, res)) return;
 
-        res.status(200).json({
-            success: true,
-            data: {
-                totalUsers,
-                totalProducts,
-                totalOrders,
-                totalRevenue: totalRevenue[0]?.total || 0,
-                usersByRole,
-                recentUsers,
-            },
-        });
-    } catch (error) {
-        next(error);
-    }
+    const [
+      totalUsers,
+      totalProducts,
+      totalOrders,
+      totalRevenueAgg,
+      usersByRole,
+      recentUsers,
+    ] = await Promise.all([
+      User.countDocuments({ isActive: true }),
+      Product.countDocuments(),
+      Order.countDocuments(),
+      Order.aggregate([
+        { $match: { status: 'delivered' } },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]),
+      User.aggregate([{ $group: { _id: '$role', count: { $sum: 1 } } }]),
+      User.find({ isActive: true }).select('firstName lastName email role createdAt').sort({ createdAt: -1 }).limit(10).lean(),
+    ]);
+
+    respond(res, {
+      data: {
+        totalUsers,
+        totalProducts,
+        totalOrders,
+        totalRevenue: totalRevenueAgg[0]?.total || 0,
+        usersByRole,
+        recentUsers,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };

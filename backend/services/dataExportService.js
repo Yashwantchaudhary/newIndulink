@@ -1,10 +1,8 @@
 /// 📊 Data Export/Import Service
-/// Handles data export to various formats and import from external sources
+/// Handles data export to JSON format and import from JSON sources (no third party libraries)
 
 const fs = require('fs');
 const path = require('path');
-const PDFDocument = require('pdfkit');
-const { Parser } = require('json2csv');
 
 class DataExportService {
     constructor() {
@@ -52,158 +50,14 @@ class DataExportService {
         };
     }
 
-    // Export data to CSV format
+    // Export data to CSV format (stub - not implemented without third party libraries)
     async exportToCSV(data, filename, fields = null, options = {}) {
-        const {
-            includeHeaders = true,
-            delimiter = ',',
-            includeMetadata = true
-        } = options;
-
-        try {
-            // If fields not specified, use all keys from first object
-            const csvFields = fields || (data.length > 0 ? Object.keys(data[0]) : []);
-
-            const opts = {
-                fields: csvFields,
-                header: includeHeaders,
-                delimiter: delimiter
-            };
-
-            const parser = new Parser(opts);
-            let csvData = parser.parse(data);
-
-            // Add metadata if requested
-            if (includeMetadata) {
-                const metadata = [
-                    `Exported At,${new Date().toISOString()}`,
-                    `Total Records,${data.length}`,
-                    `Format,csv`,
-                    '', // Empty line
-                ].join('\n');
-
-                csvData = metadata + csvData;
-            }
-
-            const filePath = path.join(this.exportsDir, `${filename}.csv`);
-            fs.writeFileSync(filePath, csvData, 'utf8');
-
-            return {
-                success: true,
-                filePath,
-                filename: `${filename}.csv`,
-                size: Buffer.byteLength(csvData, 'utf8'),
-                format: 'csv'
-            };
-        } catch (error) {
-            throw new Error(`CSV export failed: ${error.message}`);
-        }
+        throw new Error('CSV export not supported. Only JSON export is available.');
     }
 
-    // Export data to PDF format
+    // Export data to PDF format (stub - not implemented without third party libraries)
     async exportToPDF(data, filename, options = {}) {
-        const {
-            title = 'Data Export',
-            includeMetadata = true,
-            orientation = 'landscape'
-        } = options;
-
-        return new Promise((resolve, reject) => {
-            try {
-                const filePath = path.join(this.exportsDir, `${filename}.pdf`);
-                const doc = new PDFDocument({
-                    size: 'A4',
-                    orientation: orientation,
-                    margin: 50
-                });
-
-                const stream = fs.createWriteStream(filePath);
-                doc.pipe(stream);
-
-                // Title
-                doc.fontSize(20).font('Helvetica-Bold').text(title, { align: 'center' });
-                doc.moveDown(2);
-
-                // Metadata
-                if (includeMetadata) {
-                    doc.fontSize(10).font('Helvetica');
-                    doc.text(`Exported At: ${new Date().toISOString()}`);
-                    doc.text(`Total Records: ${data.length}`);
-                    doc.text(`Format: PDF`);
-                    doc.moveDown();
-                }
-
-                // Table headers (if data exists)
-                if (data.length > 0) {
-                    const headers = Object.keys(data[0]);
-                    const colWidth = (doc.page.width - 100) / headers.length;
-
-                    // Header row
-                    doc.fontSize(12).font('Helvetica-Bold');
-                    headers.forEach((header, index) => {
-                        doc.text(header, 50 + (index * colWidth), doc.y, {
-                            width: colWidth,
-                            align: 'left'
-                        });
-                    });
-
-                    doc.moveDown(0.5);
-
-                    // Header underline
-                    doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).stroke();
-                    doc.moveDown();
-
-                    // Data rows
-                    doc.fontSize(10).font('Helvetica');
-                    data.forEach((row, rowIndex) => {
-                        if (doc.y > doc.page.height - 100) {
-                            doc.addPage();
-                            doc.fontSize(10).font('Helvetica');
-                        }
-
-                        headers.forEach((header, colIndex) => {
-                            const value = String(row[header] || '').substring(0, 50); // Truncate long values
-                            doc.text(value, 50 + (colIndex * colWidth), doc.y, {
-                                width: colWidth,
-                                align: 'left'
-                            });
-                        });
-
-                        doc.moveDown(0.5);
-                    });
-                }
-
-                // Footer
-                const pageCount = doc.bufferedPageRange().count;
-                for (let i = 0; i < pageCount; i++) {
-                    doc.switchToPage(i);
-                    doc.fontSize(8).font('Helvetica');
-                    doc.text(
-                        `Page ${i + 1} of ${pageCount}`,
-                        50,
-                        doc.page.height - 50,
-                        { align: 'center' }
-                    );
-                }
-
-                doc.end();
-
-                stream.on('finish', () => {
-                    const stats = fs.statSync(filePath);
-                    resolve({
-                        success: true,
-                        filePath,
-                        filename: `${filename}.pdf`,
-                        size: stats.size,
-                        format: 'pdf'
-                    });
-                });
-
-                stream.on('error', reject);
-            } catch (error) {
-                reject(error);
-            }
-        });
+        throw new Error('PDF export not supported. Only JSON export is available.');
     }
 
     // Export user data (GDPR compliant)
@@ -253,14 +107,12 @@ class DataExportService {
 
         const filename = `user_data_${userId}_${Date.now()}`;
 
-        switch (format.toLowerCase()) {
-            case 'csv':
-                return await this.exportToCSV([exportData], filename);
-            case 'pdf':
-                return await this.exportToPDF([exportData], filename, { title: 'User Data Export' });
-            default:
-                return await this.exportToJSON(exportData, filename);
+        // Only JSON format supported
+        if (format.toLowerCase() !== 'json') {
+            throw new Error('Only JSON format is supported for user data export.');
         }
+
+        return await this.exportToJSON(exportData, filename);
     }
 
     // Import data from JSON
@@ -328,32 +180,9 @@ class DataExportService {
         }
     }
 
-    // Import data from CSV
+    // Import data from CSV (stub - not implemented without third party libraries)
     async importFromCSV(csvData, options = {}) {
-        const {
-            collection = null,
-            validateData = true,
-            skipDuplicates = true
-        } = options;
-
-        try {
-            // Parse CSV (simplified - in production use a proper CSV parser)
-            const lines = csvData.split('\n').filter(line => line.trim());
-            const headers = lines[0].split(',').map(h => h.trim());
-
-            const data = lines.slice(1).map(line => {
-                const values = line.split(',');
-                const item = {};
-                headers.forEach((header, index) => {
-                    item[header] = values[index]?.trim() || '';
-                });
-                return item;
-            });
-
-            return await this.importFromJSON(data, { collection, validateData, skipDuplicates });
-        } catch (error) {
-            throw new Error(`CSV import failed: ${error.message}`);
-        }
+        throw new Error('CSV import not supported. Only JSON import is available.');
     }
 
     // Helper methods

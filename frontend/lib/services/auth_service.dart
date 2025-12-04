@@ -298,15 +298,11 @@ class AuthService {
   /// Handle successful authentication response
   Future<AuthResult> _handleAuthSuccess(dynamic data) async {
     try {
-      print('AUTH SUCCESS RESPONSE: $data');
       // Extract tokens - handle nested data structure from backend
       final responseData = data['data'] ?? data;
-      print('RESPONSE DATA: $responseData');
       final accessToken = responseData['accessToken'] ?? responseData['token'];
       final refreshToken = responseData['refreshToken'];
       final userData = responseData['user'];
-
-      print('EXTRACTED - accessToken: $accessToken, userData: $userData');
 
       if (accessToken == null || userData == null) {
         return AuthResult(
@@ -334,7 +330,6 @@ class AuthService {
         user: user,
       );
     } catch (e) {
-      print('AUTH SUCCESS PARSING ERROR: $e');
       return AuthResult(
         success: false,
         message: 'Failed to process authentication response: $e',

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/product.dart';
 import '../services/api_service.dart';
+import '../core/constants/app_config.dart';
 
 /// ❤️ Wishlist Provider
 /// Manages user wishlist state and synchronization
@@ -32,7 +33,7 @@ class WishlistProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _apiService.get('/wishlist');
+      final response = await _apiService.get(AppConfig.wishlistEndpoint);
 
       if (response.success) {
         final List<dynamic> items = response.data['items'] ?? [];
@@ -61,8 +62,8 @@ class WishlistProvider with ChangeNotifier {
 
     try {
       final response = await _apiService.post(
-        '/wishlist/add',
-        body: {'productId': product.id},
+        '${AppConfig.wishlistEndpoint}/${product.id}',
+        body: {},
       );
 
       if (response.success) {
@@ -99,7 +100,7 @@ class WishlistProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiService.delete('/wishlist/remove/$productId');
+      final response = await _apiService.delete('${AppConfig.wishlistEndpoint}/$productId');
 
       if (response.success) {
         return true;
@@ -140,7 +141,7 @@ class WishlistProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiService.delete('/wishlist/clear');
+      final response = await _apiService.delete(AppConfig.wishlistEndpoint);
 
       if (response.success) {
         return true;

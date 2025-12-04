@@ -6,9 +6,9 @@ const Product = require('../models/Product');
 // @access  Private
 exports.getWishlist = async (req, res) => {
     try {
-        const wishlist = await Wishlist.findOne({ user: req.user._id })
+        const wishlist = await Wishlist.findOne({ userId: req.user._id })
             .populate({
-                path: 'products.product',
+                path: 'products.productId',
                 select: 'name price images stock category supplier rating',
                 populate: {
                     path: 'supplier',
@@ -39,10 +39,19 @@ exports.getWishlist = async (req, res) => {
 
 // @desc    Add product to wishlist
 // @route   POST /api/wishlist/:productId
+// @route   POST /api/wishlist
 // @access  Private
 exports.addToWishlist = async (req, res) => {
     try {
-        const { productId } = req.params;
+        // Get productId from either params or body
+        const { productId } = req.params.productId ? req.params : req.body;
+
+        if (!productId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Product ID is required'
+            });
+        }
 
         // Check if product exists
         const product = await Product.findById(productId);
@@ -53,18 +62,18 @@ exports.addToWishlist = async (req, res) => {
             });
         }
 
-        let wishlist = await Wishlist.findOne({ user: req.user._id });
+        let wishlist = await Wishlist.findOne({ userId: req.user._id });
 
         if (!wishlist) {
             // Create new wishlist
             wishlist = await Wishlist.create({
-                user: req.user._id,
-                products: [{ product: productId }]
+                userId: req.user._id,
+                products: [{ productId: productId }]
             });
         } else {
             // Check if product already in wishlist
             const productExists = wishlist.products.some(
-                item => item.product.toString() === productId
+                item => item.productId.toString() === productId
             );
 
             if (productExists) {
@@ -74,12 +83,12 @@ exports.addToWishlist = async (req, res) => {
                 });
             }
 
-            wishlist.products.push({ product: productId });
+            wishlist.products.push({ productId: productId });
             await wishlist.save();
         }
 
         await wishlist.populate({
-            path: 'products.product',
+            path: 'products.productId',
             select: 'name price images stock'
         });
 
@@ -105,7 +114,7 @@ exports.removeFromWishlist = async (req, res) => {
     try {
         const { productId } = req.params;
 
-        const wishlist = await Wishlist.findOne({ user: req.user._id });
+        const wishlist = await Wishlist.findOne({ userId: req.user._id });
 
         if (!wishlist) {
             return res.status(404).json({
@@ -115,13 +124,13 @@ exports.removeFromWishlist = async (req, res) => {
         }
 
         wishlist.products = wishlist.products.filter(
-            item => item.product.toString() !== productId
+            item => item.productId.toString() !== productId
         );
 
         await wishlist.save();
 
         await wishlist.populate({
-            path: 'products.product',
+            path: 'products.productId',
             select: 'name price images stock'
         });
 
@@ -145,7 +154,7 @@ exports.removeFromWishlist = async (req, res) => {
 // @access  Private
 exports.clearWishlist = async (req, res) => {
     try {
-        const wishlist = await Wishlist.findOne({ user: req.user._id });
+        const wishlist = await Wishlist.findOne({ userId: req.user._id });
 
         if (!wishlist) {
             return res.status(404).json({
@@ -179,7 +188,7 @@ exports.checkWishlist = async (req, res) => {
     try {
         const { productId } = req.params;
 
-        const wishlist = await Wishlist.findOne({ user: req.user._id });
+        const wishlist = await Wishlist.findOne({ userId: req.user._id });
 
         if (!wishlist) {
             return res.status(200).json({
@@ -189,7 +198,7 @@ exports.checkWishlist = async (req, res) => {
         }
 
         const inWishlist = wishlist.products.some(
-            item => item.product.toString() === productId
+            item => item.productId.toString() === productId
         );
 
         res.status(200).json({

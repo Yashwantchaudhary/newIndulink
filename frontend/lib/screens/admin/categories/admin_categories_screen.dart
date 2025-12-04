@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/constants/app_config.dart';
 import '../../../services/api_service.dart';
 import '../widgets/admin_layout.dart';
 
@@ -27,10 +28,15 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
   Future<void> _loadCategories() async {
     setState(() => _isLoading = true);
     try {
-      final response = await _apiService.get('/api/categories');
+      final response = await _apiService.get(AppConfig.adminCategoriesEndpoint);
       if (response.isSuccess && response.data != null) {
         setState(() {
-          _categories = List<Map<String, dynamic>>.from(response.data['data'] ?? []);
+          final dataMap = response.data as Map<String, dynamic>;
+          final actualData = dataMap.containsKey('data')
+              ? Map<String, dynamic>.from(dataMap['data'] as Map)
+              : dataMap;
+          _categories =
+              List<Map<String, dynamic>>.from(actualData['data'] ?? []);
           _isLoading = false;
         });
       }

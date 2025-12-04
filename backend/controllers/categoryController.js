@@ -98,6 +98,46 @@ exports.updateCategory = async (req, res, next) => {
     }
 };
 
+// @desc    Get category statistics
+// @route   GET /api/categories/stats
+// @access  Public
+exports.getCategoryStats = async (req, res, next) => {
+    try {
+        const totalCategories = await Category.countDocuments();
+        const activeCategories = await Category.countDocuments({ isActive: true });
+
+        // Get product count per category
+        const categoriesWithProducts = await Category.aggregate([
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: '_id',
+                    foreignField: 'category',
+                    as: 'products'
+                }
+            },
+            {
+                $project: {
+                    name: 1,
+                    productCount: { $size: '$products' }
+                }
+            }
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalCategories,
+                activeCategories,
+                categoriesWithProducts,
+                count: totalCategories
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Delete category
 // @route   DELETE /api/categories/:id
 // @access  Private (Admin)

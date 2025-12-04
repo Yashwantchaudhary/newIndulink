@@ -262,40 +262,110 @@ exports.searchConversations = async (req, res, next) => {
             });
         }
 
-        const firebaseService = new FirebaseMessageService();
-        const conversations = await firebaseService.getConversations(req.user.id);
-
-        // Filter conversations based on search query
-        // For now, we'll search in user names from MongoDB
-        const filteredConversations = await Promise.all(
-            conversations.map(async (conversation) => {
-                // Get other participant
-                const otherParticipantId = conversation.participants.find(p => p !== req.user.id);
-                if (!otherParticipantId) return null;
-
-                const otherUser = await User.findById(otherParticipantId)
-                    .select('firstName lastName businessName')
-                    .lean();
-
-                if (!otherUser) return null;
-
-                const searchString = `${otherUser.firstName} ${otherUser.lastName} ${otherUser.businessName || ''}`.toLowerCase();
-                if (searchString.includes(query.toLowerCase())) {
-                    return {
-                        ...conversation,
-                        otherUser,
-                    };
+        // Find conversations where the other user matches the search query
+        const conversations = await Message.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { sender: req.user._id },
+                        { receiver: req.user._id }
+                    ]
                 }
-                return null;
-            })
-        );
+            },
+            {
+                $sort: { createdAt: -1 }
+            },
+            {
+                $group: {
+                    _id: '$conversationId',
+                    lastMessage: { $first: '$$ROOT' },
+                    messageCount: { $sum: 1 },
+                    unreadCount: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        { $eq: ['$receiver', req.user._id] },
+                                        { $eq: ['$isRead', false] }
+                                    ]
+                                },
+                                1,
+                                0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    let: {
+                        senderId: '$lastMessage.sender',
+                        receiverId: '$lastMessage.receiver',
+                        currentUserId: req.user._id
+                    },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $or: [
+                                        { $eq: ['$_id', '$$senderId'] },
+                                        { $eq: ['$_id', '$$receiverId'] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $match: {
+                                $expr: { $ne: ['$_id', '$$currentUserId'] }
+                            }
+                        }
+                    ],
+                    as: 'otherUser'
+                }
+            },
+            {
+                $unwind: '$otherUser'
+            },
+            {
+                $match: {
+                    $or: [
+                        { 'otherUser.firstName': new RegExp(query, 'i') },
+                        { 'otherUser.lastName': new RegExp(query, 'i') },
+                        { 'otherUser.businessName': new RegExp(query, 'i') }
+                    ]
+                }
+            },
+            {
+                $sort: { 'lastMessage.createdAt': -1 }
+            }
+        ]);
 
-        const validConversations = filteredConversations.filter(conv => conv !== null);
+        // Format the results
+        const formattedConversations = conversations.map(conversation => ({
+            conversationId: conversation._id,
+            otherUser: {
+                _id: conversation.otherUser._id,
+                firstName: conversation.otherUser.firstName,
+                lastName: conversation.otherUser.lastName,
+                businessName: conversation.otherUser.businessName,
+                role: conversation.otherUser.role
+            },
+            lastMessage: {
+                id: conversation.lastMessage._id,
+                content: conversation.lastMessage.content,
+                createdAt: conversation.lastMessage.createdAt,
+                isRead: conversation.lastMessage.isRead,
+                attachments: conversation.lastMessage.attachments,
+            },
+            messageCount: conversation.messageCount,
+            unreadCount: conversation.unreadCount,
+        }));
 
         res.status(200).json({
             success: true,
-            count: validConversations.length,
-            data: validConversations,
+            count: formattedConversations.length,
+            data: formattedConversations,
         });
     } catch (error) {
         next(error);
@@ -308,25 +378,31 @@ exports.searchConversations = async (req, res, next) => {
 exports.deleteMessage = async (req, res, next) => {
     try {
         const { messageId } = req.params;
-        const firebaseService = new FirebaseMessageService();
 
-        // For now, we'll need to find the conversation ID from the message
-        // This is a limitation of Firebase Realtime Database - we might need to store message metadata
-        // For simplicity, we'll implement a basic delete that requires conversationId in query
-        const conversationId = req.query.conversationId;
+        // Find the message and verify ownership
+        const message = await Message.findById(messageId);
 
-        if (!conversationId) {
-            return res.status(400).json({
+        if (!message) {
+            return res.status(404).json({
                 success: false,
-                message: 'Conversation ID required for message deletion',
+                message: 'Message not found',
             });
         }
 
-        await firebaseService.deleteMessage(conversationId, messageId);
+        // Only sender can delete their own messages
+        if (message.sender.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: 'You can only delete your own messages',
+            });
+        }
+
+        // Soft delete by marking as deleted (or hard delete)
+        await Message.findByIdAndDelete(messageId);
 
         res.status(200).json({
             success: true,
-            message: 'Message deleted',
+            message: 'Message deleted successfully',
         });
     } catch (error) {
         next(error);
@@ -346,6 +422,37 @@ exports.getUnreadCount = async (req, res, next) => {
         res.status(200).json({
             success: true,
             data: { unreadCount },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get message statistics
+// @route   GET /api/messages/stats
+// @access  Private (Admin)
+exports.getMessageStats = async (req, res, next) => {
+    try {
+        const totalMessages = await Message.countDocuments();
+        const unreadMessages = await Message.countDocuments({ isRead: false });
+        const todayMessages = await Message.countDocuments({
+            createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+        });
+
+        // Get message count by type
+        const messagesByType = await Message.aggregate([
+            { $group: { _id: '$type', count: { $sum: 1 } } }
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalMessages,
+                unreadMessages,
+                todayMessages,
+                messagesByType,
+                count: totalMessages
+            }
         });
     } catch (error) {
         next(error);

@@ -44,4 +44,9 @@ router.post('/custom', authorize('admin'), getCustomAnalytics);
 // Export analytics reports (Admin only)
 router.get('/export/:type', authorize('admin'), exportAnalyticsReport);
 
+// Product-specific analytics routes (commented out - functions not implemented)
+// router.get('/products/performance', authorize('admin', 'supplier'), getComprehensiveProductAnalytics);
+// router.get('/products/trends', authorize('admin', 'supplier'), getProductTrendAnalysis);
+// router.post('/products/compare', authorize('admin', 'supplier'), getProductComparisonAnalytics);
+
 module.exports = router;

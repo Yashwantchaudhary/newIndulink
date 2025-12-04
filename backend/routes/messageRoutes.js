@@ -8,8 +8,9 @@ const {
     getUnreadCount,
     searchConversations,
     deleteMessage,
+    getMessageStats,
 } = require('../controllers/messageController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requireAdmin } = require('../middleware/authMiddleware');
 
 // All message routes require authentication
 router.use(protect);
@@ -21,5 +22,6 @@ router.post('/', sendMessage);
 router.put('/read/:conversationId', markAsRead);
 router.delete('/:messageId', deleteMessage);
 router.get('/unread/count', getUnreadCount);
+router.get('/stats', requireAdmin, getMessageStats);
 
 module.exports = router;

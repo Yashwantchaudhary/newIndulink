@@ -7,6 +7,8 @@ const {
     deleteReview,
     markReviewHelpful,
     addSupplierResponse,
+    getReviewStats,
+    getUserReviewStats,
 } = require('../controllers/reviewController');
 const { protect, requireCustomer, requireSupplier } = require('../middleware/authMiddleware');
 const { uploadMultiple } = require('../middleware/upload');
@@ -24,5 +26,9 @@ router.put('/:id/helpful', protect, markReviewHelpful);
 
 // Supplier routes
 router.put('/:id/response', protect, requireSupplier, addSupplierResponse);
+
+// Stats routes
+router.get('/stats', getReviewStats);
+router.get('/stats/user/:userId', protect, getUserReviewStats);
 
 module.exports = router;

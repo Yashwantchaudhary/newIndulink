@@ -4,7 +4,7 @@ import '../models/user.dart';
 import 'api_service.dart';
 
 /// 📦 Order Service
-/// Handles order management operations
+/// Handles order management operations for customers, suppliers, and admins
 class OrderService {
   static final OrderService _instance = OrderService._internal();
   factory OrderService() => _instance;
@@ -12,7 +12,7 @@ class OrderService {
 
   final ApiService _api = ApiService();
 
-  // =================== Order Operations ====================
+  // =================== Customer Order Operations ====================
 
   /// Create new order
   Future<OrderResult> createOrder({
@@ -30,27 +30,17 @@ class OrderService {
           if (notes != null) 'notes': notes,
           if (couponCode != null) 'couponCode': couponCode,
         },
+        retries: 2,
       );
 
       if (response.isSuccess && response.data != null) {
         final order = Order.fromJson(response.data);
-
-        return OrderResult(
-          success: true,
-          order: order,
-          message: 'Order placed successfully',
-        );
+        return OrderResult(success: true, order: order, message: 'Order placed successfully');
       } else {
-        return OrderResult(
-          success: false,
-          message: response.message ?? 'Failed to create order',
-        );
+        return OrderResult(success: false, message: response.message ?? 'Failed to create order');
       }
     } catch (e) {
-      return OrderResult(
-        success: false,
-        message: 'An error occurred while creating order',
-      );
+      return OrderResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
 
@@ -65,125 +55,70 @@ class OrderService {
         'page': page.toString(),
         'limit': limit.toString(),
       };
+      if (status != null) params['status'] = status.value;
 
-      if (status != null) {
-        params['status'] = status.value;
-      }
-
-      final response = await _api.get(
-        AppConfig.ordersEndpoint,
-        params: params,
-      );
+      final response = await _api.get(AppConfig.ordersEndpoint, params: params, retries: 2);
 
       if (response.isSuccess && response.data != null) {
         final data = response.data;
         final ordersJson = data['orders'] ?? data['data'] ?? [];
-        final orders =
-            (ordersJson as List).map((json) => Order.fromJson(json)).toList();
-
-        return OrderListResult(
-          success: true,
-          orders: orders,
-          total: data['total'] ?? orders.length,
-        );
+        final orders = (ordersJson as List).map((json) => Order.fromJson(json)).toList();
+        return OrderListResult(success: true, orders: orders, total: data['total'] ?? orders.length);
       } else {
-        return OrderListResult(
-          success: false,
-          message: response.message ?? 'Failed to fetch orders',
-        );
+        return OrderListResult(success: false, message: response.message ?? 'Failed to fetch orders');
       }
     } catch (e) {
-      return OrderListResult(
-        success: false,
-        message: 'An error occurred while fetching orders',
-      );
+      return OrderListResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
 
   /// Get order details by ID
   Future<OrderResult> getOrderDetails(String orderId) async {
     try {
-      final endpoint = AppConfig.replaceParams(
-        AppConfig.orderDetailsEndpoint,
-        {'id': orderId},
-      );
-
-      final response = await _api.get(endpoint);
+      final endpoint = AppConfig.replaceParams(AppConfig.orderDetailsEndpoint, {'id': orderId});
+      final response = await _api.get(endpoint, retries: 2);
 
       if (response.isSuccess && response.data != null) {
         final order = Order.fromJson(response.data);
-
-        return OrderResult(
-          success: true,
-          order: order,
-        );
+        return OrderResult(success: true, order: order);
       } else {
-        return OrderResult(
-          success: false,
-          message: response.message ?? 'Order not found',
-        );
+        return OrderResult(success: false, message: response.message ?? 'Order not found');
       }
     } catch (e) {
-      return OrderResult(
-        success: false,
-        message: 'An error occurred',
-      );
+      return OrderResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
 
   /// Cancel order
   Future<OrderResult> cancelOrder(String orderId) async {
     try {
-      final endpoint = AppConfig.replaceParams(
-        AppConfig.cancelOrderEndpoint,
-        {'id': orderId},
-      );
-
-      final response = await _api.put(endpoint);
+      final endpoint = AppConfig.replaceParams(AppConfig.cancelOrderEndpoint, {'id': orderId});
+      final response = await _api.put(endpoint, retries: 2);
 
       if (response.isSuccess) {
-        final order =
-            response.data != null ? Order.fromJson(response.data) : null;
-
-        return OrderResult(
-          success: true,
-          order: order,
-          message: 'Order cancelled successfully',
-        );
+        final order = response.data != null ? Order.fromJson(response.data) : null;
+        return OrderResult(success: true, order: order, message: 'Order cancelled successfully');
       } else {
-        return OrderResult(
-          success: false,
-          message: response.message ?? 'Failed to cancel order',
-        );
+        return OrderResult(success: false, message: response.message ?? 'Failed to cancel order');
       }
     } catch (e) {
-      return OrderResult(
-        success: false,
-        message: 'An error occurred',
-      );
+      return OrderResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
 
   /// Track order
   Future<OrderTrackingResult> trackOrder(String orderId) async {
     try {
-      final endpoint = AppConfig.replaceParams(
-        AppConfig.trackOrderEndpoint,
-        {'id': orderId},
-      );
-
-      final response = await _api.get(endpoint);
+      final endpoint = AppConfig.replaceParams(AppConfig.trackOrderEndpoint, {'id': orderId});
+      final response = await _api.get(endpoint, retries: 2);
 
       if (response.isSuccess && response.data != null) {
         final data = response.data;
-
         return OrderTrackingResult(
           success: true,
           status: OrderStatus.fromString(data['status'] ?? 'pending'),
           statusHistory: data['statusHistory'] != null
-              ? (data['statusHistory'] as List)
-                  .map((e) => OrderStatusHistory.fromJson(e))
-                  .toList()
+              ? (data['statusHistory'] as List).map((e) => OrderStatusHistory.fromJson(e)).toList()
               : [],
           trackingNumber: data['trackingNumber'],
           estimatedDelivery: data['estimatedDelivery'] != null
@@ -191,22 +126,16 @@ class OrderService {
               : null,
         );
       } else {
-        return OrderTrackingResult(
-          success: false,
-          message: response.message ?? 'Failed to track order',
-        );
+        return OrderTrackingResult(success: false, message: response.message ?? 'Failed to track order');
       }
     } catch (e) {
-      return OrderTrackingResult(
-        success: false,
-        message: 'An error occurred',
-      );
+      return OrderTrackingResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
 
-  // ==================== Supplier Order Management ====================
+  // ==================== Supplier/Admin Order Management ====================
 
-  /// Get orders for supplier (supplier role only)
+  /// Get orders for supplier
   Future<OrderListResult> getSupplierOrders({
     OrderStatus? status,
     int page = 1,
@@ -217,38 +146,20 @@ class OrderService {
         'page': page.toString(),
         'limit': limit.toString(),
       };
+      if (status != null) params['status'] = status.value;
 
-      if (status != null) {
-        params['status'] = status.value;
-      }
-
-      final response = await _api.get(
-        AppConfig.supplierOrdersEndpoint,
-        params: params,
-      );
+      final response = await _api.get(AppConfig.supplierOrdersEndpoint, params: params, retries: 2);
 
       if (response.isSuccess && response.data != null) {
         final data = response.data;
         final ordersJson = data['orders'] ?? [];
-        final orders =
-            (ordersJson as List).map((json) => Order.fromJson(json)).toList();
-
-        return OrderListResult(
-          success: true,
-          orders: orders,
-          total: data['total'] ?? orders.length,
-        );
+        final orders = (ordersJson as List).map((json) => Order.fromJson(json)).toList();
+        return OrderListResult(success: true, orders: orders, total: data['total'] ?? orders.length);
       } else {
-        return OrderListResult(
-          success: false,
-          message: response.message ?? 'Failed to fetch orders',
-        );
+        return OrderListResult(success: false, message: response.message ?? 'Failed to fetch supplier orders');
       }
     } catch (e) {
-      return OrderListResult(
-        success: false,
-        message: 'An error occurred',
-      );
+      return OrderListResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
 
@@ -259,39 +170,21 @@ class OrderService {
     String? notes,
   }) async {
     try {
-      final endpoint = AppConfig.replaceParams(
-        AppConfig.updateOrderStatusEndpoint,
-        {'id': orderId},
-      );
-
+      final endpoint = AppConfig.replaceParams(AppConfig.updateOrderStatusEndpoint, {'id': orderId});
       final response = await _api.put(
         endpoint,
-        body: {
-          'status': status.value,
-          if (notes != null) 'notes': notes,
-        },
+        body: {'status': status.value, if (notes != null) 'notes': notes},
+        retries: 2,
       );
 
       if (response.isSuccess) {
-        final order =
-            response.data != null ? Order.fromJson(response.data) : null;
-
-        return OrderResult(
-          success: true,
-          order: order,
-          message: 'Order status updated',
-        );
+        final order = response.data != null ? Order.fromJson(response.data) : null;
+        return OrderResult(success: true, order: order, message: 'Order status updated');
       } else {
-        return OrderResult(
-          success: false,
-          message: response.message ?? 'Failed to update order status',
-        );
+        return OrderResult(success: false, message: response.message ?? 'Failed to update order status');
       }
     } catch (e) {
-      return OrderResult(
-        success: false,
-        message: 'An error occurred',
-      );
+      return OrderResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
 }
@@ -302,11 +195,7 @@ class OrderResult {
   final String? message;
   final Order? order;
 
-  OrderResult({
-    required this.success,
-    this.message,
-    this.order,
-  });
+  OrderResult({required this.success, this.message, this.order});
 }
 
 /// 📋 Order List Result
@@ -316,12 +205,7 @@ class OrderListResult {
   final List<Order> orders;
   final int? total;
 
-  OrderListResult({
-    required this.success,
-    this.message,
-    this.orders = const [],
-    this.total,
-  });
+  OrderListResult({required this.success, this.message, this.orders = const [], this.total});
 }
 
 /// 📋 Order Tracking Result

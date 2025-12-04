@@ -258,15 +258,15 @@ class ReviewCard extends StatelessWidget {
               // Could update UI to show report submitted state
             }
           },
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          ),
           child: Text(
             'Report',
             style: TextStyle(
               fontSize: 12,
               color: AppColors.error,
             ),
-          ),
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           ),
         ),
       ],

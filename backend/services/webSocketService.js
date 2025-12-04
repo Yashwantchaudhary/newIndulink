@@ -182,6 +182,23 @@ class WebSocketService {
         this.notifyRole('admin', 'product_updated', eventData);
     }
 
+    // Admin cart updates
+    sendAdminCartUpdate(cartUpdateData) {
+        const eventData = {
+            type: 'cart_update',
+            data: cartUpdateData,
+            timestamp: new Date().toISOString()
+        };
+
+        // Notify all admins about cart updates
+        this.notifyRole('admin', 'cart_updated', eventData);
+
+        // Also notify suppliers about cart updates for their products
+        if (cartUpdateData.productId && cartUpdateData.supplierId) {
+            this.notifyUser(cartUpdateData.supplierId, 'cart_updated', eventData);
+        }
+    }
+
     // Message notifications
     notifyNewMessage(conversationId, messageData, participants) {
         const eventData = {

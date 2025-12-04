@@ -160,9 +160,6 @@ Comprehensive analysis of route alignment between Flutter frontend and Node.js b
 |--------|------|--------|-------------------|
 | GET | `/health` | ✅ Working | Health check |
 | GET | `/api` | ✅ Working | API info |
-| GET | `/api/metrics` | ✅ Working | System metrics |
-| GET | `/api/infrastructure` | ✅ Working | Infrastructure metrics |
-| GET | `/monitoring` | ✅ Working | Monitoring dashboard |
 
 ---
 

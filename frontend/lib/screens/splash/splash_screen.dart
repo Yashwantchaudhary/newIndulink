@@ -92,27 +92,32 @@ class _SplashScreenState extends State<SplashScreen>
 
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      if (authProvider.isAuthenticated && authProvider.user != null) {
-        // Navigate to appropriate dashboard based on role
-        _navigateToDashboard(authProvider.user!.role);
-      } else {
-        // Navigate to role selection
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const RoleSelectionScreen(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 500),
-          ),
-        );
+      // Don't navigate if auth provider is still loading
+      if (authProvider.isLoading) {
+        // Check again in 1 second if still loading
+        Timer(const Duration(seconds: 1), () {
+          if (mounted && !authProvider.isLoading) {
+            _performNavigation(authProvider);
+          } else if (mounted) {
+            // Force navigation after timeout
+            _performNavigation(authProvider);
+          }
+        });
+        return;
       }
+
+      _performNavigation(authProvider);
     });
+  }
+
+  void _performNavigation(AuthProvider authProvider) {
+    if (authProvider.isAuthenticated && authProvider.user != null) {
+      // Navigate to appropriate dashboard based on role
+      _navigateToDashboard(authProvider.user!.role);
+    } else {
+      // Navigate to role selection
+      Navigator.of(context).pushReplacementNamed(AppRoutes.roleSelection);
+    }
   }
 
   void _navigateToDashboard(UserRole role) {
@@ -235,7 +240,7 @@ class _SplashScreenState extends State<SplashScreen>
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
               ),
             ),
           ),
@@ -258,7 +263,7 @@ class _SplashScreenState extends State<SplashScreen>
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -275,7 +280,7 @@ class _SplashScreenState extends State<SplashScreen>
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 30,
             offset: const Offset(0, 10),
           ),
@@ -318,7 +323,7 @@ class _SplashScreenState extends State<SplashScreen>
         Text(
           'Marketplace',
           style: AppTypography.h5.copyWith(
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
             fontWeight: AppTypography.medium,
           ),
           textAlign: TextAlign.center,
@@ -335,7 +340,7 @@ class _SplashScreenState extends State<SplashScreen>
         child: CircularProgressIndicator(
           strokeWidth: 3,
           valueColor: AlwaysStoppedAnimation<Color>(
-            Colors.white.withOpacity(0.8),
+            Colors.white.withValues(alpha: 0.8),
           ),
         ),
       ),
@@ -347,7 +352,7 @@ class _SplashScreenState extends State<SplashScreen>
       child: Text(
         'Version 1.0.0',
         style: AppTypography.caption.copyWith(
-          color: Colors.white.withOpacity(0.7),
+          color: Colors.white.withValues(alpha: 0.7),
         ),
       ),
     );

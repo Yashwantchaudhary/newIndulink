@@ -16,7 +16,7 @@ class ProductService {
 
   // ==================== Fetch Products ====================
 
-  /// Get all products with pagination
+  /// Get all products with pagination and filters
   Future<ProductResult> getProducts({
     int page = 1,
     int limit = 20,
@@ -27,12 +27,10 @@ class ProductService {
     String? sortBy,
   }) async {
     try {
-      // Build query parameters
       final params = <String, String>{
         'page': page.toString(),
         'limit': limit.toString(),
       };
-
       if (category != null) params['category'] = category;
       if (minPrice != null) params['minPrice'] = minPrice.toString();
       if (maxPrice != null) params['maxPrice'] = maxPrice.toString();
@@ -43,6 +41,7 @@ class ProductService {
         AppConfig.productsEndpoint,
         params: params,
         requiresAuth: false,
+        retries: 2,
       );
 
       if (response.isSuccess && response.data != null) {
@@ -60,16 +59,10 @@ class ProductService {
           totalPages: data['totalPages'] ?? 1,
         );
       } else {
-        return ProductResult(
-          success: false,
-          message: response.message ?? 'Failed to fetch products',
-        );
+        return ProductResult(success: false, message: response.message ?? 'Failed to fetch products');
       }
     } catch (e) {
-      return ProductResult(
-        success: false,
-        message: 'An error occurred while fetching products',
-      );
+      return ProductResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
 
@@ -80,6 +73,7 @@ class ProductService {
         AppConfig.featuredProductsEndpoint,
         params: {'limit': limit.toString()},
         requiresAuth: false,
+        retries: 2,
       );
 
       if (response.isSuccess && response.data != null) {
@@ -88,21 +82,12 @@ class ProductService {
             .map((json) => Product.fromJson(json))
             .toList();
 
-        return ProductResult(
-          success: true,
-          products: products,
-        );
+        return ProductResult(success: true, products: products);
       } else {
-        return ProductResult(
-          success: false,
-          message: response.message ?? 'Failed to fetch featured products',
-        );
+        return ProductResult(success: false, message: response.message ?? 'Failed to fetch featured products');
       }
     } catch (e) {
-      return ProductResult(
-        success: false,
-        message: 'An error occurred',
-      );
+      return ProductResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
 
@@ -121,7 +106,6 @@ class ProductService {
         'page': page.toString(),
         'limit': limit.toString(),
       };
-
       if (category != null) params['category'] = category;
       if (minPrice != null) params['minPrice'] = minPrice.toString();
       if (maxPrice != null) params['maxPrice'] = maxPrice.toString();
@@ -130,6 +114,7 @@ class ProductService {
         AppConfig.searchProductsEndpoint,
         params: params,
         requiresAuth: false,
+        retries: 2,
       );
 
       if (response.isSuccess && response.data != null) {
@@ -139,61 +124,34 @@ class ProductService {
             .map((json) => Product.fromJson(json))
             .toList();
 
-        // Save search query to history
         if (query.isNotEmpty) {
           await _storage.addSearchQuery(query);
         }
 
-        return ProductResult(
-          success: true,
-          products: products,
-          total: data['total'] ?? products.length,
-        );
+        return ProductResult(success: true, products: products, total: data['total'] ?? products.length);
       } else {
-        return ProductResult(
-          success: false,
-          message: response.message ?? 'Search failed',
-        );
+        return ProductResult(success: false, message: response.message ?? 'Search failed');
       }
     } catch (e) {
-      return ProductResult(
-        success: false,
-        message: 'An error occurred during search',
-      );
+      return ProductResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
 
   /// Get product details by ID
   Future<ProductDetailResult> getProductDetails(String productId) async {
     try {
-      final endpoint = AppConfig.replaceParams(
-        AppConfig.productDetailsEndpoint,
-        {'id': productId},
-      );
-
-      final response = await _api.get(endpoint, requiresAuth: false);
+      final endpoint = AppConfig.replaceParams(AppConfig.productDetailsEndpoint, {'id': productId});
+      final response = await _api.get(endpoint, requiresAuth: false, retries: 2);
 
       if (response.isSuccess && response.data != null) {
         final product = Product.fromJson(response.data);
-
-        // Add to recently viewed
         await _storage.addRecentlyViewed(productId);
-
-        return ProductDetailResult(
-          success: true,
-          product: product,
-        );
+        return ProductDetailResult(success: true, product: product);
       } else {
-        return ProductDetailResult(
-          success: false,
-          message: response.message ?? 'Product not found',
-        );
+        return ProductDetailResult(success: false, message: response.message ?? 'Product not found');
       }
     } catch (e) {
-      return ProductDetailResult(
-        success: false,
-        message: 'An error occurred',
-      );
+      return ProductDetailResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
 
@@ -202,33 +160,17 @@ class ProductService {
   /// Get all categories
   Future<CategoryResult> getCategories() async {
     try {
-      final response = await _api.get(
-        AppConfig.categoriesEndpoint,
-        requiresAuth: false,
-      );
+      final response = await _api.get(AppConfig.categoriesEndpoint, requiresAuth: false, retries: 2);
 
       if (response.isSuccess && response.data != null) {
-        final categoriesJson =
-            response.data['categories'] ?? response.data ?? [];
-        final categories = (categoriesJson as List)
-            .map((json) => Category.fromJson(json))
-            .toList();
-
-        return CategoryResult(
-          success: true,
-          categories: categories,
-        );
+        final categoriesJson = response.data['categories'] ?? response.data ?? [];
+        final categories = (categoriesJson as List).map((json) => Category.fromJson(json)).toList();
+        return CategoryResult(success: true, categories: categories);
       } else {
-        return CategoryResult(
-          success: false,
-          message: response.message ?? 'Failed to fetch categories',
-        );
+        return CategoryResult(success: false, message: response.message ?? 'Failed to fetch categories');
       }
     } catch (e) {
-      return CategoryResult(
-        success: false,
-        message: 'An error occurred',
-      );
+      return CategoryResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
 
@@ -239,43 +181,24 @@ class ProductService {
     int limit = 20,
   }) async {
     try {
-      final endpoint = AppConfig.replaceParams(
-        AppConfig.categoryProductsEndpoint,
-        {'id': categoryId},
-      );
-
+      final endpoint = AppConfig.replaceParams(AppConfig.categoryProductsEndpoint, {'id': categoryId});
       final response = await _api.get(
         endpoint,
-        params: {
-          'page': page.toString(),
-          'limit': limit.toString(),
-        },
+        params: {'page': page.toString(), 'limit': limit.toString()},
         requiresAuth: false,
+        retries: 2,
       );
 
       if (response.isSuccess && response.data != null) {
         final data = response.data;
         final productsJson = data['products'] ?? [];
-        final products = (productsJson as List)
-            .map((json) => Product.fromJson(json))
-            .toList();
-
-        return ProductResult(
-          success: true,
-          products: products,
-          total: data['total'] ?? products.length,
-        );
+        final products = (productsJson as List).map((json) => Product.fromJson(json)).toList();
+        return ProductResult(success: true, products: products, total: data['total'] ?? products.length);
       } else {
-        return ProductResult(
-          success: false,
-          message: response.message ?? 'Failed to fetch products',
-        );
+        return ProductResult(success: false, message: response.message ?? 'Failed to fetch products');
       }
     } catch (e) {
-      return ProductResult(
-        success: false,
-        message: 'An error occurred',
-      );
+      return ProductResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
 
@@ -285,25 +208,14 @@ class ProductService {
   Future<ProductResult> getRecentlyViewed() async {
     try {
       final productIds = await _storage.getRecentlyViewed();
-
       if (productIds.isEmpty) {
-        return ProductResult(
-          success: true,
-          products: [],
-        );
+        return ProductResult(success: true, products: []);
       }
 
-      // Fetch products by IDs (implement this endpoint in backend if needed)
-      // For now, return empty list
-      return ProductResult(
-        success: true,
-        products: [],
-      );
+      // Future improvement: fetch products by IDs from backend
+      return ProductResult(success: true, products: []);
     } catch (e) {
-      return ProductResult(
-        success: false,
-        message: 'An error occurred',
-      );
+      return ProductResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
 }
@@ -333,11 +245,7 @@ class ProductDetailResult {
   final String? message;
   final Product? product;
 
-  ProductDetailResult({
-    required this.success,
-    this.message,
-    this.product,
-  });
+  ProductDetailResult({required this.success, this.message, this.product});
 }
 
 /// 📋 Category Result
@@ -346,9 +254,5 @@ class CategoryResult {
   final String? message;
   final List<Category> categories;
 
-  CategoryResult({
-    required this.success,
-    this.message,
-    this.categories = const [],
-  });
+  CategoryResult({required this.success, this.message, this.categories = const []});
 }

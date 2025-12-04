@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/constants/app_config.dart';
 import '../../../services/api_service.dart';
 import '../widgets/admin_layout.dart';
 
@@ -28,11 +29,15 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   Future<void> _loadUsers() async {
     setState(() => _isLoading = true);
     try {
-      final response = await _apiService.get('/api/users');
+      final response = await _apiService.get(AppConfig.adminUsersEndpoint);
       if (response.isSuccess && response.data != null) {
         setState(() {
-          _users =
-              List<Map<String, dynamic>>.from(response.data['users'] ?? []);
+          final dataMap = response.data as Map<String, dynamic>;
+          // Backend returns {success, message, data: {data: [...], pagination: {...}}}
+          final actualData = dataMap.containsKey('data')
+              ? Map<String, dynamic>.from(dataMap['data'] as Map)
+              : dataMap;
+          _users = List<Map<String, dynamic>>.from(actualData['data'] ?? []);
           _isLoading = false;
         });
       }

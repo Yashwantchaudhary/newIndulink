@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/constants/app_config.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/api_service.dart';
-import '../../../providers/auth_provider.dart';
 import '../../../core/widgets/realtime_indicator.dart';
 import '../widgets/admin_layout.dart';
 import 'data_export_import_screen.dart';
@@ -34,31 +33,28 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
   Future<void> _loadDataStats() async {
     setState(() => _isLoading = true);
     try {
-      // Load stats for all collections
-      final responses = await Future.wait([
-        _apiService.get('/api/users/stats'),
-        _apiService.get('/api/products/stats'),
-        _apiService.get('/api/categories/stats'),
-        _apiService.get('/api/orders/stats'),
-        _apiService.get('/api/reviews/stats'),
-        _apiService.get('/api/rfq/stats'),
-        _apiService.get('/api/messages/stats'),
-        _apiService.get('/api/notifications/stats'),
-      ]);
+      // Load comprehensive stats from admin stats endpoint
+      final response = await _apiService.get(AppConfig.adminDashboardEndpoint);
 
-      setState(() {
-        _stats = {
-          'users': responses[0].isSuccess ? responses[0].data : {'count': 0},
-          'products': responses[1].isSuccess ? responses[1].data : {'count': 0},
-          'categories': responses[2].isSuccess ? responses[2].data : {'count': 0},
-          'orders': responses[3].isSuccess ? responses[3].data : {'count': 0},
-          'reviews': responses[4].isSuccess ? responses[4].data : {'count': 0},
-          'rfqs': responses[5].isSuccess ? responses[5].data : {'count': 0},
-          'messages': responses[6].isSuccess ? responses[6].data : {'count': 0},
-          'notifications': responses[7].isSuccess ? responses[7].data : {'count': 0},
-        };
-        _isLoading = false;
-      });
+      if (response.isSuccess && response.data != null) {
+        final statsData = response.data;
+
+        setState(() {
+          _stats = {
+            'users': {'count': statsData['totalUsers'] ?? 0},
+            'products': {'count': statsData['totalProducts'] ?? 0},
+            'categories': {'count': 0}, // Categories count not available in current stats
+            'orders': {'count': statsData['totalOrders'] ?? 0},
+            'reviews': {'count': 0}, // Reviews count not available in current stats
+            'rfqs': {'count': 0}, // RFQs count not available in current stats
+            'messages': {'count': 0}, // Messages count not available in current stats
+            'notifications': {'count': 0}, // Notifications count not available in current stats
+          };
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
     } catch (e) {
       setState(() => _isLoading = false);
     }

@@ -25,6 +25,7 @@ class AppColors {
   /// Success Green - For positive actions and confirmations
   static const Color success = Color(0xFF00C853);
   static const Color successLight = Color(0xFF69F0AE);
+  static const Color successLightest = Color(0xFFE8F5E8);
   static const Color successDark = Color(0xFF00A843);
 
   /// Warning Amber - For alerts and important information

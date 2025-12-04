@@ -14,6 +14,15 @@ const Cart = require('../models/Cart');
 const Wishlist = require('../models/Wishlist');
 const Address = require('../models/Address');
 
+// WebSocket service for real-time updates (optional)
+let webSocketService;
+try {
+    webSocketService = require('../services/webSocketService');
+} catch (error) {
+    // WebSocket service not available, continue without real-time updates
+    console.log('WebSocket service not available, real-time updates disabled');
+}
+
 // @desc    Export user data (GDPR compliant)
 // @route   GET /api/export/user-data
 // @access  Private (Own data only)
@@ -268,6 +277,76 @@ exports.importCollection = async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: `Import completed. ${result.imported} records imported, ${result.skipped} skipped.`,
+            data: result
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Import products with validation and supplier assignment
+// @route   POST /api/products/import
+// @access  Private (Admin and Supplier)
+exports.importProducts = async (req, res, next) => {
+    try {
+        const format = req.query.format || 'json';
+        const options = {
+            validateData: req.query.validate !== 'false',
+            skipDuplicates: req.query.skipDuplicates !== 'false',
+            assignToSupplier: req.user.role === 'supplier' ? req.user.id : null
+        };
+
+        let data;
+        if (req.file) {
+            // File upload
+            const fs = require('fs');
+            const fileContent = fs.readFileSync(req.file.path, 'utf8');
+
+            if (format === 'csv') {
+                data = fileContent;
+            } else {
+                data = JSON.parse(fileContent);
+            }
+
+            // Clean up uploaded file
+            fs.unlinkSync(req.file.path);
+        } else if (req.body.data) {
+            // Raw data in request body
+            data = req.body.data;
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: 'No data provided. Use file upload or raw data in request body.'
+            });
+        }
+
+        // Perform product-specific import
+        let result;
+        if (format === 'csv') {
+            result = await dataExportService.importFromCSV(data, {
+                collection: 'products',
+                validateData: options.validateData,
+                skipDuplicates: options.skipDuplicates
+            });
+        } else {
+            result = await dataExportService.importFromJSON(data, {
+                collection: 'products',
+                validateData: options.validateData,
+                skipDuplicates: options.skipDuplicates
+            });
+        }
+
+        // Send real-time updates via WebSocket for new products
+        if (webSocketService && result.importedProducts) {
+            result.importedProducts.forEach(product => {
+                webSocketService.notifyProductUpdate(product._id, 'created', product, req.user.id);
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Product import completed. ${result.imported} products imported, ${result.skipped} skipped.`,
             data: result
         });
 

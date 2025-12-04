@@ -48,6 +48,7 @@ class ProductCard extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Image Section
             Stack(
@@ -166,132 +167,134 @@ class ProductCard extends StatelessWidget {
             ),
 
             // Details Section
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Category
-                  if (product.categoryName != null)
-                    Text(
-                      product.categoryName!.toUpperCase(),
-                      style: const TextStyle(
-                        color: AppColors.textTertiary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  const SizedBox(height: 4),
-
-                  // Title
-                  Text(
-                    product.title,
-                    style: AppTypography.bodyMedium.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-
-                  // Rating
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.star,
-                        size: 14,
-                        color: AppColors.warning,
-                      ),
-                      const SizedBox(width: 4),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Category
+                    if (product.categoryName != null)
                       Text(
-                        product.averageRating.toStringAsFixed(1),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '(${product.totalReviews})',
+                        product.categoryName!.toUpperCase(),
                         style: const TextStyle(
                           color: AppColors.textTertiary,
-                          fontSize: 12,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+                    const SizedBox(height: 4),
 
-                  // Price and Add Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Rs. ${product.price.toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            if (product.hasDiscount)
-                              Text(
-                                'Rs. ${product.compareAtPrice!.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  color: AppColors.textTertiary,
-                                  decoration: TextDecoration.lineThrough,
-                                  fontSize: 12,
-                                ),
-                              ),
-                          ],
-                        ),
+                    // Title
+                    Text(
+                      product.title,
+                      style: AppTypography.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                      if (showAddButton)
-                        InkWell(
-                          onTap: () async {
-                            final success = await context
-                                .read<CartProvider>()
-                                .addToCart(product);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(success
-                                    ? '${product.title} added to cart'
-                                    : 'Failed to add ${product.title} to cart'),
-                                duration: const Duration(seconds: 1),
-                                action: success
-                                    ? SnackBarAction(
-                                        label: 'VIEW CART',
-                                        onPressed: () {
-                                          // Navigate to cart
-                                        },
-                                      )
-                                    : null,
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.add_shopping_cart,
-                              color: Colors.white,
-                              size: 18,
-                            ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Rating
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.star,
+                          size: 14,
+                          color: AppColors.warning,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          product.averageRating.toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 4),
+                        Text(
+                          '(${product.totalReviews})',
+                          style: const TextStyle(
+                            color: AppColors.textTertiary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+
+                    // Price and Add Button
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Rs. ${product.price.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              if (product.hasDiscount)
+                                Text(
+                                  'Rs. ${product.compareAtPrice!.toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                    color: AppColors.textTertiary,
+                                    decoration: TextDecoration.lineThrough,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        if (showAddButton)
+                          InkWell(
+                            onTap: () async {
+                              final success = await context
+                                  .read<CartProvider>()
+                                  .addToCart(product);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(success
+                                      ? '${product.title} added to cart'
+                                      : 'Failed to add ${product.title} to cart'),
+                                  duration: const Duration(seconds: 1),
+                                  action: success
+                                      ? SnackBarAction(
+                                          label: 'VIEW CART',
+                                          onPressed: () {
+                                            // Navigate to cart
+                                          },
+                                        )
+                                      : null,
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.add_shopping_cart,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

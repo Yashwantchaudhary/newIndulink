@@ -58,13 +58,9 @@ class ApiService {
           encodedBody = null;
         }
       } catch (e) {
-        print('JSON ENCODE ERROR: $e');
-        print('BODY DATA: $body');
+        // JSON encoding failed, body will be null
         encodedBody = null;
       }
-      print('REQUEST -> POST $uri');
-      print('HEADERS -> $headers');
-      print('BODY -> $encodedBody');
 
       final response = await _client
           .post(
@@ -74,9 +70,6 @@ class ApiService {
             encoding: Encoding.getByName('utf-8'),
           )
           .timeout(AppConfig.connectTimeout);
-
-      print('RESPONSE STATUS -> ${response.statusCode}');
-      print('RESPONSE BODY -> ${response.body}');
 
       return _handleResponse(response);
     } catch (e) {

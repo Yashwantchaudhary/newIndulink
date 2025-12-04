@@ -6,13 +6,13 @@ const Product = require('../models/Product');
 // @access  Private (Customer)
 exports.getCart = async (req, res, next) => {
     try {
-        let cart = await Cart.findOne({ user: req.user.id }).populate({
+        let cart = await Cart.findOne({ user: req.user._id }).populate({
             path: 'items.product',
             select: 'title price images stock status',
         });
 
         if (!cart) {
-            cart = await Cart.create({ user: req.user.id, items: [] });
+            cart = await Cart.create({ user: req.user._id, items: [] });
         }
 
         res.status(200).json({
@@ -56,10 +56,10 @@ exports.addToCart = async (req, res, next) => {
         }
 
         // Get or create cart
-        let cart = await Cart.findOne({ user: req.user.id });
+        let cart = await Cart.findOne({ user: req.user._id });
 
         if (!cart) {
-            cart = await Cart.create({ user: req.user.id, items: [] });
+            cart = await Cart.create({ user: req.user._id, items: [] });
         }
 
         // Check if product already in cart
@@ -122,6 +122,25 @@ exports.addToCart = async (req, res, next) => {
             select: 'title price images stock status',
         });
 
+        // Send real-time update to admin dashboard
+        try {
+            const { sendAdminCartUpdate } = require('../services/webSocketService');
+            if (sendAdminCartUpdate) {
+                await sendAdminCartUpdate({
+                    customerId: req.user.id,
+                    productId: productId,
+                    supplierId: product.supplier.toString(),
+                    quantity: quantity,
+                    productName: product.title,
+                    productPrice: product.price,
+                    timestamp: new Date().toISOString(),
+                });
+            }
+        } catch (adminUpdateError) {
+            console.error('Error sending admin cart update:', adminUpdateError);
+            // Don't fail the cart operation if admin update fails
+        }
+
         res.status(200).json({
             success: true,
             message: 'Item added to cart',
@@ -139,7 +158,7 @@ exports.updateCartItem = async (req, res, next) => {
     try {
         const { quantity } = req.body;
 
-        const cart = await Cart.findOne({ user: req.user.id });
+        const cart = await Cart.findOne({ user: req.user._id });
 
         if (!cart) {
             return res.status(404).json({
@@ -191,7 +210,7 @@ exports.updateCartItem = async (req, res, next) => {
 // @access  Private (Customer)
 exports.removeFromCart = async (req, res, next) => {
     try {
-        const cart = await Cart.findOne({ user: req.user.id });
+        const cart = await Cart.findOne({ user: req.user._id });
 
         if (!cart) {
             return res.status(404).json({
@@ -219,12 +238,57 @@ exports.removeFromCart = async (req, res, next) => {
     }
 };
 
+// @desc    Get cart statistics
+// @route   GET /api/cart/stats/:userId
+// @access  Private
+exports.getCartStats = async (req, res, next) => {
+    try {
+        const userId = req.params.userId;
+
+        // Check if user is authorized to access this user's data
+        if (req.user.role !== 'admin' && req.user.id !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to access this user data',
+            });
+        }
+
+        const cart = await Cart.findOne({ user: userId }).populate({
+            path: 'items.product',
+            select: 'title price images stock status',
+        });
+
+        if (!cart) {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    count: 0,
+                    total: 0
+                }
+            });
+        }
+
+        const itemCount = cart.items.length;
+        const totalValue = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                count: itemCount,
+                total: totalValue
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Clear cart
 // @route   DELETE /api/cart
 // @access  Private (Customer)
 exports.clearCart = async (req, res, next) => {
     try {
-        const cart = await Cart.findOne({ user: req.user.id });
+        const cart = await Cart.findOne({ user: req.user._id });
 
         if (!cart) {
             return res.status(404).json({

@@ -29,7 +29,6 @@ class AppConfig {
   // ==================== Authentication Endpoints ====================
   static const String loginEndpoint = '/auth/login';
   static const String registerEndpoint = '/auth/register';
-  static const String googleLoginEndpoint = '/auth/google';
   static const String logoutEndpoint = '/auth/logout';
   static const String refreshTokenEndpoint = '/auth/refresh';
   static const String verifyEmailEndpoint = '/auth/verify-email';
@@ -60,10 +59,10 @@ class AppConfig {
 
   // ==================== Cart Endpoints ====================
   static const String cartEndpoint = '/cart';
-  static const String addToCartEndpoint = '/cart/add';
-  static const String updateCartEndpoint = '/cart/update';
-  static const String removeFromCartEndpoint = '/cart/remove';
-  static const String clearCartEndpoint = '/cart/clear';
+  static const String addToCartEndpoint = '/cart'; // POST to /cart to add items
+  static const String updateCartEndpoint = '/cart'; // PUT to /cart/:itemId to update
+  static const String removeFromCartEndpoint = '/cart'; // DELETE to /cart/:itemId to remove
+  static const String clearCartEndpoint = '/cart'; // DELETE to /cart to clear
 
   // ==================== Order Endpoints ====================
   static const String ordersEndpoint = '/orders';
@@ -92,14 +91,11 @@ class AppConfig {
 
   // ==================== Wishlist Endpoints ====================
   static const String wishlistEndpoint = '/wishlist';
-  static const String addToWishlistEndpoint = '/wishlist/add';
-  static const String removeFromWishlistEndpoint = '/wishlist/remove';
 
   // ==================== Notification Endpoints ====================
   static const String notificationsEndpoint = '/notifications';
   static const String markNotificationReadEndpoint = '/notifications/:id/read';
   static const String markAllNotificationsReadEndpoint = '/notifications/read-all';
-  static const String fcmTokenEndpoint = '/notifications/fcm-token';
 
   // ==================== Message/Chat Endpoints ====================
   static const String conversationsEndpoint = '/conversations';

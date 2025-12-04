@@ -6,11 +6,13 @@ const {
     createCategory,
     updateCategory,
     deleteCategory,
+    getCategoryStats,
 } = require('../controllers/categoryController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 // Public routes
 router.get('/', getCategories);
+router.get('/stats', getCategoryStats);
 router.get('/:id', getCategory);
 
 // Protected routes (supplier/admin)

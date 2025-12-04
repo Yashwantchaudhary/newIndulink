@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 
 // Core
@@ -39,7 +38,6 @@ void main() async {
 
   // Initialize Storage Service first
   await StorageService().init();
-
 
   // Initialize Notification Service
   try {
@@ -83,15 +81,23 @@ class IndulinkApp extends StatefulWidget {
   State<IndulinkApp> createState() => _IndulinkAppState();
 }
 
-
 class _IndulinkAppState extends State<IndulinkApp> {
   @override
   void initState() {
     super.initState();
-    // Initialize auth provider after first frame
+    // Initialize auth and theme providers after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      authProvider.init();
+      // Use a safe context that has access to providers
+      final buildContext = NavigationService().currentContext;
+      if (buildContext != null) {
+        final authProvider =
+            Provider.of<AuthProvider>(buildContext, listen: false);
+        authProvider.init();
+
+        final themeProvider =
+            Provider.of<ThemeProvider>(buildContext, listen: false);
+        themeProvider.init();
+      }
     });
   }
 
@@ -124,8 +130,10 @@ class _IndulinkAppState extends State<IndulinkApp> {
 
         // Real-time Updates
         ChangeNotifierProxyProvider<AuthProvider, WebSocketProvider>(
-          create: (context) => WebSocketProvider(Provider.of<AuthProvider>(context, listen: false)),
-          update: (context, authProvider, previous) => previous ?? WebSocketProvider(authProvider),
+          create: (context) => WebSocketProvider(
+              Provider.of<AuthProvider>(context, listen: false)),
+          update: (context, authProvider, previous) =>
+              previous ?? WebSocketProvider(authProvider),
         ),
 
         // Data Export/Import
@@ -137,6 +145,8 @@ class _IndulinkAppState extends State<IndulinkApp> {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
+            key: ValueKey(
+                themeProvider.themeMode), // Prevents GlobalKey conflicts
             title: 'INDULINK',
             debugShowCheckedModeBanner: false,
 
@@ -159,4 +169,3 @@ class _IndulinkAppState extends State<IndulinkApp> {
     );
   }
 }
-

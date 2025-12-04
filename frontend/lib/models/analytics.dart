@@ -1,5 +1,6 @@
 /// 📊 Analytics Models
 /// Data models for analytics and reporting
+library;
 
 /// Supplier Analytics Data
 class SupplierAnalytics {

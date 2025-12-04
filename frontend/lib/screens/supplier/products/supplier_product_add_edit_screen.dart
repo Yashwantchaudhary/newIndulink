@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 import '../../../core/constants/app_colors.dart';
@@ -141,6 +140,10 @@ class _SupplierProductAddEditScreenState
         final uploadedUrls = await _imageService.uploadMultipleImagesToBackend(
           _selectedImages,
           folder: 'products',
+          onProgress: (progress, currentIndex) {
+            // Optional: Update UI with upload progress
+            // Example: setState(() => _uploadProgress = progress);
+          },
         );
         imageUrls.addAll(uploadedUrls);
       }
@@ -376,7 +379,7 @@ class _SupplierProductAddEditScreenState
                   _isFeatured = value;
                 });
               },
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
               contentPadding: EdgeInsets.zero,
             ),
             const SizedBox(height: 32),
@@ -414,14 +417,13 @@ class _SupplierProductAddEditScreenState
     );
   }
 
-
   Widget _buildCategorySelector() {
     if (_isCategoriesLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     return DropdownButtonFormField<String>(
-      value: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+      initialValue: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
       decoration: const InputDecoration(
         labelText: 'Select Category *',
         hintText: 'Choose a category',

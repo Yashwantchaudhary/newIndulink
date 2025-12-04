@@ -101,7 +101,6 @@ rfqSchema.pre('save', async function (next) {
 });
 
 // Indexes for performance
-rfqSchema.index({ rfqNumber: 1 });
 rfqSchema.index({ customerId: 1, createdAt: -1 });
 rfqSchema.index({ status: 1 });
 

@@ -1,104 +1,32 @@
 require('dotenv').config();
 
-// // Initialize New Relic APM (must be first)
-// if (process.env.NEW_RELIC_LICENSE_KEY) {
-//     require('newrelic');
-// }
-
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-const { createServer } = require('http');
-const { Server } = require('socket.io');
 
 const connectDatabase = require('./config/database');
-// const { initializeFirebase } = require('./config/firebase'); // Commented out for local testing
-const cdnConfig = require('./config/cdn');
 const errorHandler = require('./middleware/errorHandler');
 const { languageMiddleware } = require('./middleware/languageMiddleware');
-const { apiMonitoring } = require('./middleware/apiMonitoring');
-const infrastructureMonitor = require('./services/infrastructureMonitor');
+const {
+    authRateLimiter,
+    registerRateLimiter,
+    passwordResetRateLimiter,
+    securityHeaders,
+    securityCors
+} = require('./middleware/securityMiddleware');
 
 // Initialize Express app
 const app = express();
 
-// Create HTTP server for Socket.IO
-const server = createServer(app);
-
-// Initialize Socket.IO
-const io = new Server(server, {
-    cors: {
-        origin: function (origin, callback) {
-            // Allow requests with no origin (like mobile apps, Postman, or cURL)
-            if (!origin) return callback(null, true);
-
-            // Allow localhost origins for development (web browsers)
-            if (origin && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
-                return callback(null, true);
-            }
-
-            // If ALLOWED_ORIGINS is '*', allow all origins
-            if (allowedOrigins === '*') {
-                return callback(null, true);
-            }
-
-            // Otherwise, check if origin is in the allowed list
-            const allowedList = allowedOrigins.split(',').map(o => o.trim());
-            if (allowedList.indexOf(origin) !== -1 || allowedList.includes('*')) {
-                callback(null, true);
-            } else {
-                callback(new Error('Not allowed by CORS'));
-            }
-        },
-        credentials: true,
-        methods: ['GET', 'POST'],
-    },
-    transports: ['websocket', 'polling'],
-});
-
 // Connect to Database
 connectDatabase();
 
-// Initialize Firebase Admin SDK
-// initializeFirebase(); // Commented out for local testing without firebase config
 
-// CORS Configuration (must come before other middleware)
-const allowedOrigins = process.env.ALLOWED_ORIGINS || '*';
-
-const corsOptions = {
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps, Postman, or cURL)
-        if (!origin) return callback(null, true);
-
-        // Allow localhost origins for development (web browsers)
-        if (origin && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
-            return callback(null, true);
-        }
-
-        // If ALLOWED_ORIGINS is '*', allow all origins
-        if (allowedOrigins === '*') {
-            return callback(null, true);
-        }
-
-        // Otherwise, check if origin is in the allowed list
-        const allowedList = allowedOrigins.split(',').map(o => o.trim());
-        if (allowedList.indexOf(origin) !== -1 || allowedList.includes('*')) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-    optionsSuccessStatus: 200,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-Request-ID'],
-    exposedHeaders: ['Authorization'],
-};
-app.use(cors(corsOptions));
+// CORS Configuration
+app.use(cors());
 
 // Security Middleware (configured for CORS compatibility)
 app.use(helmet({
@@ -124,7 +52,11 @@ app.use(helmet({
     }
 }));
 
-// Rate Limiting
+// Enhanced Security Middleware
+app.use(securityHeaders);
+app.use(securityCors);
+
+// Enhanced Rate Limiting
 const limiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
@@ -134,16 +66,15 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Body Parser Middleware
-app.use(express.json({ limit: '10mb', verify: (req, res, buf) => {
-  if (req.url.includes('/auth/register')) {
-    console.log('Raw register request body:', buf.toString());
-  }
-} }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Specific rate limiting for auth routes
+app.use('/api/auth/register', registerRateLimiter);
+app.use('/api/auth/login', authRateLimiter);
+app.use('/api/auth/forgot-password', passwordResetRateLimiter);
+app.use('/api/auth/reset-password', passwordResetRateLimiter);
 
-// Compression Middleware
-app.use(compression());
+// Body Parser Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Logging Middleware
 if (process.env.NODE_ENV === 'development') {
@@ -155,32 +86,10 @@ if (process.env.NODE_ENV === 'development') {
 // Language Middleware (for localization support)
 app.use(languageMiddleware);
 
-// API Monitoring Middleware
-app.use('/api', apiMonitoring);
-
-// CDN Middleware for setting cache headers
-app.use('/uploads', (req, res, next) => {
-    // Set CDN cache headers for images
-    const headers = cdnConfig.getCacheHeaders('images');
-    Object.entries(headers).forEach(([key, value]) => {
-        res.setHeader(key, value);
-    });
-    next();
-});
 
 // Static Files (for uploaded images)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
-    maxAge: cdnConfig.cacheSettings.images.maxAge * 1000, // Convert to milliseconds
-    etag: true,
-    lastModified: true
-}));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Static Files (for monitoring dashboard)
-app.use('/monitoring', express.static(path.join(__dirname, 'public'), {
-    maxAge: 300000, // 5 minutes cache
-    etag: true,
-    lastModified: true
-}));
 
 // ==================== API ROUTES BY ROLE ====================
 
@@ -196,6 +105,9 @@ app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/wishlist', require('./routes/wishlistRoutes'));
 app.use('/api/addresses', require('./routes/addressRoutes'));
+
+// 🔍 Filter Routes (Public)
+app.use('/api/filters', require('./routes/filterRoutes'));
 
 // 🛒 Customer Routes (Customer + Admin)
 app.use('/api/cart', require('./routes/cartRoutes'));
@@ -213,69 +125,34 @@ app.use('/api/rfq', require('./routes/rfqRoutes'));
 // 👨‍💼 Admin Routes (Admin only)
 app.use('/api/admin', require('./routes/adminRoutes'));
 
+// 👥 Enhanced User Management Routes (Admin only)
+app.use('/api/admin/users', require('./routes/userManagementRoutes'));
+
 // 📊 Export/Import Routes (Authenticated users)
 app.use('/api/export', require('./routes/exportRoutes'));
 
 // 📈 Analytics Routes (Authenticated users)
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 
-// 🔔 Push Notification Routes (Authenticated users)
-app.use('/api/notifications', require('./routes/pushNotificationRoutes'));
+// 💳 Payment Routes (Various access levels)
+app.use('/api/payments', require('./routes/paymentRoutes'));
 
 // Seeding Routes (Admin only - for development/testing)
-// app.use('/api/seed', require('./routes/seedingRoutes'));
+app.use('/api/seed', require('./routes/seedingRoutes'));
 
-// CDN Routes for image optimization and cache management
-// app.use('/cdn', require('./routes/cdnRoutes'));
 
 // Health Check Route
 app.get('/health', (req, res) => {
-    const infrastructureReport = infrastructureMonitor.getInfrastructureReport();
-    const healthStatus = infrastructureReport.alerts.status;
-
-    res.status(healthStatus.status === 'healthy' ? 200 : 503).json({
-        success: healthStatus.status === 'healthy',
-        message: `Indulink API is ${healthStatus.status}`,
+    res.status(200).json({
+        success: true,
+        message: 'Indulink API is healthy',
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
-        infrastructure: infrastructureReport,
         uptime: process.uptime(),
         memory: process.memoryUsage()
     });
 });
 
-// API Metrics Route (for monitoring dashboards)
-app.get('/api/metrics', (req, res) => {
-    const { getMetricsSummary } = require('./middleware/apiMonitoring');
-    const apiMetrics = getMetricsSummary();
-    const infrastructureMetrics = infrastructureMonitor.getInfrastructureReport();
-
-    res.status(200).json({
-        success: true,
-        message: 'System metrics retrieved successfully',
-        data: {
-            api: apiMetrics,
-            infrastructure: infrastructureMetrics,
-            timestamp: new Date().toISOString()
-        }
-    });
-});
-
-// Infrastructure Metrics Route (detailed system metrics)
-app.get('/api/infrastructure', (req, res) => {
-    const report = infrastructureMonitor.getInfrastructureReport();
-
-    res.status(200).json({
-        success: true,
-        message: 'Infrastructure metrics retrieved successfully',
-        data: report
-    });
-});
-
-// Monitoring Dashboard Route
-app.get('/monitoring', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'monitoring-dashboard.html'));
-});
 
 // API Root Route
 app.get('/api', (req, res) => {
@@ -316,19 +193,11 @@ app.use((req, res) => {
 // Error Handler Middleware (must be last)
 app.use(errorHandler);
 
-// Initialize WebSocket Service
-const webSocketService = require('./services/webSocketService')(io);
-
-// Set WebSocket service for controllers that need real-time updates
-require('./controllers/productController').setWebSocketService(webSocketService);
-require('./controllers/orderController').setWebSocketService && require('./controllers/orderController').setWebSocketService(webSocketService);
-require('./controllers/userController').setWebSocketService && require('./controllers/userController').setWebSocketService(webSocketService);
-require('./controllers/messageController').setWebSocketService && require('./controllers/messageController').setWebSocketService(webSocketService);
 
 
 // Start Server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`
 ╔═══════════════════════════════════════════════════════╗
 ║                                                       ║
@@ -339,13 +208,13 @@ server.listen(PORT, '0.0.0.0', () => {
 ║   ✓ API Base: http://localhost:${PORT}/api           ║
 ║                                                       ║
 ╚═══════════════════════════════════════════════════════╝
-  `);
+   `);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
     console.error(`❌ Unhandled Promise Rejection: ${err.message}`);
-    server.close(() => process.exit(1));
+    process.exit(1);
 });
 
 module.exports = app;

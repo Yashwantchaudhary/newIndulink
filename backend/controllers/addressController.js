@@ -191,3 +191,67 @@ exports.setDefaultAddress = async (req, res, next) => {
         next(error);
     }
 };
+
+// @desc    Get address statistics
+// @route   GET /api/addresses/stats
+// @access  Private (Admin)
+exports.getAddressStats = async (req, res, next) => {
+    try {
+        const totalAddresses = await Address.countDocuments();
+        const defaultAddresses = await Address.countDocuments({ isDefault: true });
+
+        // Get addresses by country
+        const addressesByCountry = await Address.aggregate([
+            { $group: { _id: '$country', count: { $sum: 1 } } }
+        ]);
+
+        // Get addresses by city
+        const addressesByCity = await Address.aggregate([
+            { $group: { _id: '$city', count: { $sum: 1 } } }
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalAddresses,
+                defaultAddresses,
+                addressesByCountry,
+                addressesByCity,
+                count: totalAddresses
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get user-specific address statistics
+// @route   GET /api/addresses/stats/:userId
+// @access  Private (User or Admin)
+exports.getUserAddressStats = async (req, res, next) => {
+    try {
+        const userId = req.params.userId;
+
+        // Check if user is authorized to access this user's data
+        if (req.user.role !== 'admin' && req.user.id !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to access this user data',
+            });
+        }
+
+        const totalAddresses = await Address.countDocuments({ user: userId });
+        const defaultAddresses = await Address.countDocuments({ user: userId, isDefault: true });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalAddresses,
+                defaultAddresses,
+                count: totalAddresses
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};

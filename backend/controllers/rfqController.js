@@ -414,3 +414,73 @@ exports.uploadAttachments = async (req, res) => {
         });
     }
 };
+
+// @desc    Get RFQ statistics
+// @route   GET /api/rfq/stats
+// @access  Private (Admin)
+exports.getRFQStats = async (req, res) => {
+    try {
+        const totalRFQs = await RFQ.countDocuments();
+        const pendingRFQs = await RFQ.countDocuments({ status: 'pending' });
+        const quotedRFQs = await RFQ.countDocuments({ status: 'quoted' });
+        const awardedRFQs = await RFQ.countDocuments({ status: 'awarded' });
+        const closedRFQs = await RFQ.countDocuments({ status: 'closed' });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalRFQs,
+                pendingRFQs,
+                quotedRFQs,
+                awardedRFQs,
+                closedRFQs,
+                count: totalRFQs
+            }
+        });
+    } catch (error) {
+        console.error('Get RFQ Stats Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching RFQ stats',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get supplier RFQ statistics
+// @route   GET /api/rfq/stats/supplier/:supplierId
+// @access  Private (Supplier or Admin)
+exports.getSupplierRFQStats = async (req, res) => {
+    try {
+        const supplierId = req.params.supplierId;
+
+        // Check if user is authorized to access this supplier's data
+        if (req.user.role !== 'admin' && req.user.id !== supplierId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to access this supplier data',
+            });
+        }
+
+        const totalRFQs = await RFQ.countDocuments({ 'quotes.supplier': supplierId });
+        const pendingRFQs = await RFQ.countDocuments({ 'quotes.supplier': supplierId, status: 'pending' });
+        const awardedRFQs = await RFQ.countDocuments({ 'quotes.supplier': supplierId, status: 'awarded' });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalRFQs,
+                pendingRFQs,
+                awardedRFQs,
+                count: totalRFQs
+            }
+        });
+    } catch (error) {
+        console.error('Get Supplier RFQ Stats Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching supplier RFQ stats',
+            error: error.message
+        });
+    }
+};

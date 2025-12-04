@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_typography.dart';
-import '../../../core/widgets/error_widget.dart';
 import '../../../core/widgets/loading_widgets.dart';
 
 import '../../../models/user.dart';
@@ -373,7 +372,7 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                 _isDefault = value;
               });
             },
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
           ),
         ],
       ),

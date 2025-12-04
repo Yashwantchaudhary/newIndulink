@@ -18,6 +18,7 @@ const {
     getNotificationPreferences,
     updateLanguage,
     getLanguage,
+    getUserStats,
 } = require('../controllers/userController');
 const { protect, requireCustomer, requireAdmin } = require('../middleware/authMiddleware');
 const { uploadSingle } = require('../middleware/upload');
@@ -52,5 +53,6 @@ router.put('/language', protect, updateLanguage);
 router.get('/', protect, requireAdmin, getUsers);
 router.put('/:id', protect, requireAdmin, updateUser);
 router.delete('/:id', protect, requireAdmin, deleteUser);
+router.get('/stats', protect, requireAdmin, getUserStats);
 
 module.exports = router;

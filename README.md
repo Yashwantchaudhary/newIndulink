@@ -83,10 +83,10 @@
 ### Backend Integration
 - **API**: RESTful with Node.js + Express
 - **Database**: MongoDB
-- **Authentication**: JWT + Google OAuth
-- **Storage**: Firebase Storage
-- **Push Notifications**: Firebase Cloud Messaging
-- **Analytics**: Firebase Analytics
+- **Authentication**: JWT
+- **Storage**: Local file system
+- **Real-time**: WebSocket
+- **Architecture**: Clean, no third party services
 
 ### Dependencies
 ```yaml
@@ -94,11 +94,6 @@
 flutter_sdk: 3.x
 provider: ^6.1.1
 google_fonts: ^6.1.0
-
-# Authentication
-firebase_core: ^4.1.0
-firebase_auth: ^6.0.2
-google_sign_in: ^7.2.0
 
 # Networking
 http: ^1.2.0
@@ -115,6 +110,7 @@ glassmorphism: ^3.0.0
 # Additional
 image_picker: ^1.0.4
 fl_chart: ^1.1.1
+socket_io_client: ^2.0.3
 ```
 
 ## 📁 Project Structure
@@ -191,15 +187,9 @@ cd indulink
 flutter pub get
 ```
 
-3. **Configure Firebase**
-   - Create a Firebase project
-   - Add Android/iOS apps
-   - Download `google-services.json` (Android) and `GoogleService-Info.plist` (iOS)
-   - Place them in respective folders
-
-4. **Configure Backend**
-   - Update API base URL in `lib/core/constants/app_config.dart`
-   - Set environment variables
+3. **Configure Backend**
+    - Update API base URL in `lib/core/constants/app_config.dart`
+    - Ensure backend server is running on localhost:5000
 
 5. **Run the app**
 ```bash
@@ -225,18 +215,19 @@ flutter build apk --release
 - [x] Customer home screen with product cards
 - [x] API configuration and endpoints
 - [x] Theme switching (Light/Dark)
+- [x] **Backend cleanup - removed all third party services**
+- [x] **Application testing - backend + frontend integration verified**
+- [x] **Clean architecture - zero external dependencies**
 
 ### 🚧 In Progress
 - [ ] Complete customer screens (Product details, Cart, Checkout)
 - [ ] Supplier dashboard and management
 - [ ] Admin panel
-- [ ] API integration with backend
 - [ ] State management implementation
-- [ ] Payment gateway integration
+- [ ] Flutter app development and testing
 
 ### 📋 Planned
-- [ ] Push notifications
-- [ ] Real-time order tracking
+- [ ] Real-time order tracking (WebSocket)
 - [ ] Advanced search & filters
 - [ ] Product reviews system
 - [ ] RFQ (Request for Quotation)
@@ -324,6 +315,7 @@ For support, email support@indulink.com or create an issue in this repository.
 
 ---
 
-**Built with ❤️ using Flutter**
+**Built with ❤️ using Flutter & Node.js**
 
-*Last Updated: November 28, 2025*
+*Last Updated: December 3, 2025*
+*Backend cleaned: All third party services removed, zero external dependencies*

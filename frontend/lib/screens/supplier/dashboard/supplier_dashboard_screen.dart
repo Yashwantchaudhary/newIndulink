@@ -42,11 +42,16 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
     });
 
     try {
-      final response = await _apiService.get(AppConfig.supplierDashboardEndpoint);
+      final response =
+          await _apiService.get(AppConfig.supplierDashboardEndpoint);
 
       if (response.isSuccess && response.data != null) {
         setState(() {
-          _dashboardData = SupplierDashboardData.fromJson(response.data);
+          final dataMap = response.data as Map<String, dynamic>;
+          final actualData = dataMap.containsKey('data')
+              ? Map<String, dynamic>.from(dataMap['data'] as Map)
+              : dataMap;
+          _dashboardData = SupplierDashboardData.fromJson(actualData);
           _isLoading = false;
         });
       } else {
@@ -165,13 +170,20 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
     return SliverAppBar(
       floating: true,
       snap: true,
-      backgroundColor: AppColors.primary,
+      backgroundColor: Theme.of(context).colorScheme.primary,
       elevation: 0,
       expandedHeight: 120,
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.primaryContainer,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
           padding: const EdgeInsets.only(
             left: AppDimensions.pageHorizontalPadding,
@@ -184,7 +196,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
               Text(
                 'Supplier Dashboard',
                 style: AppTypography.h4.copyWith(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onPrimary,
                   fontWeight: AppTypography.bold,
                 ),
               ),
@@ -192,7 +204,8 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
               Text(
                 'Overview of your business',
                 style: AppTypography.bodyMedium.copyWith(
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color:
+                      Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.9),
                 ),
               ),
             ],
@@ -206,7 +219,8 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
           },
           icon: Stack(
             children: [
-              const Icon(Icons.notifications_outlined, color: Colors.white),
+              Icon(Icons.notifications_outlined,
+                  color: Theme.of(context).colorScheme.onPrimary),
               if ((_dashboardData?.unreadNotifications ?? 0) > 0)
                 Positioned(
                   right: 0,
@@ -214,8 +228,8 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                   child: Container(
                     width: 8,
                     height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.error,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.error,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -298,11 +312,11 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -317,7 +331,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -328,8 +342,8 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: trend >= 0
-                        ? AppColors.success.withValues(alpha: 0.1)
-                        : AppColors.error.withValues(alpha: 0.1),
+                        ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                        : Theme.of(context).colorScheme.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -337,14 +351,17 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                       Icon(
                         trend >= 0 ? Icons.trending_up : Icons.trending_down,
                         size: 12,
-                        color: trend >= 0 ? AppColors.success : AppColors.error,
+                        color: trend >= 0
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.error,
                       ),
                       const SizedBox(width: 2),
                       Text(
                         '${trend.abs().toStringAsFixed(1)}%',
                         style: AppTypography.caption.copyWith(
-                          color:
-                              trend >= 0 ? AppColors.success : AppColors.error,
+                          color: trend >= 0
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.error,
                           fontWeight: AppTypography.semiBold,
                         ),
                       ),
@@ -358,14 +375,16 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
             value,
             style: AppTypography.h3.copyWith(
               fontWeight: AppTypography.bold,
-              color: isWarning ? AppColors.error : AppColors.textPrimary,
+              color: isWarning
+                  ? Theme.of(context).colorScheme.error
+                  : Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
             style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -386,11 +405,11 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
       ),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -403,6 +422,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
             'Revenue Overview',
             style: AppTypography.h5.copyWith(
               fontWeight: AppTypography.bold,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 20),
@@ -413,10 +433,30 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                 gridData: FlGridData(show: true, drawVerticalLine: false),
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: true, reservedSize: 40),
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (value, meta) => Text(
+                        value.toString(),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
                   ),
                   bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: true, reservedSize: 30),
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      getTitlesWidget: (value, meta) => Text(
+                        value.toString(),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
                   ),
                   rightTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false)),
@@ -432,12 +472,15 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                         .map((e) => FlSpot(e.key.toDouble(), e.value))
                         .toList(),
                     isCurved: true,
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     barWidth: 3,
                     dotData: FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.1),
                     ),
                   ),
                 ],
@@ -520,7 +563,8 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                       // TODO: Navigate to messages screen
                       break;
                     case 'Business Data':
-                      Navigator.pushNamed(context, AppRoutes.supplierDataManagement);
+                      Navigator.pushNamed(
+                          context, AppRoutes.supplierDataManagement);
                       break;
                   }
                 },
@@ -544,16 +588,16 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: Theme.of(context).colorScheme.outline),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: color, size: 20),
@@ -564,6 +608,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                 title,
                 style: AppTypography.labelLarge.copyWith(
                   fontWeight: AppTypography.semiBold,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -596,13 +641,18 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                 'Recent Orders',
                 style: AppTypography.h5.copyWith(
                   fontWeight: AppTypography.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.pushNamed(context, '/supplier/orders');
                 },
-                child: const Text('View All'),
+                child: Text(
+                  'View All',
+                  style:
+                      TextStyle(color: Theme.of(context).colorScheme.primary),
+                ),
               ),
             ],
           ),
@@ -621,9 +671,9 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
       ),
       child: Row(
         children: [
@@ -635,13 +685,14 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                   'Order #${order['orderNumber']}',
                   style: AppTypography.labelLarge.copyWith(
                     fontWeight: AppTypography.semiBold,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   order['customerName'] ?? 'Customer',
                   style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -654,15 +705,14 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                 '₹${order['amount']}',
                 style: AppTypography.labelLarge.copyWith(
                   fontWeight: AppTypography.bold,
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 4),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color:
-                      _getStatusColor(order['status']).withValues(alpha: 0.1),
+                  color: _getStatusColor(order['status']).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -698,6 +748,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
             'Top Products',
             style: AppTypography.h5.copyWith(
               fontWeight: AppTypography.bold,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 12),
@@ -716,9 +767,9 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
       ),
       child: Row(
         children: [
@@ -726,14 +777,14 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 '$rank',
                 style: AppTypography.labelLarge.copyWith(
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                   fontWeight: AppTypography.bold,
                 ),
               ),
@@ -746,7 +797,9 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
               children: [
                 Text(
                   product['name'] ?? 'Product',
-                  style: AppTypography.labelLarge,
+                  style: AppTypography.labelLarge.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -754,7 +807,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                 Text(
                   '${product['soldCount']} sold',
                   style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -764,7 +817,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
             '₹${product['revenue']}',
             style: AppTypography.labelLarge.copyWith(
               fontWeight: AppTypography.bold,
-              color: AppColors.success,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ],
@@ -775,10 +828,10 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
   Widget _buildBottomNavigation() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -787,8 +840,9 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
       child: BottomNavigationBar(
         currentIndex: 0,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textSecondary,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         onTap: (index) {
           switch (index) {
             case 0:

@@ -5,7 +5,7 @@ const User = require('../models/User');
 // @access  Private
 exports.getProfile = async (req, res, next) => {
     try {
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(req.user._id);
 
         res.status(200).json({
             success: true,
@@ -489,6 +489,39 @@ exports.getLanguage = async (req, res, next) => {
         res.status(200).json({
             success: true,
             data: { language: user.language },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get user statistics
+// @route   GET /api/users/stats
+// @access  Private (Admin)
+exports.getUserStats = async (req, res, next) => {
+    try {
+        const totalUsers = await User.countDocuments();
+        const activeUsers = await User.countDocuments({ isActive: true });
+        const adminUsers = await User.countDocuments({ role: 'admin' });
+        const supplierUsers = await User.countDocuments({ role: 'supplier' });
+        const customerUsers = await User.countDocuments({ role: 'customer' });
+
+        // Get user count by role
+        const usersByRole = await User.aggregate([
+            { $group: { _id: '$role', count: { $sum: 1 } } }
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalUsers,
+                activeUsers,
+                adminUsers,
+                supplierUsers,
+                customerUsers,
+                usersByRole,
+                count: totalUsers
+            }
         });
     } catch (error) {
         next(error);

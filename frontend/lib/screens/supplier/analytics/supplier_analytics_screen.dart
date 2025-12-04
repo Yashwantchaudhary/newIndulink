@@ -229,7 +229,7 @@ class _SupplierAnalyticsScreenState extends State<SupplierAnalyticsScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -320,7 +320,7 @@ class _SupplierAnalyticsScreenState extends State<SupplierAnalyticsScreen>
             barWidth: 3,
             belowBarData: BarAreaData(
               show: true,
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
             ),
             dotData: FlDotData(show: false),
           ),
@@ -433,7 +433,7 @@ class _SupplierAnalyticsScreenState extends State<SupplierAnalyticsScreen>
                 final product = products[index];
                 return ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                     child: Text('${index + 1}'),
                   ),
                   title: Text(product['name'] ?? 'Unknown Product'),
@@ -532,7 +532,7 @@ class _SupplierAnalyticsScreenState extends State<SupplierAnalyticsScreen>
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(

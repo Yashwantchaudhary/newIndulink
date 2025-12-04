@@ -6,7 +6,6 @@ import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_config.dart';
 import '../../../models/order.dart';
 import '../../../services/api_service.dart';
-import 'supplier_order_detail_screen.dart';
 
 /// 📦 Supplier Orders Screen
 /// Manage orders with filters and status tracking

@@ -59,7 +59,17 @@ class _RouteGuardWidgetState extends State<RouteGuardWidget> {
     // Check role authorization
     if (widget.allowedRoles != null && widget.allowedRoles!.isNotEmpty) {
       final userRole = authProvider.user?.role.value;
-      if (userRole == null || !widget.allowedRoles!.contains(userRole)) {
+      // Make role comparison case-insensitive
+      final userRoleLower = userRole?.toLowerCase();
+      final allowedRolesLower =
+          widget.allowedRoles!.map((r) => r.toLowerCase()).toList();
+
+      debugPrint(
+          '🔐 Route Guard: User role = $userRole, Allowed roles = ${widget.allowedRoles}');
+
+      if (userRoleLower == null || !allowedRolesLower.contains(userRoleLower)) {
+        debugPrint(
+            '❌ Authorization failed: User role "$userRole" not in allowed roles ${widget.allowedRoles}');
         _redirectToUnauthorized();
         return;
       }
@@ -70,18 +80,42 @@ class _RouteGuardWidgetState extends State<RouteGuardWidget> {
     final currentRoute = ModalRoute.of(context)?.settings.name;
     NavigationService().navigateAndRemoveUntil(
       AppRoutes.roleSelection,
-      arguments: currentRoute, // Pass current route to redirect back after login
+      arguments:
+          currentRoute, // Pass current route to redirect back after login
     );
   }
 
   void _redirectToUnauthorized() {
-    NavigationService().showError('You are not authorized to access this page');
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userRole = authProvider.user?.role.value ?? 'unknown';
+    final allowedRoles = widget.allowedRoles?.join(', ') ?? 'none';
+
+    debugPrint(
+        '🚫 Unauthorized access attempt: User role "$userRole" tried to access route requiring roles [$allowedRoles]');
+
+    NavigationService()
+        .showError('Role \'$userRole\' is not authorized to access this route');
 
     // Navigate back or to appropriate screen
     if (NavigationService().canPop()) {
       NavigationService().pop();
     } else {
-      NavigationService().navigateAndRemoveUntil(AppRoutes.roleSelection);
+      // Navigate to appropriate dashboard based on role
+      String redirectRoute;
+      switch (userRole.toLowerCase()) {
+        case 'customer':
+          redirectRoute = AppRoutes.customerHome;
+          break;
+        case 'supplier':
+          redirectRoute = AppRoutes.supplierDashboard;
+          break;
+        case 'admin':
+          redirectRoute = AppRoutes.adminDashboard;
+          break;
+        default:
+          redirectRoute = AppRoutes.roleSelection;
+      }
+      NavigationService().navigateAndRemoveUntil(redirectRoute);
     }
   }
 
@@ -134,7 +168,7 @@ class CustomerRouteGuard extends StatelessWidget {
   Widget build(BuildContext context) {
     return RouteGuardWidget(
       requiresAuth: true,
-      allowedRoles: ['customer'],
+      allowedRoles: const ['customer'],
       child: child,
     );
   }
@@ -153,7 +187,7 @@ class SupplierRouteGuard extends StatelessWidget {
   Widget build(BuildContext context) {
     return RouteGuardWidget(
       requiresAuth: true,
-      allowedRoles: ['supplier'],
+      allowedRoles: const ['supplier'],
       child: child,
     );
   }
@@ -172,7 +206,7 @@ class AdminRouteGuard extends StatelessWidget {
   Widget build(BuildContext context) {
     return RouteGuardWidget(
       requiresAuth: true,
-      allowedRoles: ['admin'],
+      allowedRoles: const ['admin'],
       child: child,
     );
   }

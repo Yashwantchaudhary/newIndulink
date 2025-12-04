@@ -722,4 +722,328 @@ class AnalyticsService {
     }
 }
 
+// @desc    Get comprehensive product performance analytics
+// @route   GET /api/analytics/products/performance
+// @access  Private (Admin and Supplier)
+exports.getComprehensiveProductAnalytics = async (req, res, next) => {
+    try {
+        const timeframe = req.query.timeframe || '30d';
+        const startDate = this.getStartDate(timeframe);
+
+        const [salesPerformance, inventoryAnalytics, categoryPerformance, supplierPerformance] = await Promise.all([
+            this.getSalesPerformanceByProduct(startDate),
+            this.getInventoryAnalytics(startDate),
+            this.getCategoryPerformance(startDate),
+            this.getSupplierPerformance(startDate)
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                salesPerformance,
+                inventoryAnalytics,
+                categoryPerformance,
+                supplierPerformance,
+                timeframe,
+                generatedAt: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get product trend analysis
+// @route   GET /api/analytics/products/trends
+// @access  Private (Admin and Supplier)
+exports.getProductTrendAnalysis = async (req, res, next) => {
+    try {
+        const timeframe = req.query.timeframe || '90d';
+        const productId = req.query.productId;
+
+        if (!productId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Product ID is required'
+            });
+        }
+
+        const trendData = await this.getProductTrendData(productId, timeframe);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                productId,
+                trendData,
+                timeframe,
+                generatedAt: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get product comparison analytics
+// @route   POST /api/analytics/products/compare
+// @access  Private (Admin and Supplier)
+exports.getProductComparisonAnalytics = async (req, res, next) => {
+    try {
+        const { productIds, metrics = ['sales', 'views', 'rating', 'stock'] } = req.body;
+        const timeframe = req.query.timeframe || '30d';
+
+        if (!productIds || !Array.isArray(productIds) || productIds.length < 2) {
+            return res.status(400).json({
+                success: false,
+                message: 'At least 2 product IDs are required for comparison'
+            });
+        }
+
+        const comparisonData = await this.compareProducts(productIds, metrics, timeframe);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                comparisonData,
+                metrics,
+                timeframe,
+                generatedAt: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Helper method to get sales performance by product
+exports.getSalesPerformanceByProduct = async (startDate) => {
+    const result = await Order.aggregate([
+        { $match: { createdAt: { $gte: startDate }, status: 'delivered' } },
+        { $unwind: '$items' },
+        {
+            $lookup: {
+                from: 'products',
+                localField: 'items.product',
+                foreignField: '_id',
+                as: 'product'
+            }
+        },
+        { $unwind: '$product' },
+        {
+            $group: {
+                _id: '$product._id',
+                title: { $first: '$product.title' },
+                category: { $first: '$product.category' },
+                supplier: { $first: '$product.supplier' },
+                totalRevenue: { $sum: { $multiply: ['$items.quantity', '$items.price'] } },
+                totalQuantity: { $sum: '$items.quantity' },
+                orderCount: { $sum: 1 },
+                avgPrice: { $avg: '$items.price' },
+                minPrice: { $min: '$items.price' },
+                maxPrice: { $max: '$items.price' }
+            }
+        },
+        {
+            $project: {
+                productId: '$_id',
+                title: 1,
+                category: 1,
+                supplier: 1,
+                totalRevenue: 1,
+                totalQuantity: 1,
+                orderCount: 1,
+                avgPrice: 1,
+                minPrice: 1,
+                maxPrice: 1,
+                conversionRate: { $divide: ['$orderCount', { $size: '$items' }] }
+            }
+        },
+        { $sort: { totalRevenue: -1 } },
+        { $limit: 50 }
+    ]);
+
+    return result;
+};
+
+// Helper method to get inventory analytics
+exports.getInventoryAnalytics = async (startDate) => {
+    const result = await Product.aggregate([
+        {
+            $lookup: {
+                from: 'orders',
+                let: { productId: '$_id' },
+                pipeline: [
+                    { $match: { createdAt: { $gte: startDate }, status: 'delivered' } },
+                    { $unwind: '$items' },
+                    { $match: { $expr: { $eq: ['$items.product', '$$productId'] } } },
+                    {
+                        $group: {
+                            _id: null,
+                            totalSold: { $sum: '$items.quantity' },
+                            lastSaleDate: { $max: '$createdAt' }
+                        }
+                    }
+                ],
+                as: 'salesData'
+            }
+        },
+        {
+            $addFields: {
+                salesData: { $arrayElemAt: ['$salesData', 0] },
+                totalSold: { $ifNull: ['$salesData.totalSold', 0] },
+                lastSaleDate: { $ifNull: ['$salesData.lastSaleDate', null] }
+            }
+        },
+        {
+            $project: {
+                productId: '$_id',
+                title: 1,
+                sku: 1,
+                currentStock: '$stock',
+                totalSold: 1,
+                lastSaleDate: 1,
+                stockTurnover: {
+                    $cond: [
+                        { $gt: ['$stock', 0] },
+                        { $divide: ['$totalSold', '$stock'] },
+                        0
+                    ]
+                },
+                daysSinceLastSale: {
+                    $cond: [
+                        { $ne: ['$lastSaleDate', null] },
+                        { $divide: [{ $subtract: [new Date(), '$lastSaleDate'] }, 24 * 60 * 60 * 1000] },
+                        null
+                    ]
+                },
+                stockStatus: {
+                    $switch: {
+                        branches: [
+                            { case: { $lt: ['$stock', 5] }, then: 'critical' },
+                            { case: { $lt: ['$stock', 10] }, then: 'low' },
+                            { case: { $lt: ['$stock', 50] }, then: 'medium' }
+                        ],
+                        default: 'high'
+                    }
+                }
+            }
+        },
+        { $sort: { stockTurnover: -1 } }
+    ]);
+
+    return result;
+};
+
+// Helper method to get product trend data
+exports.getProductTrendData = async (productId, timeframe) => {
+    const periods = this.getGrowthPeriods(timeframe);
+    const trendData = [];
+
+    for (const period of periods) {
+        const [salesData, viewData] = await Promise.all([
+            Order.aggregate([
+                { $match: { createdAt: { $gte: period.start, $lt: period.end }, status: 'delivered' } },
+                { $unwind: '$items' },
+                { $match: { 'items.product': mongoose.Types.ObjectId(productId) } },
+                {
+                    $group: {
+                        _id: null,
+                        revenue: { $sum: { $multiply: ['$items.quantity', '$items.price'] } },
+                        quantity: { $sum: '$items.quantity' },
+                        orders: { $sum: 1 }
+                    }
+                }
+            ]),
+            Product.aggregate([
+                { $match: { _id: mongoose.Types.ObjectId(productId) } },
+                {
+                    $project: {
+                        views: '$viewCount',
+                        rating: '$averageRating',
+                        stock: '$stock',
+                        price: '$price'
+                    }
+                }
+            ])
+        ]);
+
+        trendData.push({
+            period: period.label,
+            date: period.start,
+            sales: salesData[0] || { revenue: 0, quantity: 0, orders: 0 },
+            views: viewData[0]?.views || 0,
+            rating: viewData[0]?.rating || 0,
+            stock: viewData[0]?.stock || 0,
+            price: viewData[0]?.price || 0
+        });
+    }
+
+    return trendData;
+};
+
+// Helper method to compare products
+exports.compareProducts = async (productIds, metrics, timeframe) => {
+    const startDate = this.getStartDate(timeframe);
+
+    const comparisonResults = [];
+
+    for (const productId of productIds) {
+        const productData = await Product.findById(productId);
+
+        if (!productData) {
+            comparisonResults.push({
+                productId,
+                error: 'Product not found'
+            });
+            continue;
+        }
+
+        const comparisonMetrics = {};
+
+        if (metrics.includes('sales')) {
+            const salesData = await Order.aggregate([
+                { $match: { createdAt: { $gte: startDate }, status: 'delivered' } },
+                { $unwind: '$items' },
+                { $match: { 'items.product': mongoose.Types.ObjectId(productId) } },
+                {
+                    $group: {
+                        _id: null,
+                        totalRevenue: { $sum: { $multiply: ['$items.quantity', '$items.price'] } },
+                        totalQuantity: { $sum: '$items.quantity' },
+                        orderCount: { $sum: 1 }
+                    }
+                }
+            ]);
+
+            comparisonMetrics.sales = salesData[0] || { totalRevenue: 0, totalQuantity: 0, orderCount: 0 };
+        }
+
+        if (metrics.includes('views')) {
+            comparisonMetrics.views = productData.viewCount || 0;
+        }
+
+        if (metrics.includes('rating')) {
+            comparisonMetrics.rating = {
+                average: productData.averageRating || 0,
+                totalReviews: productData.totalReviews || 0
+            };
+        }
+
+        if (metrics.includes('stock')) {
+            comparisonMetrics.stock = {
+                current: productData.stock || 0,
+                status: productData.stock === 0 ? 'out_of_stock' : productData.stock < 10 ? 'low' : 'adequate'
+            };
+        }
+
+        comparisonResults.push({
+            productId: productData._id,
+            title: productData.title,
+            metrics: comparisonMetrics
+        });
+    }
+
+    return comparisonResults;
+};
+
 module.exports = new AnalyticsService();

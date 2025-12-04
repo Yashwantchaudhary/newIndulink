@@ -15,7 +15,6 @@ import '../search/search_screen.dart';
 import '../wishlist/customer_wishlist_screen.dart';
 import '../categories/customer_categories_screen.dart';
 import '../notifications/customer_notifications_screen.dart';
-import '../data/customer_data_management_screen.dart';
 
 /// 🏠 **WORLD-CLASS Customer Home Screen**
 /// Production-level modern UI/UX with premium animations
@@ -144,7 +143,7 @@ class _CustomerHomeScreenRedesignedState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
@@ -213,8 +212,15 @@ class _CustomerHomeScreenRedesignedState
       elevation: 0,
       backgroundColor: Colors.transparent,
       flexibleSpace: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.primaryGradient,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.primaryContainer,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
         child: SafeArea(
           child: FlexibleSpaceBar(
@@ -238,12 +244,15 @@ class _CustomerHomeScreenRedesignedState
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimary
+                                  .withOpacity(0.2),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.construction,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onPrimary,
                               size: 24,
                             ),
                           ),
@@ -258,7 +267,7 @@ class _CustomerHomeScreenRedesignedState
                           Text(
                             'INDULINK',
                             style: AppTypography.h5.copyWith(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onPrimary,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 1.2,
                             ),
@@ -266,7 +275,10 @@ class _CustomerHomeScreenRedesignedState
                           Text(
                             'Building Materials Marketplace',
                             style: AppTypography.caption.copyWith(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimary
+                                  .withOpacity(0.9),
                               fontSize: 10,
                             ),
                           ),
@@ -301,9 +313,9 @@ class _CustomerHomeScreenRedesignedState
                 child: Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(
-                      (1 - _pulseAnimationController.value) * 0.3,
-                    ),
+                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(
+                          (1 - _pulseAnimationController.value) * 0.3,
+                        ),
                   ),
                 ),
               ),
@@ -319,9 +331,9 @@ class _CustomerHomeScreenRedesignedState
               },
               icon: Stack(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.notifications_outlined,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onPrimary,
                     size: 26,
                   ),
                   Positioned(
@@ -331,9 +343,11 @@ class _CustomerHomeScreenRedesignedState
                       width: 10,
                       height: 10,
                       decoration: BoxDecoration(
-                        color: AppColors.badgeSale,
+                        color: Theme.of(context).colorScheme.error,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            width: 1.5),
                       ),
                     ),
                   ),
@@ -358,9 +372,9 @@ class _CustomerHomeScreenRedesignedState
           },
           icon: Stack(
             children: [
-              const Icon(
+              Icon(
                 Icons.shopping_cart_outlined,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
                 size: 26,
               ),
               if (cart.itemCount > 0)
@@ -370,9 +384,11 @@ class _CustomerHomeScreenRedesignedState
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: AppColors.secondary,
+                      color: Theme.of(context).colorScheme.secondary,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.5),
+                      border: Border.all(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          width: 1.5),
                     ),
                     constraints: const BoxConstraints(
                       minWidth: 18,
@@ -380,8 +396,8 @@ class _CustomerHomeScreenRedesignedState
                     ),
                     child: Text(
                       cart.itemCount > 9 ? '9+' : cart.itemCount.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSecondary,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -415,11 +431,12 @@ class _CustomerHomeScreenRedesignedState
             child: Container(
               height: 56,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color:
+                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
                     blurRadius: 20,
                     offset: const Offset(0, 4),
                   ),
@@ -431,12 +448,15 @@ class _CustomerHomeScreenRedesignedState
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLightest,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.search,
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                       size: 22,
                     ),
                   ),
@@ -445,7 +465,7 @@ class _CustomerHomeScreenRedesignedState
                     child: Text(
                       'Search building materials...',
                       style: AppTypography.bodyMedium.copyWith(
-                        color: AppColors.textTertiary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -453,12 +473,15 @@ class _CustomerHomeScreenRedesignedState
                     margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLightest,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.filter_list,
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                       size: 20,
                     ),
                   ),
@@ -597,13 +620,14 @@ class _CustomerHomeScreenRedesignedState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         banner['icon'] as IconData,
                         color: Colors.white.withOpacity(0.9),
-                        size: 32,
+                        size: 28,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Text(
                         banner['title'] as String,
                         style: AppTypography.h6.copyWith(
@@ -611,23 +635,29 @@ class _CustomerHomeScreenRedesignedState
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.5,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         banner['subtitle'] as String,
-                        style: AppTypography.h3.copyWith(
+                        style: AppTypography.h4.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w900,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         banner['description'] as String,
                         style: AppTypography.bodyMedium.copyWith(
                           color: Colors.white.withOpacity(0.95),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: () {
                           Navigator.push(
@@ -1086,7 +1116,7 @@ class _CustomerHomeScreenRedesignedState
               ),
               const SizedBox(height: 16),
               SizedBox(
-                height: 280,
+                height: 320,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
@@ -1324,7 +1354,7 @@ class _CustomerHomeScreenRedesignedState
                 ),
               ),
               SizedBox(
-                height: 290,
+                height: 330,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
@@ -1416,7 +1446,7 @@ class _CustomerHomeScreenRedesignedState
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.7,
+                    childAspectRatio: 0.65,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
@@ -1451,8 +1481,8 @@ class _CustomerHomeScreenRedesignedState
       ),
       child: SafeArea(
         child: Container(
-          height: 70,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          height: 65,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -1490,16 +1520,21 @@ class _CustomerHomeScreenRedesignedState
               Icon(
                 icon,
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                size: isSelected ? 26 : 24,
+                size: isSelected ? 24 : 22,
               ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: AppTypography.caption.copyWith(
-                  color:
-                      isSelected ? AppColors.primary : AppColors.textSecondary,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  fontSize: 11,
+              const SizedBox(height: 2),
+              Flexible(
+                child: Text(
+                  label,
+                  style: AppTypography.caption.copyWith(
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    fontSize: 10,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

@@ -16,6 +16,7 @@ import '../../../providers/review_provider.dart';
 import '../../../providers/wishlist_provider.dart';
 import '../cart/cart_screen.dart';
 import 'write_review_screen.dart';
+import '../../../models/review.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -48,9 +49,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   void _addToCart(Product product) {
-    context
-        .read<CartProvider>()
-        .addToCart(product, quantity: _quantity);
+    context.read<CartProvider>().addToCart(product, quantity: _quantity);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${product.title} added to cart'),
@@ -84,7 +83,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(wishlistProvider.errorMessage ?? 'Failed to update wishlist'),
+          content: Text(
+              wishlistProvider.errorMessage ?? 'Failed to update wishlist'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -102,14 +102,13 @@ ${product.hasDiscount ? '🔥 Special Offer: ${product.discountPercentage}% OFF!
 
 📦 ${product.stockStatusText}
 
-${product.description.length > 100
-        ? '${product.description.substring(0, 100)}...'
-        : product.description}
+${product.description.length > 100 ? '${product.description.substring(0, 100)}...' : product.description}
 
 Download INDULINK app to purchase: https://indulink.com/product/${product.id}
 ''';
 
-    Share.share(shareText.trim(), subject: 'Check out this product on INDULINK');
+    Share.share(shareText.trim(),
+        subject: 'Check out this product on INDULINK');
   }
 
   @override
@@ -186,7 +185,8 @@ Download INDULINK app to purchase: https://indulink.com/product/${product.id}
           builder: (context, provider, child) {
             final product = provider.selectedProduct;
             return IconButton(
-              icon: const Icon(Icons.share_outlined, color: AppColors.textPrimary),
+              icon: const Icon(Icons.share_outlined,
+                  color: AppColors.textPrimary),
               onPressed: product != null ? () => _shareProduct(product) : null,
             );
           },
@@ -525,13 +525,11 @@ Download INDULINK app to purchase: https://indulink.com/product/${product.id}
           ),
           OutlinedButton(
             onPressed: () {
-              if (product.supplierId != null) {
-                Navigator.pushNamed(
-                  context,
-                  '/customer/supplier/profile',
-                  arguments: product.supplierId,
-                );
-              }
+              Navigator.pushNamed(
+                context,
+                '/customer/supplier/profile',
+                arguments: product.supplierId,
+              );
             },
             child: const Text('View Profile'),
           ),
@@ -622,21 +620,28 @@ Download INDULINK app to purchase: https://indulink.com/product/${product.id}
                   children: [
                     Text(
                       'Customer Reviews',
-                      style: AppTypography.h6.copyWith(fontWeight: FontWeight.bold),
+                      style: AppTypography.h6
+                          .copyWith(fontWeight: FontWeight.bold),
                     ),
                     const Spacer(),
                     if (reviewProvider.reviews.isNotEmpty)
                       TextButton(
                         onPressed: () {
-                          final productProvider = context.read<ProductProvider>();
+                          final productProvider =
+                              context.read<ProductProvider>();
                           Navigator.pushNamed(
                             context,
                             '/customer/products/reviews',
                             arguments: {
                               'productId': widget.productId,
-                              'productTitle': productProvider.selectedProduct?.title ?? 'Product',
-                              'productImage': productProvider.selectedProduct?.images.isNotEmpty == true
-                                  ? productProvider.selectedProduct!.images.first.url
+                              'productTitle':
+                                  productProvider.selectedProduct?.title ??
+                                      'Product',
+                              'productImage': productProvider
+                                          .selectedProduct?.images.isNotEmpty ==
+                                      true
+                                  ? productProvider
+                                      .selectedProduct!.images.first.url
                                   : null,
                             },
                           );
@@ -653,42 +658,46 @@ Download INDULINK app to purchase: https://indulink.com/product/${product.id}
               // Review Summary
               if (reviewProvider.reviews.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingL),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppDimensions.paddingL),
                   child: ReviewSummaryWidget(
                     averageRating: product.averageRating,
                     totalReviews: product.totalReviews,
-                    ratingDistribution: _calculateRatingDistribution(reviewProvider.reviews),
+                    ratingDistribution:
+                        _calculateRatingDistribution(reviewProvider.reviews),
                   ),
                 ),
 
               // Write Review Button
               Padding(
-                 padding: const EdgeInsets.all(AppDimensions.paddingL),
-                 child: SizedBox(
-                   width: double.infinity,
-                   child: OutlinedButton.icon(
-                     onPressed: () {
-                       Navigator.push(
-                         context,
-                         MaterialPageRoute(
-                           builder: (context) => WriteReviewScreen(
-                             productId: product.id,
-                             productTitle: product.title,
-                             productImage: product.images.isNotEmpty ? product.images.first.url : null,
-                           ),
-                         ),
-                       );
-                     },
-                     icon: const Icon(Icons.edit_outlined),
-                     label: const Text('Write a Review'),
-                     style: OutlinedButton.styleFrom(
-                       padding: const EdgeInsets.symmetric(vertical: 12),
-                       side: BorderSide(color: AppColors.primary),
-                       foregroundColor: AppColors.primary,
-                     ),
-                   ),
-                 ),
-               ),
+                padding: const EdgeInsets.all(AppDimensions.paddingL),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => WriteReviewScreen(
+                            productId: product.id,
+                            productTitle: product.title,
+                            productImage: product.images.isNotEmpty
+                                ? product.images.first.url
+                                : null,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Write a Review'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(color: AppColors.primary),
+                      foregroundColor: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ),
 
               // Reviews List
               if (reviewProvider.isLoading)
@@ -729,7 +738,9 @@ Download INDULINK app to purchase: https://indulink.com/product/${product.id}
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: reviewProvider.reviews.length > 3 ? 3 : reviewProvider.reviews.length,
+                  itemCount: reviewProvider.reviews.length > 3
+                      ? 3
+                      : reviewProvider.reviews.length,
                   itemBuilder: (context, index) {
                     final review = reviewProvider.reviews[index];
                     return ReviewCard(review: review);
@@ -749,9 +760,14 @@ Download INDULINK app to purchase: https://indulink.com/product/${product.id}
                           '/customer/products/reviews',
                           arguments: {
                             'productId': widget.productId,
-                            'productTitle': productProvider.selectedProduct?.title ?? 'Product',
-                            'productImage': productProvider.selectedProduct?.images.isNotEmpty == true
-                                ? productProvider.selectedProduct!.images.first.url
+                            'productTitle':
+                                productProvider.selectedProduct?.title ??
+                                    'Product',
+                            'productImage': productProvider
+                                        .selectedProduct?.images.isNotEmpty ==
+                                    true
+                                ? productProvider
+                                    .selectedProduct!.images.first.url
                                 : null,
                           },
                         );

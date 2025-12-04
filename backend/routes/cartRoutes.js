@@ -15,6 +15,7 @@ router.use(requireCustomer);
 
 router.get('/', getCart);
 router.post('/', addToCart);
+router.post('/add', addToCart);
 router.put('/:itemId', updateCartItem);
 router.delete('/:itemId', removeFromCart);
 router.delete('/', clearCart);

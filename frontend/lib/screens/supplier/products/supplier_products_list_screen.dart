@@ -49,14 +49,20 @@ class _SupplierProductsListScreenState
       // Get current supplier ID from storage or use parameter
       final endpoint = supplierId != null
           ? '/products/supplier/$supplierId'
-          : AppConfig.supplierProductsEndpoint; // Use supplier-specific endpoint
+          : AppConfig
+              .supplierProductsEndpoint; // Use supplier-specific endpoint
 
       final response = await _apiService.get(endpoint);
 
       if (response.isSuccess && response.data != null) {
-        final List<dynamic> productsJson = response.data is List
-            ? response.data
-            : response.data['products'] ?? [];
+        final dataMap = response.data as Map<String, dynamic>;
+        final actualData = dataMap.containsKey('data')
+            ? Map<String, dynamic>.from(dataMap['data'] as Map)
+            : dataMap;
+
+        final List<dynamic> productsJson = actualData.containsKey('products')
+            ? actualData['products']
+            : actualData['data'] ?? [];
 
         setState(() {
           _products =
@@ -100,7 +106,8 @@ class _SupplierProductsListScreenState
     if (confirmed != true) return;
 
     try {
-      final response = await _apiService.delete(AppConfig.replaceParams(AppConfig.deleteProductEndpoint, {'id': productId}));
+      final response = await _apiService.delete(AppConfig.replaceParams(
+          AppConfig.deleteProductEndpoint, {'id': productId}));
 
       if (response.isSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(

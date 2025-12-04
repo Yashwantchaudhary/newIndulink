@@ -1,5 +1,8 @@
 const User = require('../models/User');
 const { validationResult } = require('express-validator');
+const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+const { checkPasswordStrength } = require('../middleware/securityMiddleware');
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -16,6 +19,17 @@ exports.register = async (req, res, next) => {
         }
 
         const { firstName, lastName, email, password, phone, role, businessName, businessDescription } = req.body;
+
+        // Validate password strength
+        const passwordCheck = checkPasswordStrength(password);
+        if (passwordCheck.rating === 'weak') {
+            return res.status(400).json({
+                success: false,
+                message: 'Password is too weak',
+                suggestions: passwordCheck.suggestions,
+                code: 'WEAK_PASSWORD'
+            });
+        }
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
@@ -42,7 +56,12 @@ exports.register = async (req, res, next) => {
             userData.businessDescription = businessDescription;
         }
 
+        // Create user with enhanced security
         const user = await User.create(userData);
+
+        // Generate email verification token
+        const emailVerificationToken = user.generateEmailVerificationToken();
+        await user.save();
 
         // Generate tokens
         const accessToken = user.generateAccessToken();
@@ -82,16 +101,28 @@ exports.login = async (req, res, next) => {
             return res.status(400).json({
                 success: false,
                 message: 'Please provide email and password',
+                code: 'MISSING_CREDENTIALS'
             });
         }
 
-        // Check for user (include password for comparison)
-        const user = await User.findOne({ email }).select('+password');
+        // Check if user exists
+        const user = await User.findOne({ email }).select('+password +loginAttempts +accountLockUntil');
 
         if (!user) {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials',
+                code: 'INVALID_CREDENTIALS'
+            });
+        }
+
+        // Check if account is locked
+        if (user.isAccountLocked()) {
+            return res.status(403).json({
+                success: false,
+                message: 'Account is temporarily locked due to too many failed login attempts',
+                lockedUntil: user.accountLockUntil,
+                code: 'ACCOUNT_LOCKED'
             });
         }
 
@@ -100,6 +131,7 @@ exports.login = async (req, res, next) => {
             return res.status(401).json({
                 success: false,
                 message: 'Account is deactivated',
+                code: 'ACCOUNT_DEACTIVATED'
             });
         }
 
@@ -107,11 +139,37 @@ exports.login = async (req, res, next) => {
         const isPasswordMatch = await user.comparePassword(password);
 
         if (!isPasswordMatch) {
+            // Increment login attempts
+            user.loginAttempts += 1;
+
+            // Lock account after 5 failed attempts
+            if (user.loginAttempts >= 5) {
+                user.accountLockUntil = Date.now() + 30 * 60 * 1000; // 30 minutes lock
+                await user.save();
+
+                return res.status(403).json({
+                    success: false,
+                    message: 'Account is temporarily locked due to too many failed login attempts',
+                    lockedUntil: user.accountLockUntil,
+                    code: 'ACCOUNT_LOCKED'
+                });
+            }
+
+            await user.save();
+
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials',
+                attemptsRemaining: 5 - user.loginAttempts,
+                code: 'INVALID_CREDENTIALS'
             });
         }
+
+        // Reset login attempts on successful login
+        user.loginAttempts = 0;
+        user.accountLockUntil = null;
+        user.lastLogin = Date.now();
+        await user.save();
 
         // Generate tokens
         const accessToken = user.generateAccessToken();
@@ -150,11 +208,25 @@ exports.refreshToken = async (req, res, next) => {
             return res.status(400).json({
                 success: false,
                 message: 'Refresh token is required',
+                code: 'MISSING_REFRESH_TOKEN'
             });
         }
 
-        // Verify refresh token
-        const decoded = require('jsonwebtoken').verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+        // Enhanced refresh token validation
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, {
+            algorithms: ['HS256'],
+            maxAge: process.env.JWT_REFRESH_EXPIRE || '7d',
+            clockTolerance: 30
+        });
+
+        // Check if refresh token is valid
+        if (!decoded.id || !decoded.jti) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid refresh token structure',
+                code: 'INVALID_REFRESH_TOKEN_STRUCTURE'
+            });
+        }
 
         // Find user with this refresh token
         const user = await User.findById(decoded.id).select('+refreshToken');
@@ -163,6 +235,26 @@ exports.refreshToken = async (req, res, next) => {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid refresh token',
+                code: 'INVALID_REFRESH_TOKEN'
+            });
+        }
+
+        // Check if user account is active
+        if (!user.isActive) {
+            return res.status(401).json({
+                success: false,
+                message: 'Account is deactivated',
+                code: 'ACCOUNT_DEACTIVATED'
+            });
+        }
+
+        // Check if account is locked
+        if (user.isAccountLocked()) {
+            return res.status(403).json({
+                success: false,
+                message: 'Account is temporarily locked',
+                lockedUntil: user.accountLockUntil,
+                code: 'ACCOUNT_LOCKED'
             });
         }
 
@@ -176,9 +268,23 @@ exports.refreshToken = async (req, res, next) => {
             },
         });
     } catch (error) {
-        return res.status(401).json({
+        console.error('Refresh token error:', error);
+        let statusCode = 401;
+        let message = 'Invalid or expired refresh token';
+        let code = 'INVALID_REFRESH_TOKEN';
+
+        if (error.name === 'TokenExpiredError') {
+            message = 'Refresh token expired';
+            code = 'REFRESH_TOKEN_EXPIRED';
+        } else if (error.name === 'JsonWebTokenError') {
+            message = 'Invalid refresh token format';
+            code = 'INVALID_REFRESH_TOKEN_FORMAT';
+        }
+
+        return res.status(statusCode).json({
             success: false,
-            message: 'Invalid or expired refresh token',
+            message,
+            code
         });
     }
 };
@@ -228,6 +334,18 @@ exports.updatePassword = async (req, res, next) => {
             return res.status(400).json({
                 success: false,
                 message: 'Please provide current and new password',
+                code: 'MISSING_PASSWORD_FIELDS'
+            });
+        }
+
+        // Validate new password strength
+        const passwordCheck = checkPasswordStrength(newPassword);
+        if (passwordCheck.rating === 'weak') {
+            return res.status(400).json({
+                success: false,
+                message: 'New password is too weak',
+                suggestions: passwordCheck.suggestions,
+                code: 'WEAK_NEW_PASSWORD'
             });
         }
 
@@ -247,6 +365,45 @@ exports.updatePassword = async (req, res, next) => {
         // Update password
         user.password = newPassword;
         await user.save();
+
+        // Send real-time notification to user about password change
+        try {
+            const { createAndSendNotification } = require('../services/notificationService');
+            await createAndSendNotification({
+                userId: user._id.toString(),
+                type: 'security',
+                title: 'Password Changed',
+                message: 'Your password was successfully updated. If this was not you, please contact support immediately.',
+                data: {
+                    securityAlert: true,
+                    actionRequired: true,
+                    timestamp: new Date().toISOString()
+                },
+            });
+        } catch (notificationError) {
+            console.error('Error sending password change notification:', notificationError);
+            // Don't fail the password change if notification fails
+        }
+
+        // Send real-time WebSocket update if available
+        try {
+            if (req.app.get('webSocketService')) {
+                const webSocketService = req.app.get('webSocketService');
+                webSocketService.notifyUserDataChange(
+                    user._id.toString(),
+                    'user',
+                    'password_updated',
+                    {
+                        message: 'Password updated successfully',
+                        timestamp: new Date().toISOString(),
+                        securityEvent: true
+                    }
+                );
+            }
+        } catch (websocketError) {
+            console.error('Error sending WebSocket password update:', websocketError);
+            // Don't fail the password change if WebSocket fails
+        }
 
         res.status(200).json({
             success: true,
@@ -282,13 +439,8 @@ exports.forgotPassword = async (req, res, next) => {
             });
         }
 
-        // Generate reset token (simplified - in production use proper token generation)
-        const resetToken = require('crypto').randomBytes(32).toString('hex');
-        const resetTokenExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-        // Save reset token to user
-        user.resetPasswordToken = resetToken;
-        user.resetPasswordExpiry = resetTokenExpiry;
+        // Generate reset token with enhanced security
+        const resetToken = user.generatePasswordResetToken();
         await user.save();
 
         // In a real application, send email here
@@ -320,8 +472,8 @@ exports.resetPassword = async (req, res, next) => {
 
         // Find user with valid reset token
         const user = await User.findOne({
-            resetPasswordToken: token,
-            resetPasswordExpiry: { $gt: Date.now() },
+            passwordResetToken: token,
+            passwordResetExpiry: { $gt: Date.now() },
         });
 
         if (!user) {
@@ -331,11 +483,52 @@ exports.resetPassword = async (req, res, next) => {
             });
         }
 
-        // Update password
+        // Update password with enhanced security
         user.password = newPassword;
-        user.resetPasswordToken = undefined;
-        user.resetPasswordExpiry = undefined;
+        user.passwordResetToken = undefined;
+        user.passwordResetExpiry = undefined;
+        user.loginAttempts = 0; // Reset login attempts
+        user.accountLockUntil = null; // Unlock account
         await user.save();
+
+        // Send real-time notification about password reset
+        try {
+            const { createAndSendNotification } = require('../services/notificationService');
+            await createAndSendNotification({
+                userId: user._id.toString(),
+                type: 'security',
+                title: 'Password Reset Successful',
+                message: 'Your password has been reset successfully. Your account is now secure.',
+                data: {
+                    securityEvent: true,
+                    passwordReset: true,
+                    timestamp: new Date().toISOString()
+                },
+            });
+        } catch (notificationError) {
+            console.error('Error sending password reset notification:', notificationError);
+            // Don't fail the password reset if notification fails
+        }
+
+        // Send real-time WebSocket update if available
+        try {
+            if (req.app.get('webSocketService')) {
+                const webSocketService = req.app.get('webSocketService');
+                webSocketService.notifyUserDataChange(
+                    user._id.toString(),
+                    'user',
+                    'password_reset',
+                    {
+                        message: 'Password reset successfully',
+                        timestamp: new Date().toISOString(),
+                        securityEvent: true
+                    }
+                );
+            }
+        } catch (websocketError) {
+            console.error('Error sending WebSocket password reset update:', websocketError);
+            // Don't fail the password reset if WebSocket fails
+        }
 
         res.status(200).json({
             success: true,

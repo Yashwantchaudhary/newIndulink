@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/constants/app_config.dart';
 import '../../../services/api_service.dart';
 import '../widgets/admin_layout.dart';
 
@@ -27,10 +28,14 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
   Future<void> _loadOrders() async {
     setState(() => _isLoading = true);
     try {
-      final response = await _apiService.get('/api/orders');
+      final response = await _apiService.get(AppConfig.adminOrdersEndpoint);
       if (response.isSuccess && response.data != null) {
         setState(() {
-          _orders = List<Map<String, dynamic>>.from(response.data['data'] ?? []);
+          final dataMap = response.data as Map<String, dynamic>;
+          final actualData = dataMap.containsKey('data')
+              ? Map<String, dynamic>.from(dataMap['data'] as Map)
+              : dataMap;
+          _orders = List<Map<String, dynamic>>.from(actualData['data'] ?? []);
           _isLoading = false;
         });
       }
@@ -75,14 +80,16 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: _getStatusColor(order['status'] ?? 'pending')
+                                color: _getStatusColor(
+                                        order['status'] ?? 'pending')
                                     .withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
                                 order['status'] ?? 'pending',
                                 style: TextStyle(
-                                  color: _getStatusColor(order['status'] ?? 'pending'),
+                                  color: _getStatusColor(
+                                      order['status'] ?? 'pending'),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),

@@ -15,7 +15,13 @@ class CachedApiService {
 
   /// Initialize the cached API service
   Future<void> initialize() async {
-    await _cacheService.initialize();
+    try {
+      await _cacheService.initialize();
+    } catch (e) {
+      debugPrint(
+          '⚠️ Cache service initialization failed (likely web platform): $e');
+      // Continue without cache on web
+    }
   }
 
   /// GET request with caching
@@ -189,7 +195,8 @@ class CachedApiService {
   }
 
   /// Cache user-specific data
-  Future<bool> cacheUserData(String userId, String dataType, dynamic data) async {
+  Future<bool> cacheUserData(
+      String userId, String dataType, dynamic data) async {
     return await _cacheService.setUserData(userId, dataType, data);
   }
 
@@ -204,7 +211,8 @@ class CachedApiService {
   }
 
   /// Cache file with offline support
-  Future<String?> cacheFile(String url, List<int> bytes, {String? filename}) async {
+  Future<String?> cacheFile(String url, List<int> bytes,
+      {String? filename}) async {
     return await _cacheService.cacheFile(url, bytes, filename: filename);
   }
 
@@ -234,12 +242,12 @@ class CachedApiService {
   }
 
   /// Generate cache key
-  String _generateCacheKey(String method, String endpoint, Map<String, dynamic>? params) {
+  String _generateCacheKey(
+      String method, String endpoint, Map<String, dynamic>? params) {
     final key = '$method:$endpoint';
     if (params != null && params.isNotEmpty) {
       final sortedParams = Map.fromEntries(
-        params.entries.toList()..sort((a, b) => a.key.compareTo(b.key))
-      );
+          params.entries.toList()..sort((a, b) => a.key.compareTo(b.key)));
       return '$key:${jsonEncode(sortedParams)}';
     }
     return key;

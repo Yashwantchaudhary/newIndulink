@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/constants/app_config.dart';
 
 import '../../../services/api_service.dart';
 import '../products/product_list_screen.dart';
@@ -40,7 +41,7 @@ class _CustomerCategoriesScreenState extends State<CustomerCategoriesScreen> {
     });
 
     try {
-      final response = await _apiService.get('/api/categories');
+      final response = await _apiService.get(AppConfig.categoriesEndpoint);
 
       if (response.isSuccess && response.data != null) {
         final List<dynamic> categoriesJson = response.data is List

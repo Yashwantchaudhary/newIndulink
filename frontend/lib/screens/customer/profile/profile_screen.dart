@@ -104,7 +104,7 @@ class ProfileScreen extends StatelessWidget {
                                 Text(
                                   'My Profile',
                                   style: AppTypography.h5.copyWith(
-                                    color: Colors.white,
+                                    color: Theme.of(context).brightness == Brightness.dark ? AppColors.textPrimaryDark : Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -138,7 +138,7 @@ class ProfileScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: Theme.of(context).brightness == Brightness.dark ? AppColors.cardDark : Colors.white,
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: [
                                   BoxShadow(
@@ -192,7 +192,7 @@ class ProfileScreen extends StatelessWidget {
                                           user.fullName,
                                           style: AppTypography.h6.copyWith(
                                             fontWeight: FontWeight.bold,
-                                            color: AppColors.textPrimary,
+                                            color: Theme.of(context).brightness == Brightness.dark ? AppColors.textPrimaryDark : AppColors.textPrimary,
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -202,7 +202,7 @@ class ProfileScreen extends StatelessWidget {
                                           user.email,
                                           style:
                                               AppTypography.bodyMedium.copyWith(
-                                            color: AppColors.textSecondary,
+                                            color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textSecondary,
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -221,7 +221,7 @@ class ProfileScreen extends StatelessWidget {
                                           ),
                                           child: Text(
                                             user.role.displayName,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               color: AppColors.primary,
                                               fontSize: 12,
                                               fontWeight: FontWeight.bold,
@@ -250,6 +250,7 @@ class ProfileScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       _buildMenuSection(
+                        context,
                         title: 'Shopping',
                         items: [
                           _MenuItem(
@@ -310,6 +311,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 24),
                       _buildMenuSection(
+                        context,
                         title: 'Preferences',
                         items: [
                           _MenuItem(
@@ -374,7 +376,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuSection({
+  Widget _buildMenuSection(BuildContext context, {
     required String title,
     required List<_MenuItem> items,
   }) {
@@ -387,7 +389,7 @@ class ProfileScreen extends StatelessWidget {
             title,
             style: AppTypography.h6.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).brightness == Brightness.dark ? AppColors.textPrimaryDark : AppColors.textPrimary,
             ),
           ),
         ),
@@ -430,15 +432,16 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     title: Text(
                       item.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
+                        color: Theme.of(context).brightness == Brightness.dark ? AppColors.textPrimaryDark : AppColors.textPrimary,
                       ),
                     ),
-                    trailing: const Icon(
+                    trailing: Icon(
                       Icons.chevron_right,
                       size: 20,
-                      color: AppColors.textTertiary,
+                      color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textTertiary,
                     ),
                     onTap: item.onTap,
                   ),
@@ -447,7 +450,7 @@ class ProfileScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 70, right: 20),
                       child: Divider(
                         height: 1,
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Theme.of(context).brightness == Brightness.dark ? AppColors.dividerDark.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
                       ),
                     ),
                 ],

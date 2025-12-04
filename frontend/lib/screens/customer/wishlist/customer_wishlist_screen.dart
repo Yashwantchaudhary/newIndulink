@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/constants/app_config.dart';
 import '../../../core/widgets/product_card_widget.dart';
 import '../../../models/product.dart';
 import '../../../services/api_service.dart';
@@ -42,7 +43,7 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
     });
 
     try {
-      final response = await _apiService.get('/api/wishlist');
+      final response = await _apiService.get(AppConfig.wishlistEndpoint);
 
       if (response.isSuccess && response.data != null) {
         final List<dynamic> productsJson = response.data is List
@@ -74,7 +75,7 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
 
   Future<void> _removeFromWishlist(String productId) async {
     try {
-      final response = await _apiService.delete('/api/wishlist/$productId');
+      final response = await _apiService.delete('${AppConfig.wishlistEndpoint}/$productId');
 
       if (response.isSuccess) {
         setState(() {

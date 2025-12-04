@@ -31,7 +31,6 @@ const orderSchema = new mongoose.Schema(
         orderNumber: {
             type: String,
             unique: true,
-            required: true,
         },
         customer: {
             type: mongoose.Schema.Types.ObjectId,
@@ -123,8 +122,13 @@ const orderSchema = new mongoose.Schema(
 // Generate order number before saving
 orderSchema.pre('save', async function (next) {
     if (this.isNew) {
-        const count = await mongoose.model('Order').countDocuments();
-        this.orderNumber = `IND${Date.now()}${String(count + 1).padStart(4, '0')}`;
+        try {
+            const count = await mongoose.model('Order').countDocuments();
+            this.orderNumber = `IND${Date.now()}${String(count + 1).padStart(4, '0')}`;
+        } catch (error) {
+            // Fallback order number generation
+            this.orderNumber = `IND${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+        }
     }
     next();
 });
@@ -156,7 +160,6 @@ orderSchema.pre('save', function (next) {
 });
 
 // Indexes for performance
-orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ customer: 1, createdAt: -1 });
 orderSchema.index({ supplier: 1, status: 1, createdAt: -1 });
 orderSchema.index({ status: 1 });

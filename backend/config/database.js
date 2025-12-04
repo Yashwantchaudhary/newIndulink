@@ -2,28 +2,33 @@ const mongoose = require('mongoose');
 
 const connectDatabase = async () => {
   try {
-    // Production-ready connection options
+    // Optimized connection options for better performance and memory usage
     const options = {
-      // Connection pooling
-      maxPoolSize: 10, // Maximum number of connections in the connection pool
-      minPoolSize: 2, // Minimum number of connections in the connection pool
-      maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
-      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      // Connection pooling - minimal for development, optimized for production
+      maxPoolSize: process.env.MONGO_MAX_POOL_SIZE ? parseInt(process.env.MONGO_MAX_POOL_SIZE) : (process.env.NODE_ENV === 'production' ? 10 : 2),
+      minPoolSize: process.env.MONGO_MIN_POOL_SIZE ? parseInt(process.env.MONGO_MIN_POOL_SIZE) : (process.env.NODE_ENV === 'production' ? 2 : 0),
+      maxIdleTimeMS: 30000, // 30 seconds - standard timeout
+      serverSelectionTimeoutMS: 5000, // 5 seconds for faster startup
+      socketTimeoutMS: 45000, // 45 seconds
 
       // Retry logic
       retryWrites: true,
       retryReads: true,
 
-      // Heartbeat and monitoring
-      heartbeatFrequencyMS: 10000, // Check server every 10 seconds
+      // Heartbeat - less frequent to reduce overhead
+      heartbeatFrequencyMS: 10000, // 10 seconds
 
       // Write concern
       w: 'majority',
       wtimeoutMS: 2500,
 
-      // Read preference for scaling
-      readPreference: process.env.NODE_ENV === 'production' ? 'secondaryPreferred' : 'primary',
+      // Read preference
+      readPreference: 'primary',
+
+      // Connection settings
+      connectTimeoutMS: 10000, // 10 seconds for faster startup
+      maxConnecting: 2,
+      appName: 'Indulink-Ecommerce',
     };
 
     const conn = await mongoose.connect(process.env.MONGODB_URI, options);
@@ -58,11 +63,19 @@ const connectDatabase = async () => {
       console.error('❌ MongoDB reconnection failed - manual intervention required');
     });
 
-    // Monitor connection pool stats
-    setInterval(() => {
-      const stats = mongoose.connection.db?.stats || {};
-      console.log(`📊 MongoDB Pool Stats - Active: ${mongoose.connection.readyState}, Pool Size: ${stats.connections || 'N/A'}`);
-    }, 300000); // Log every 5 minutes
+    // Light connection monitoring - only in production or when explicitly enabled
+    if (process.env.NODE_ENV === 'production' || process.env.ENABLE_DB_MONITORING === 'true') {
+      setInterval(() => {
+        const memoryUsage = process.memoryUsage();
+        const memoryUsagePercent = (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100;
+
+        console.log(`💾 Memory Usage: ${memoryUsagePercent.toFixed(1)}% (Heap: ${(memoryUsage.heapUsed / 1024 / 1024).toFixed(1)}MB / ${(memoryUsage.heapTotal / 1024 / 1024).toFixed(1)}MB)`);
+
+        if (memoryUsagePercent > 90) {
+          console.warn('⚠️ High memory usage detected');
+        }
+      }, 300000); // Every 5 minutes instead of every minute
+    }
 
     // Graceful shutdown with connection draining
     const gracefulShutdown = async (signal) => {
@@ -94,7 +107,7 @@ const connectDatabase = async () => {
     console.log('   4. Or add 0.0.0.0/0 to allow all IPs (development only)');
     console.log('');
 
-    // Exponential backoff retry logic
+    // Exponential backoff retry logic with enhanced error handling
     const retryWithBackoff = (attempt = 1, maxAttempts = 5) => {
       if (attempt > maxAttempts) {
         console.error('❌ Max retry attempts reached. Manual intervention required.');
@@ -105,9 +118,49 @@ const connectDatabase = async () => {
       console.log(`🔄 Retrying MongoDB connection in ${delay}ms (attempt ${attempt}/${maxAttempts})...`);
 
       setTimeout(() => {
-        connectDatabase().catch(() => retryWithBackoff(attempt + 1, maxAttempts));
+        connectDatabase().catch((error) => {
+          console.error(`🔄 Retry attempt ${attempt} failed: ${error.message}`);
+          retryWithBackoff(attempt + 1, maxAttempts);
+        });
       }, delay);
     };
+
+    // Query performance monitoring and optimization
+    const optimizeQueryPerformance = () => {
+      // Monitor slow queries
+      mongoose.connection.on('query', (query) => {
+        const start = Date.now();
+        query.on('end', () => {
+          const duration = Date.now() - start;
+          if (duration > 1000) { // Log queries taking longer than 1 second
+            console.warn(`⚠️ Slow query detected (${duration}ms): ${query.getQuery().collection?.name || 'unknown'} - ${JSON.stringify(query.getQuery().filter || {})}`);
+          }
+        });
+      });
+
+      // Index usage monitoring - disabled in development to reduce overhead
+      if (process.env.NODE_ENV === 'production' && process.env.ENABLE_INDEX_MONITORING === 'true') {
+        setInterval(() => {
+          mongoose.connection.db?.listCollections().toArray((err, collections) => {
+            if (err) return;
+            collections.forEach(collection => {
+              mongoose.connection.db?.collection(collection.name).stats((err, stats) => {
+                if (err) return;
+                const indexUsage = stats?.indexDetails || {};
+                Object.entries(indexUsage).forEach(([indexName, indexStats]) => {
+                  if (indexStats?.accesses?.since?.ops < 1) {
+                    console.log(`📊 Unused index detected: ${collection.name}.${indexName} (${indexStats.accesses.since.ops} operations)`);
+                  }
+                });
+              });
+            });
+          });
+        }, 3600000); // Check every hour only in production
+      }
+    };
+
+    // Initialize query optimization
+    optimizeQueryPerformance();
 
     retryWithBackoff();
   }

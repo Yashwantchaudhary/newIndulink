@@ -67,6 +67,5 @@ categorySchema.pre('save', function (next) {
 
 // Index for performance
 categorySchema.index({ parent: 1, isActive: 1 });
-categorySchema.index({ slug: 1 });
 
 module.exports = mongoose.model('Category', categorySchema);

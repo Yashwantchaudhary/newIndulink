@@ -63,7 +63,7 @@ class CartService {
   }) async {
     try {
       final response = await _api.post(
-        AppConfig.addToCartEndpoint,
+        AppConfig.cartEndpoint,
         body: {
           'productId': productId,
           'quantity': quantity,
@@ -100,9 +100,8 @@ class CartService {
   }) async {
     try {
       final response = await _api.put(
-        AppConfig.updateCartEndpoint,
+        '${AppConfig.cartEndpoint}/$productId',
         body: {
-          'productId': productId,
           'quantity': quantity,
         },
       );
@@ -134,7 +133,7 @@ class CartService {
   Future<CartResult> removeFromCart(String productId) async {
     try {
       final response = await _api.delete(
-        '${AppConfig.removeFromCartEndpoint}/$productId',
+        '${AppConfig.cartEndpoint}/$productId',
       );
 
       if (response.isSuccess) {
@@ -167,7 +166,7 @@ class CartService {
   /// Clear entire cart
   Future<CartResult> clearCart() async {
     try {
-      final response = await _api.delete(AppConfig.clearCartEndpoint);
+      final response = await _api.delete(AppConfig.cartEndpoint);
 
       if (response.isSuccess) {
         await _storage.clearCart();

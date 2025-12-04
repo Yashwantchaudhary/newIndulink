@@ -46,6 +46,7 @@ const productSchema = new mongoose.Schema(
             ref: 'User',
             required: [true, 'Product supplier is required'],
         },
+        // Legacy stock field - will be replaced by inventory system
         stock: {
             type: Number,
             required: [true, 'Stock quantity is required'],
@@ -110,6 +111,89 @@ const productSchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
+        // Inventory management fields
+        inventorySettings: {
+            trackInventory: {
+                type: Boolean,
+                default: true,
+            },
+            allowBackorders: {
+                type: Boolean,
+                default: false,
+            },
+            reorderThreshold: {
+                type: Number,
+                min: [0, 'Reorder threshold cannot be negative'],
+                default: 10,
+            },
+            reorderQuantity: {
+                type: Number,
+                min: [0, 'Reorder quantity cannot be negative'],
+                default: 50,
+            },
+            leadTimeDays: {
+                type: Number,
+                min: [0, 'Lead time cannot be negative'],
+                default: 7,
+            },
+            batchTrackingEnabled: {
+                type: Boolean,
+                default: false,
+            },
+            serialTrackingEnabled: {
+                type: Boolean,
+                default: false,
+            },
+            expirationTrackingEnabled: {
+                type: Boolean,
+                default: false,
+            },
+            minimumStockLevel: {
+                type: Number,
+                min: [0, 'Minimum stock level cannot be negative'],
+                default: 5,
+            },
+            maximumStockLevel: {
+                type: Number,
+                min: [0, 'Maximum stock level cannot be negative'],
+            },
+        },
+        // Barcode and identification
+        barcodes: [{
+            type: String,
+            trim: true,
+            unique: true,
+            sparse: true,
+        }],
+        // Product dimensions and weight for inventory planning
+        packaging: {
+            weight: {
+                value: Number,
+                unit: {
+                    type: String,
+                    enum: ['kg', 'g', 'lb'],
+                    default: 'kg',
+                },
+            },
+            dimensions: {
+                length: Number,
+                width: Number,
+                height: Number,
+                unit: {
+                    type: String,
+                    enum: ['cm', 'in'],
+                    default: 'cm',
+                },
+            },
+            volume: {
+                value: Number,
+                unit: {
+                    type: String,
+                    enum: ['cm³', 'in³'],
+                    default: 'cm³',
+                },
+            },
+        },
     },
     {
         timestamps: true,
@@ -149,10 +233,31 @@ productSchema.virtual('inStock').get(function () {
     return this.stock > 0;
 });
 
+// Virtual for total inventory across all locations
+productSchema.virtual('totalInventory').get(async function () {
+    const Inventory = require('./Inventory');
+    const inventoryItems = await Inventory.find({ product: this._id });
+    return inventoryItems.reduce((sum, item) => sum + item.quantity, 0);
+});
+
+// Virtual for low stock status
+productSchema.virtual('isLowStock').get(function () {
+    const threshold = this.inventorySettings?.reorderThreshold || 10;
+    return this.stock <= threshold && this.stock > 0;
+});
+
+// Virtual for critical stock status
+productSchema.virtual('isCriticalStock').get(function () {
+    const minStock = this.inventorySettings?.minimumStockLevel || 5;
+    return this.stock <= minStock;
+});
+
 // Update stock status when stock changes
 productSchema.pre('save', function (next) {
     if (this.stock === 0 && this.status === 'active') {
         this.status = 'out_of_stock';
+    } else if (this.stock > 0 && this.status === 'out_of_stock') {
+        this.status = 'active';
     }
     next();
 });

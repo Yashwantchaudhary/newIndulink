@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -287,7 +286,7 @@ class _DataExportImportScreenState extends State<DataExportImportScreen>
 
           // Collection Selection
           DropdownButtonFormField<String>(
-            value: _selectedCollection,
+            initialValue: _selectedCollection,
             decoration: const InputDecoration(
               labelText: 'Collection',
               border: OutlineInputBorder(),
@@ -359,7 +358,7 @@ class _DataExportImportScreenState extends State<DataExportImportScreen>
 
           // Collection Selection
           DropdownButtonFormField<String>(
-            value: _selectedCollection,
+            initialValue: _selectedCollection,
             decoration: const InputDecoration(
               labelText: 'Target Collection',
               border: OutlineInputBorder(),

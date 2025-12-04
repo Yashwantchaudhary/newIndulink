@@ -62,7 +62,12 @@ exports.createOrder = async (req, res, next) => {
             const shippingCost = subtotal > 1000 ? 0 : 100;
             const total = subtotal + tax + shippingCost;
 
+            // Generate order number manually
+            const orderCount = await Order.countDocuments();
+            const orderNumber = `IND${Date.now()}${String(orderCount + 1).padStart(4, '0')}`;
+
             const order = await Order.create({
+                orderNumber,
                 customer: req.user.id,
                 supplier: supplierId,
                 items: orderItems,
@@ -460,6 +465,488 @@ exports.cancelOrder = async (req, res, next) => {
             success: true,
             message: 'Order cancelled successfully',
             data: order,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get order statistics
+// @route   GET /api/orders/stats
+// @access  Private (Admin)
+exports.getOrderStats = async (req, res, next) => {
+    try {
+        const totalOrders = await Order.countDocuments();
+        const pendingOrders = await Order.countDocuments({ status: 'pending' });
+        const completedOrders = await Order.countDocuments({ status: 'delivered' });
+        const cancelledOrders = await Order.countDocuments({ status: 'cancelled' });
+
+        // Get total revenue
+        const revenueData = await Order.aggregate([
+            { $match: { status: 'delivered' } },
+            { $group: { _id: null, totalRevenue: { $sum: '$total' } } }
+        ]);
+
+        const totalRevenue = revenueData[0]?.totalRevenue || 0;
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalOrders,
+                pendingOrders,
+                completedOrders,
+                cancelledOrders,
+                totalRevenue,
+                count: totalOrders
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get supplier order statistics
+// @route   GET /api/orders/stats/supplier/:supplierId
+// @access  Private (Supplier or Admin)
+exports.getSupplierOrderStats = async (req, res, next) => {
+    try {
+        const supplierId = req.params.supplierId;
+
+        // Check if user is authorized to access this supplier's data
+        if (req.user.role !== 'admin' && req.user.id !== supplierId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to access this supplier data',
+            });
+        }
+
+        const totalOrders = await Order.countDocuments({ supplier: supplierId });
+        const pendingOrders = await Order.countDocuments({ supplier: supplierId, status: 'pending' });
+        const completedOrders = await Order.countDocuments({ supplier: supplierId, status: 'delivered' });
+        const cancelledOrders = await Order.countDocuments({ supplier: supplierId, status: 'cancelled' });
+
+        // Get total revenue for supplier
+        const revenueData = await Order.aggregate([
+            { $match: { supplier: supplierId, status: 'delivered' } },
+            { $group: { _id: null, totalRevenue: { $sum: '$total' } } }
+        ]);
+
+        const totalRevenue = revenueData[0]?.totalRevenue || 0;
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalOrders,
+                pendingOrders,
+                completedOrders,
+                cancelledOrders,
+                totalRevenue,
+                count: totalOrders
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Search orders
+// @route   GET /api/orders/search
+// @access  Private (Admin)
+exports.searchOrders = async (req, res, next) => {
+    try {
+        const { query, status, customerId, supplierId, startDate, endDate, page = 1, limit = 20 } = req.query;
+        const skip = (page - 1) * limit;
+
+        const filter = {};
+
+        if (query) {
+            filter.$or = [
+                { orderNumber: { $regex: query, $options: 'i' } },
+                { 'shippingAddress.fullName': { $regex: query, $options: 'i' } },
+                { 'shippingAddress.phone': { $regex: query, $options: 'i' } }
+            ];
+        }
+
+        if (status) filter.status = status;
+        if (customerId) filter.customer = customerId;
+        if (supplierId) filter.supplier = supplierId;
+
+        if (startDate || endDate) {
+            filter.createdAt = {};
+            if (startDate) filter.createdAt.$gte = new Date(startDate);
+            if (endDate) filter.createdAt.$lte = new Date(endDate);
+        }
+
+        const orders = await Order.find(filter)
+            .populate('customer', 'firstName lastName email')
+            .populate('supplier', 'firstName lastName businessName')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parseInt(limit));
+
+        const total = await Order.countDocuments(filter);
+
+        res.status(200).json({
+            success: true,
+            count: orders.length,
+            total,
+            page: parseInt(page),
+            pages: Math.ceil(total / limit),
+            data: orders,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Bulk update order status
+// @route   PUT /api/orders/bulk/status
+// @access  Private (Admin)
+exports.bulkUpdateOrderStatus = async (req, res, next) => {
+    try {
+        const { orderIds, status, trackingNumbers = [], supplierNotes = [] } = req.body;
+
+        if (!Array.isArray(orderIds) || orderIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Order IDs array is required',
+            });
+        }
+
+        if (!status) {
+            return res.status(400).json({
+                success: false,
+                message: 'Status is required',
+            });
+        }
+
+        const validStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status value',
+            });
+        }
+
+        // Update orders in bulk
+        const result = await Order.updateMany(
+            { _id: { $in: orderIds } },
+            {
+                $set: {
+                    status: status,
+                    ...(status === 'shipped' && { shippedAt: new Date() }),
+                    ...(status === 'delivered' && { deliveredAt: new Date(), paymentStatus: 'paid' }),
+                    ...(status === 'cancelled' && { cancelledAt: new Date() })
+                }
+            }
+        );
+
+        // Update tracking numbers if provided
+        if (trackingNumbers.length > 0 && orderIds.length === trackingNumbers.length) {
+            for (let i = 0; i < orderIds.length; i++) {
+                await Order.findByIdAndUpdate(orderIds[i], {
+                    trackingNumber: trackingNumbers[i]
+                });
+            }
+        }
+
+        // Update supplier notes if provided
+        if (supplierNotes.length > 0 && orderIds.length === supplierNotes.length) {
+            for (let i = 0; i < orderIds.length; i++) {
+                await Order.findByIdAndUpdate(orderIds[i], {
+                    supplierNote: supplierNotes[i]
+                });
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Bulk order status update completed',
+            modifiedCount: result.modifiedCount,
+            matchedCount: result.matchedCount,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Export orders data
+// @route   GET /api/orders/export
+// @access  Private (Admin)
+exports.exportOrders = async (req, res, next) => {
+    try {
+        const { status, startDate, endDate, format = 'csv' } = req.query;
+
+        const filter = {};
+
+        if (status) filter.status = status;
+        if (startDate || endDate) {
+            filter.createdAt = {};
+            if (startDate) filter.createdAt.$gte = new Date(startDate);
+            if (endDate) filter.createdAt.$lte = new Date(endDate);
+        }
+
+        const orders = await Order.find(filter)
+            .populate('customer', 'firstName lastName email phone')
+            .populate('supplier', 'firstName lastName businessName phone')
+            .sort({ createdAt: -1 });
+
+        if (format === 'csv') {
+            // Generate CSV format
+            const csvHeader = 'Order Number,Customer,Supplier,Status,Total,Date,Payment Method,Tracking Number\n';
+            const csvRows = orders.map(order =>
+                `"${order.orderNumber}","${order.customer?.firstName} ${order.customer?.lastName}","${order.supplier?.businessName || order.supplier?.firstName}","${order.status}","${order.total}","${order.createdAt}","${order.paymentMethod}","${order.trackingNumber || ''}"`
+            ).join('\n');
+
+            const csvData = csvHeader + csvRows;
+
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename=orders_export.csv');
+            res.status(200).send(csvData);
+        } else {
+            // JSON format
+            res.status(200).json({
+                success: true,
+                data: orders,
+            });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Update order tracking information
+// @route   PUT /api/orders/:id/tracking
+// @access  Private (Supplier)
+exports.updateOrderTracking = async (req, res, next) => {
+    try {
+        const { trackingNumber, carrier, estimatedDelivery, trackingUrl } = req.body;
+
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found',
+            });
+        }
+
+        // Check authorization
+        if (order.supplier.toString() !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to update tracking for this order',
+            });
+        }
+
+        // Update tracking information
+        if (trackingNumber) order.trackingNumber = trackingNumber;
+        if (carrier) order.carrier = carrier;
+        if (estimatedDelivery) order.estimatedDelivery = new Date(estimatedDelivery);
+        if (trackingUrl) order.trackingUrl = trackingUrl;
+
+        // If order was not shipped yet, update status to shipped
+        if (order.status !== 'shipped' && order.status !== 'delivered') {
+            order.status = 'shipped';
+            order.shippedAt = new Date();
+        }
+
+        await order.save();
+
+        // Send notification to customer about tracking update
+        try {
+            await sendOrderStatusNotification(order.customer.toString(), order._id.toString(), 'tracking_updated', {
+                trackingNumber: trackingNumber,
+                carrier: carrier,
+                estimatedDelivery: estimatedDelivery,
+                trackingUrl: trackingUrl,
+            });
+        } catch (notificationError) {
+            console.error('Failed to send tracking update notification:', notificationError);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Order tracking information updated',
+            data: order,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Process order refund
+// @route   PUT /api/orders/:id/refund
+// @access  Private (Admin)
+exports.processRefund = async (req, res, next) => {
+    try {
+        const { refundAmount, refundReason, refundMethod } = req.body;
+
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found',
+            });
+        }
+
+        // Only delivered orders can be refunded
+        if (order.status !== 'delivered') {
+            return res.status(400).json({
+                success: false,
+                message: 'Only delivered orders can be refunded',
+            });
+        }
+
+        // Update order status and refund information
+        order.status = 'refunded';
+        order.refundedAt = new Date();
+        order.paymentStatus = 'refunded';
+        order.refundAmount = refundAmount || order.total;
+        order.refundReason = refundReason;
+        order.refundMethod = refundMethod;
+
+        await order.save();
+
+        // Send notifications
+        try {
+            // Notify customer
+            await sendOrderStatusNotification(order.customer.toString(), order._id.toString(), 'refunded', {
+                refundAmount: refundAmount,
+                refundReason: refundReason,
+                refundMethod: refundMethod,
+            });
+
+            // Notify supplier
+            await sendOrderStatusNotification(order.supplier.toString(), order._id.toString(), 'order_refunded', {
+                refundAmount: refundAmount,
+                refundReason: refundReason,
+            });
+        } catch (notificationError) {
+            console.error('Failed to send refund notification:', notificationError);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Order refund processed successfully',
+            data: order,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get comprehensive order analytics
+// @route   GET /api/orders/analytics
+// @access  Private (Admin)
+exports.getOrderAnalytics = async (req, res, next) => {
+    try {
+        const { timeRange = '30days', supplierId } = req.query;
+
+        const filter = {};
+        if (supplierId) filter.supplier = supplierId;
+
+        // Set date range filter
+        const now = new Date();
+        let startDate;
+
+        switch (timeRange) {
+            case '7days':
+                startDate = new Date(now.setDate(now.getDate() - 7));
+                break;
+            case '30days':
+                startDate = new Date(now.setDate(now.getDate() - 30));
+                break;
+            case '90days':
+                startDate = new Date(now.setDate(now.getDate() - 90));
+                break;
+            case 'year':
+                startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+                break;
+            default:
+                startDate = new Date(now.setDate(now.getDate() - 30));
+        }
+
+        filter.createdAt = { $gte: startDate };
+
+        // Get analytics data
+        const [statusDistribution, revenueByDay, averageOrderValue, topCustomers, topProducts] = await Promise.all([
+            // Status distribution
+            Order.aggregate([
+                { $match: filter },
+                { $group: { _id: '$status', count: { $sum: 1 } } },
+                { $sort: { count: -1 } }
+            ]),
+
+            // Revenue by day
+            Order.aggregate([
+                { $match: { ...filter, status: 'delivered' } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+                        totalRevenue: { $sum: '$total' },
+                        orderCount: { $sum: 1 }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ]),
+
+            // Average order value
+            Order.aggregate([
+                { $match: { ...filter, status: 'delivered' } },
+                { $group: { _id: null, avgOrderValue: { $avg: '$total' }, totalOrders: { $sum: 1 } } }
+            ]),
+
+            // Top customers
+            Order.aggregate([
+                { $match: filter },
+                { $group: { _id: '$customer', count: { $sum: 1 }, totalSpent: { $sum: '$total' } } },
+                { $sort: { totalSpent: -1 } },
+                { $limit: 5 },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'customer'
+                    }
+                },
+                { $unwind: '$customer' }
+            ]),
+
+            // Top products
+            Order.aggregate([
+                { $match: filter },
+                { $unwind: '$items' },
+                { $group: { _id: '$items.product', count: { $sum: 1 }, totalQuantity: { $sum: '$items.quantity' } } },
+                { $sort: { totalQuantity: -1 } },
+                { $limit: 5 },
+                {
+                    $lookup: {
+                        from: 'products',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'product'
+                    }
+                },
+                { $unwind: '$product' }
+            ])
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                statusDistribution: statusDistribution || [],
+                revenueByDay: revenueByDay || [],
+                averageOrderValue: averageOrderValue[0]?.avgOrderValue || 0,
+                totalOrders: averageOrderValue[0]?.totalOrders || 0,
+                topCustomers: topCustomers || [],
+                topProducts: topProducts || [],
+                timeRange: timeRange,
+                startDate: startDate.toISOString(),
+                endDate: new Date().toISOString()
+            }
         });
     } catch (error) {
         next(error);

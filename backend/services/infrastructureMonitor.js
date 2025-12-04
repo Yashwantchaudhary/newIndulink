@@ -1,272 +1,191 @@
+// services/infrastructureMonitor.js
+'use strict';
+
 const os = require('os');
 const fs = require('fs').promises;
-const path = require('path');
+const fsSync = require('fs');
+const { exec } = require('child_process');
+const util = require('util');
+const execAsync = util.promisify(exec);
 const alertService = require('./alertService');
 
-/**
- * Infrastructure Monitoring Service
- * Monitors server resources, system health, and scaling events
- */
+const COLLECT_INTERVAL_MS = parseInt(process.env.INFRA_COLLECT_INTERVAL_MS || '30000', 10);
+const ALERT_INTERVAL_MS = parseInt(process.env.INFRA_ALERT_INTERVAL_MS || '120000', 10);
+const RETENTION_POINTS = parseInt(process.env.INFRA_RETENTION_POINTS || '120', 10);
+
 class InfrastructureMonitor {
   constructor() {
-    this.metrics = {
-      cpu: [],
-      memory: [],
-      disk: [],
-      network: [],
-      uptime: 0,
-      loadAverage: []
-    };
-
-    this.previousNetworkStats = null;
+    this.metrics = { cpu: [], memory: [], disk: [], network: [], uptime: 0, loadAverage: [] };
+    this.previousNetwork = null;
     this.alertThresholds = {
-      cpuUsage: 80, // 80%
-      memoryUsage: 85, // 85%
-      diskUsage: 90, // 90%
-      loadAverage: os.cpus().length * 2, // 2x CPU cores
+      cpuUsage: parseFloat(process.env.ALERT_CPU_USAGE || '80'),
+      memoryUsage: parseFloat(process.env.ALERT_MEMORY_USAGE || '85'),
+      diskUsage: parseFloat(process.env.ALERT_DISK_USAGE || '90'),
+      loadAverage: os.cpus().length * 2,
     };
-
-    // Collect metrics every 30 seconds
-    setInterval(() => {
-      this.collectMetrics();
-    }, 30000);
-
-    // Check alerts every 2 minutes
-    setInterval(() => {
-      this.checkAlerts();
-    }, 120000);
+    this.lastAlertAt = {}; // key -> timestamp
+    this.collectTimer = null;
+    this.alertTimer = null;
+    this.start();
   }
 
-  /**
-   * Collect current system metrics
-   */
+  start() {
+    if (!this.collectTimer) this.collectTimer = setInterval(() => this.collectMetrics(), COLLECT_INTERVAL_MS);
+    if (!this.alertTimer) this.alertTimer = setInterval(() => this.checkAlerts(), ALERT_INTERVAL_MS);
+    // initial collect
+    this.collectMetrics().catch((e) => console.error('Initial collect failed', e));
+  }
+
+  stop() {
+    if (this.collectTimer) clearInterval(this.collectTimer);
+    if (this.alertTimer) clearInterval(this.alertTimer);
+    this.collectTimer = null;
+    this.alertTimer = null;
+  }
+
   async collectMetrics() {
     try {
-      const timestamp = new Date().toISOString();
-
-      // CPU metrics
+      const timestamp = Date.now();
       const cpuUsage = this.getCpuUsage();
-      this.metrics.cpu.push({
-        timestamp,
-        usage: cpuUsage,
-        cores: os.cpus().length
-      });
+      this.metrics.cpu.push({ timestamp, usage: cpuUsage, cores: os.cpus().length });
 
-      // Memory metrics
       const totalMemory = os.totalmem();
       const freeMemory = os.freemem();
       const usedMemory = totalMemory - freeMemory;
-      const memoryUsagePercent = (usedMemory / totalMemory) * 100;
+      const memoryUsagePercent = totalMemory ? (usedMemory / totalMemory) * 100 : 0;
+      this.metrics.memory.push({ timestamp, total: totalMemory, used: usedMemory, free: freeMemory, usagePercent: memoryUsagePercent });
 
-      this.metrics.memory.push({
-        timestamp,
-        total: totalMemory,
-        used: usedMemory,
-        free: freeMemory,
-        usagePercent: memoryUsagePercent
-      });
-
-      // Disk metrics
       const diskStats = await this.getDiskUsage();
-      this.metrics.disk.push({
-        timestamp,
-        ...diskStats
-      });
+      this.metrics.disk.push({ timestamp, ...diskStats });
 
-      // Network metrics
-      const networkStats = this.getNetworkStats();
-      this.metrics.network.push({
-        timestamp,
-        ...networkStats
-      });
+      const networkStats = await this.getNetworkStats();
+      this.metrics.network.push({ timestamp, ...networkStats });
 
-      // System load
-      const loadAverage = os.loadavg();
-      this.metrics.loadAverage.push({
-        timestamp,
-        '1min': loadAverage[0],
-        '5min': loadAverage[1],
-        '15min': loadAverage[2]
-      });
+      const load = os.loadavg();
+      this.metrics.loadAverage.push({ timestamp, '1min': load[0], '5min': load[1], '15min': load[2] });
 
-      // Update uptime
       this.metrics.uptime = os.uptime();
 
-      // Keep only last 120 data points (1 hour of 30-second intervals)
-      ['cpu', 'memory', 'disk', 'network', 'loadAverage'].forEach(metric => {
-        if (this.metrics[metric].length > 120) {
-          this.metrics[metric] = this.metrics[metric].slice(-120);
-        }
+      // retention
+      ['cpu', 'memory', 'disk', 'network', 'loadAverage'].forEach((m) => {
+        if (this.metrics[m].length > RETENTION_POINTS) this.metrics[m] = this.metrics[m].slice(-RETENTION_POINTS);
       });
-
-    } catch (error) {
-      console.error('Failed to collect infrastructure metrics:', error.message);
+    } catch (err) {
+      console.error('collectMetrics error:', err && err.message ? err.message : err);
     }
   }
 
-  /**
-   * Get CPU usage percentage
-   */
   getCpuUsage() {
     const cpus = os.cpus();
     let totalIdle = 0;
     let totalTick = 0;
-
-    cpus.forEach(cpu => {
-      for (const type in cpu.times) {
-        totalTick += cpu.times[type];
-      }
+    cpus.forEach((cpu) => {
+      for (const t in cpu.times) totalTick += cpu.times[t];
       totalIdle += cpu.times.idle;
     });
-
-    return 100 - ~~(100 * totalIdle / totalTick);
+    return totalTick ? 100 - (100 * totalIdle) / totalTick : 0;
   }
 
-  /**
-   * Get disk usage statistics
-   */
   async getDiskUsage() {
     try {
-      // For simplicity, check the root filesystem
-      // In production, you might want to check specific mount points
-      const stats = await fs.statvfs ? fs.statvfs('/') : { blocks: 1, bfree: 1, bsize: 1 };
-
-      if (stats.blocks && stats.bfree !== undefined) {
-        const total = stats.blocks * stats.bsize;
-        const free = stats.bfree * stats.bsize;
-        const used = total - free;
-        const usagePercent = (used / total) * 100;
-
-        return {
-          total,
-          used,
-          free,
-          usagePercent
-        };
-      }
-
-      // Fallback for systems without statvfs
-      return {
-        total: 0,
-        used: 0,
-        free: 0,
-        usagePercent: 0
-      };
-    } catch (error) {
-      console.error('Failed to get disk usage:', error.message);
-      return {
-        total: 0,
-        used: 0,
-        free: 0,
-        usagePercent: 0
-      };
-    }
-  }
-
-  /**
-   * Get network statistics
-   */
-  getNetworkStats() {
-    const networkInterfaces = os.networkInterfaces();
-    let rxBytes = 0;
-    let txBytes = 0;
-
-    // Sum up all network interfaces
-    Object.values(networkInterfaces).forEach(interfaces => {
-      interfaces?.forEach(iface => {
-        // Only count IPv4 interfaces
-        if (iface.family === 'IPv4' && !iface.internal) {
-          // Note: Node.js doesn't provide network byte counts directly
-          // This is a simplified version
+      // Linux: parse 'df -k /' output
+      if (process.platform !== 'win32') {
+        const { stdout } = await execAsync('df -k /');
+        const lines = stdout.trim().split('\n');
+        if (lines.length >= 2) {
+          const parts = lines[1].split(/\s+/);
+          const total = parseInt(parts[1], 10) * 1024;
+          const used = parseInt(parts[2], 10) * 1024;
+          const free = parseInt(parts[3], 10) * 1024;
+          const usagePercent = total ? (used / total) * 100 : 0;
+          return { total, used, free, usagePercent };
         }
-      });
-    });
-
-    return {
-      rxBytes,
-      txBytes,
-      interfaces: Object.keys(networkInterfaces).length
-    };
+      } else {
+        // Windows fallback using wmic
+        const { stdout } = await execAsync('wmic logicaldisk get size,freespace,caption');
+        const lines = stdout.trim().split('\n').slice(1).map(l => l.trim()).filter(Boolean);
+        // pick C: or first
+        for (const line of lines) {
+          const cols = line.split(/\s+/);
+          if (cols.length >= 3) {
+            const free = parseInt(cols[1], 10);
+            const total = parseInt(cols[2], 10);
+            const used = total - free;
+            const usagePercent = total ? (used / total) * 100 : 0;
+            return { total, used, free, usagePercent };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('getDiskUsage fallback:', err && err.message ? err.message : err);
+    }
+    return { total: 0, used: 0, free: 0, usagePercent: 0 };
   }
 
-  /**
-   * Check for infrastructure alerts
-   */
+  async getNetworkStats() {
+    try {
+      if (process.platform === 'linux' && fsSync.existsSync('/proc/net/dev')) {
+        const raw = await fs.readFile('/proc/net/dev', 'utf8');
+        const lines = raw.split('\n').slice(2);
+        let rx = 0, tx = 0, ifaceCount = 0;
+        for (const line of lines) {
+          const parts = line.trim().split(/\s+/);
+          if (parts.length >= 17) {
+            const name = parts[0].replace(':', '');
+            if (name && !name.startsWith('lo')) {
+              ifaceCount++;
+              rx += parseInt(parts[1], 10) || 0;
+              tx += parseInt(parts[9], 10) || 0;
+            }
+          }
+        }
+        // compute delta if previous exists
+        const now = Date.now();
+        let rxDelta = 0, txDelta = 0;
+        if (this.previousNetwork) {
+          const dt = Math.max(1, (now - this.previousNetwork.ts) / 1000);
+          rxDelta = Math.max(0, (rx - this.previousNetwork.rx) / dt);
+          txDelta = Math.max(0, (tx - this.previousNetwork.tx) / dt);
+        }
+        this.previousNetwork = { rx, tx, ts: now };
+        return { rxBytes: rx, txBytes: tx, rxPerSec: rxDelta, txPerSec: txDelta, interfaces: ifaceCount };
+      }
+    } catch (err) {
+      console.warn('getNetworkStats fallback:', err && err.message ? err.message : err);
+    }
+    return { rxBytes: 0, txBytes: 0, rxPerSec: 0, txPerSec: 0, interfaces: 0 };
+  }
+
   async checkAlerts() {
     try {
-      const latestMetrics = this.getLatestMetrics();
-
-      // CPU usage alert
-      if (latestMetrics.cpu.usage > this.alertThresholds.cpuUsage) {
-        await alertService.sendAlert(
-          'HIGH_CPU_USAGE',
-          'high',
-          `CPU usage is ${latestMetrics.cpu.usage.toFixed(1)}% (threshold: ${this.alertThresholds.cpuUsage}%)`,
-          {
-            cpuUsage: latestMetrics.cpu.usage,
-            cores: latestMetrics.cpu.cores,
-            threshold: this.alertThresholds.cpuUsage,
-            timestamp: new Date().toISOString()
-          }
-        );
-      }
-
-      // Memory usage alert
-      if (latestMetrics.memory.usagePercent > this.alertThresholds.memoryUsage) {
-        await alertService.sendAlert(
-          'HIGH_MEMORY_USAGE',
-          'high',
-          `Memory usage is ${latestMetrics.memory.usagePercent.toFixed(1)}% (threshold: ${this.alertThresholds.memoryUsage}%)`,
-          {
-            memoryUsage: latestMetrics.memory.usagePercent,
-            usedMemory: latestMetrics.memory.used,
-            totalMemory: latestMetrics.memory.total,
-            threshold: this.alertThresholds.memoryUsage,
-            timestamp: new Date().toISOString()
-          }
-        );
-      }
-
-      // Disk usage alert
-      if (latestMetrics.disk.usagePercent > this.alertThresholds.diskUsage) {
-        await alertService.sendAlert(
-          'HIGH_DISK_USAGE',
-          'medium',
-          `Disk usage is ${latestMetrics.disk.usagePercent.toFixed(1)}% (threshold: ${this.alertThresholds.diskUsage}%)`,
-          {
-            diskUsage: latestMetrics.disk.usagePercent,
-            usedDisk: latestMetrics.disk.used,
-            totalDisk: latestMetrics.disk.total,
-            threshold: this.alertThresholds.diskUsage,
-            timestamp: new Date().toISOString()
-          }
-        );
-      }
-
-      // Load average alert
-      if (latestMetrics.loadAverage['1min'] > this.alertThresholds.loadAverage) {
-        await alertService.sendAlert(
-          'HIGH_LOAD_AVERAGE',
-          'medium',
-          `System load average (1min) is ${latestMetrics.loadAverage['1min'].toFixed(2)} (threshold: ${this.alertThresholds.loadAverage})`,
-          {
-            loadAverage1m: latestMetrics.loadAverage['1min'],
-            loadAverage5m: latestMetrics.loadAverage['5min'],
-            loadAverage15m: latestMetrics.loadAverage['15min'],
-            threshold: this.alertThresholds.loadAverage,
-            timestamp: new Date().toISOString()
-          }
-        );
-      }
-
-    } catch (error) {
-      console.error('Failed to check infrastructure alerts:', error.message);
+      const latest = this.getLatestMetrics();
+      await this._maybeAlert('HIGH_CPU_USAGE', latest.cpu.usage, this.alertThresholds.cpuUsage, 'high', {
+        cpuUsage: latest.cpu.usage, cores: latest.cpu.cores,
+      });
+      await this._maybeAlert('HIGH_MEMORY_USAGE', latest.memory.usagePercent, this.alertThresholds.memoryUsage, 'high', {
+        memoryUsage: latest.memory.usagePercent, usedMemory: latest.memory.used, totalMemory: latest.memory.total,
+      });
+      await this._maybeAlert('HIGH_DISK_USAGE', latest.disk.usagePercent, this.alertThresholds.diskUsage, 'medium', {
+        diskUsage: latest.disk.usagePercent, usedDisk: latest.disk.used, totalDisk: latest.disk.total,
+      });
+      await this._maybeAlert('HIGH_LOAD_AVERAGE', latest.loadAverage['1min'], this.alertThresholds.loadAverage, 'medium', {
+        loadAverage1m: latest.loadAverage['1min'],
+      });
+    } catch (err) {
+      console.error('checkAlerts error:', err && err.message ? err.message : err);
     }
   }
 
-  /**
-   * Get latest metrics summary
-   */
+  async _maybeAlert(key, value, threshold, severity, meta = {}) {
+    if (value <= threshold) return;
+    const now = Date.now();
+    const last = this.lastAlertAt[key] || 0;
+    const cooldown = parseInt(process.env.ALERT_COOLDOWN_MS || '600000', 10); // default 10 minutes
+    if (now - last < cooldown) return;
+    this.lastAlertAt[key] = now;
+    await alertService.sendAlert(key, severity, `${key} triggered: ${value}`, { ...meta, timestamp: new Date().toISOString() });
+  }
+
   getLatestMetrics() {
     return {
       cpu: this.metrics.cpu[this.metrics.cpu.length - 1] || { usage: 0, cores: os.cpus().length },
@@ -274,105 +193,61 @@ class InfrastructureMonitor {
       disk: this.metrics.disk[this.metrics.disk.length - 1] || { usagePercent: 0, total: 0, used: 0, free: 0 },
       network: this.metrics.network[this.metrics.network.length - 1] || { rxBytes: 0, txBytes: 0, interfaces: 0 },
       loadAverage: this.metrics.loadAverage[this.metrics.loadAverage.length - 1] || { '1min': 0, '5min': 0, '15min': 0 },
-      uptime: this.metrics.uptime
+      uptime: this.metrics.uptime,
     };
   }
 
-  /**
-   * Get comprehensive infrastructure report
-   */
   getInfrastructureReport() {
     const latest = this.getLatestMetrics();
-
     return {
       timestamp: new Date().toISOString(),
-      system: {
-        platform: os.platform(),
-        arch: os.arch(),
-        release: os.release(),
-        hostname: os.hostname(),
-        uptime: latest.uptime
-      },
-      cpu: {
-        cores: latest.cpu.cores,
-        usagePercent: Math.round(latest.cpu.usage * 10) / 10,
-        loadAverage: {
-          '1min': Math.round(latest.loadAverage['1min'] * 100) / 100,
-          '5min': Math.round(latest.loadAverage['5min'] * 100) / 100,
-          '15min': Math.round(latest.loadAverage['15min'] * 100) / 100
-        }
-      },
+      system: { platform: os.platform(), arch: os.arch(), release: os.release(), hostname: os.hostname(), uptime: latest.uptime },
+      cpu: { cores: latest.cpu.cores, usagePercent: Math.round(latest.cpu.usage * 10) / 10, loadAverage: latest.loadAverage },
       memory: {
         totalGB: Math.round((latest.memory.total / (1024 ** 3)) * 100) / 100,
         usedGB: Math.round((latest.memory.used / (1024 ** 3)) * 100) / 100,
         freeGB: Math.round((latest.memory.free / (1024 ** 3)) * 100) / 100,
-        usagePercent: Math.round(latest.memory.usagePercent * 10) / 10
+        usagePercent: Math.round(latest.memory.usagePercent * 10) / 10,
       },
       disk: {
         totalGB: Math.round((latest.disk.total / (1024 ** 3)) * 100) / 100,
         usedGB: Math.round((latest.disk.used / (1024 ** 3)) * 100) / 100,
         freeGB: Math.round((latest.disk.free / (1024 ** 3)) * 100) / 100,
-        usagePercent: Math.round(latest.disk.usagePercent * 10) / 10
+        usagePercent: Math.round(latest.disk.usagePercent * 10) / 10,
       },
       network: {
         interfaces: latest.network.interfaces,
         rxMB: Math.round((latest.network.rxBytes / (1024 ** 2)) * 100) / 100,
-        txMB: Math.round((latest.network.txBytes / (1024 ** 2)) * 100) / 100
+        txMB: Math.round((latest.network.txBytes / (1024 ** 2)) * 100) / 100,
+        rxPerSec: latest.network.rxPerSec || 0,
+        txPerSec: latest.network.txPerSec || 0,
       },
-      alerts: {
-        thresholds: this.alertThresholds,
-        status: this.getHealthStatus()
-      }
+      alerts: { thresholds: this.alertThresholds, status: this.getHealthStatus() },
     };
   }
 
-  /**
-   * Get system health status
-   */
   getHealthStatus() {
     const latest = this.getLatestMetrics();
     const issues = [];
-
-    if (latest.cpu.usage > this.alertThresholds.cpuUsage) {
-      issues.push('high_cpu');
-    }
-    if (latest.memory.usagePercent > this.alertThresholds.memoryUsage) {
-      issues.push('high_memory');
-    }
-    if (latest.disk.usagePercent > this.alertThresholds.diskUsage) {
-      issues.push('high_disk');
-    }
-    if (latest.loadAverage['1min'] > this.alertThresholds.loadAverage) {
-      issues.push('high_load');
-    }
-
-    return {
-      status: issues.length === 0 ? 'healthy' : 'degraded',
-      issues: issues,
-      issueCount: issues.length
-    };
+    if (latest.cpu.usage > this.alertThresholds.cpuUsage) issues.push('high_cpu');
+    if (latest.memory.usagePercent > this.alertThresholds.memoryUsage) issues.push('high_memory');
+    if (latest.disk.usagePercent > this.alertThresholds.diskUsage) issues.push('high_disk');
+    if (latest.loadAverage['1min'] > this.alertThresholds.loadAverage) issues.push('high_load');
+    return { status: issues.length === 0 ? 'healthy' : 'degraded', issues, issueCount: issues.length };
   }
 
-  /**
-   * Get historical metrics for charting
-   */
   getHistoricalMetrics(minutes = 30) {
-    const dataPoints = (minutes * 60) / 30; // 30-second intervals
-    const recentData = {};
-
-    ['cpu', 'memory', 'disk', 'loadAverage'].forEach(metric => {
-      recentData[metric] = this.metrics[metric].slice(-dataPoints);
+    const points = Math.max(1, Math.floor((minutes * 60 * 1000) / COLLECT_INTERVAL_MS));
+    const recent = {};
+    ['cpu', 'memory', 'disk', 'loadAverage'].forEach((m) => {
+      recent[m] = this.metrics[m].slice(-points);
     });
+    return { period: `${minutes} minutes`, dataPoints: points, metrics: recent };
+  }
 
-    return {
-      period: `${minutes} minutes`,
-      dataPoints: dataPoints,
-      metrics: recentData
-    };
+  async shutdown() {
+    this.stop();
   }
 }
 
-// Export singleton instance
-const infrastructureMonitor = new InfrastructureMonitor();
-
-module.exports = infrastructureMonitor;
+module.exports = new InfrastructureMonitor();
