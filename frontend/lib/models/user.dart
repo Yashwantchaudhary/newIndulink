@@ -13,6 +13,8 @@ class User {
   final String? businessDescription;
   final String? businessAddress;
   final String? businessLicense;
+  final List<String>? services;
+  final List<String>? certifications;
   final List<Address>? addresses;
   final bool isEmailVerified;
   final bool isActive;
@@ -33,6 +35,8 @@ class User {
     this.businessDescription,
     this.businessAddress,
     this.businessLicense,
+    this.services,
+    this.certifications,
     this.addresses,
     this.isEmailVerified = false,
     this.isActive = true,
@@ -64,6 +68,11 @@ class User {
       businessDescription: json['businessDescription'],
       businessAddress: json['businessAddress'],
       businessLicense: json['businessLicense'],
+      services:
+          json['services'] != null ? List<String>.from(json['services']) : null,
+      certifications: json['certifications'] != null
+          ? List<String>.from(json['certifications'])
+          : null,
       addresses: json['addresses'] != null
           ? (json['addresses'] as List).map((e) => Address.fromJson(e)).toList()
           : null,
@@ -95,6 +104,8 @@ class User {
       'businessDescription': businessDescription,
       'businessAddress': businessAddress,
       'businessLicense': businessLicense,
+      'services': services,
+      'certifications': certifications,
       'addresses': addresses?.map((e) => e.toJson()).toList(),
       'isEmailVerified': isEmailVerified,
       'isActive': isActive,
@@ -117,6 +128,8 @@ class User {
     String? businessDescription,
     String? businessAddress,
     String? businessLicense,
+    List<String>? services,
+    List<String>? certifications,
     List<Address>? addresses,
     bool? isEmailVerified,
     bool? isActive,
@@ -137,6 +150,8 @@ class User {
       businessDescription: businessDescription ?? this.businessDescription,
       businessAddress: businessAddress ?? this.businessAddress,
       businessLicense: businessLicense ?? this.businessLicense,
+      services: services ?? this.services,
+      certifications: certifications ?? this.certifications,
       addresses: addresses ?? this.addresses,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       isActive: isActive ?? this.isActive,

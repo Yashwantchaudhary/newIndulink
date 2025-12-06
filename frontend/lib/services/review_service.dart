@@ -57,6 +57,42 @@ class ReviewService {
     }
   }
 
+  /// Get reviews for the current supplier
+  Future<ReviewResult> getSupplierReviews(
+      {int page = 1, int limit = 20}) async {
+    try {
+      final endpoint = '/reviews/supplier/me?page=$page&limit=$limit';
+      final response = await _api.get(endpoint);
+
+      if (response.isSuccess && response.data != null) {
+        final dataMap = response.data as Map<String, dynamic>;
+
+        final reviewsJson = dataMap['data'] ?? [];
+        final reviews =
+            (reviewsJson as List).map((json) => Review.fromJson(json)).toList();
+
+        return ReviewResult(
+          success: true,
+          reviews: reviews,
+          total: dataMap['total'] ?? reviews.length,
+          // Average rating not provided in this endpoint's root response,
+          // but could be calculated or ignored for this list view
+          averageRating: 0.0,
+        );
+      } else {
+        return ReviewResult(
+          success: false,
+          message: response.message ?? 'Failed to fetch supplier reviews',
+        );
+      }
+    } catch (e) {
+      return ReviewResult(
+        success: false,
+        message: 'Error: ${e.toString()}',
+      );
+    }
+  }
+
   /// Create a review (requires authentication)
   Future<ReviewResult> createReview({
     required String productId,

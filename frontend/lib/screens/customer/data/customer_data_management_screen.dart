@@ -16,10 +16,12 @@ class CustomerDataManagementScreen extends StatefulWidget {
   const CustomerDataManagementScreen({super.key});
 
   @override
-  State<CustomerDataManagementScreen> createState() => _CustomerDataManagementScreenState();
+  State<CustomerDataManagementScreen> createState() =>
+      _CustomerDataManagementScreenState();
 }
 
-class _CustomerDataManagementScreenState extends State<CustomerDataManagementScreen> {
+class _CustomerDataManagementScreenState
+    extends State<CustomerDataManagementScreen> {
   final ApiService _apiService = ApiService();
   bool _isLoading = true;
   Map<String, dynamic> _stats = {};
@@ -40,15 +42,18 @@ class _CustomerDataManagementScreenState extends State<CustomerDataManagementScr
       final responses = await Future.wait([
         _apiService.get('${AppConfig.cartEndpoint}/stats/$userId'),
         _apiService.get('${AppConfig.wishlistEndpoint}/stats/$userId'),
-        _apiService.get('/api/addresses/stats/$userId'),
-        _apiService.get('/api/reviews/stats/user/$userId'),
+        _apiService.get('/addresses/stats/$userId'),
+        _apiService.get('/reviews/stats/user/$userId'),
       ]);
 
       setState(() {
         _stats = {
-          'cart': responses[0].isSuccess ? responses[0].data : {'count': 0, 'total': 0},
+          'cart': responses[0].isSuccess
+              ? responses[0].data
+              : {'count': 0, 'total': 0},
           'wishlist': responses[1].isSuccess ? responses[1].data : {'count': 0},
-          'addresses': responses[2].isSuccess ? responses[2].data : {'count': 0},
+          'addresses':
+              responses[2].isSuccess ? responses[2].data : {'count': 0},
           'reviews': responses[3].isSuccess ? responses[3].data : {'count': 0},
         };
         _isLoading = false;
@@ -202,7 +207,8 @@ class _CustomerDataManagementScreenState extends State<CustomerDataManagementScr
         'route': AppRoutes.customerDataCart,
         'stats': _stats['cart'],
         'description': 'Manage cart items',
-        'subtitle': '${_stats['cart']?['count'] ?? 0} items • ₹${_stats['cart']?['total']?.toStringAsFixed(2) ?? '0.00'}',
+        'subtitle':
+            '${_stats['cart']?['count'] ?? 0} items • ₹${_stats['cart']?['total']?.toStringAsFixed(2) ?? '0.00'}',
       },
       {
         'title': 'Wishlist',
@@ -382,7 +388,8 @@ class _CustomerDataManagementScreenState extends State<CustomerDataManagementScr
     );
   }
 
-  Widget _buildQuickActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildQuickActionCard(
+      String title, IconData icon, Color color, VoidCallback onTap) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -418,7 +425,8 @@ class _CustomerDataManagementScreenState extends State<CustomerDataManagementScr
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear Cart'),
-        content: const Text('Are you sure you want to remove all items from your cart?'),
+        content: const Text(
+            'Are you sure you want to remove all items from your cart?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

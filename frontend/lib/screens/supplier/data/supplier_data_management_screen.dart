@@ -14,10 +14,12 @@ class SupplierDataManagementScreen extends StatefulWidget {
   const SupplierDataManagementScreen({super.key});
 
   @override
-  State<SupplierDataManagementScreen> createState() => _SupplierDataManagementScreenState();
+  State<SupplierDataManagementScreen> createState() =>
+      _SupplierDataManagementScreenState();
 }
 
-class _SupplierDataManagementScreenState extends State<SupplierDataManagementScreen> {
+class _SupplierDataManagementScreenState
+    extends State<SupplierDataManagementScreen> {
   final ApiService _apiService = ApiService();
   bool _isLoading = true;
   Map<String, dynamic> _stats = {};
@@ -36,15 +38,19 @@ class _SupplierDataManagementScreenState extends State<SupplierDataManagementScr
 
       // Load stats for supplier collections
       final responses = await Future.wait([
-        _apiService.get('/api/products/stats/supplier/$userId'),
-        _apiService.get('/api/orders/stats/supplier/$userId'),
-        _apiService.get('/api/rfq/stats/supplier/$userId'),
+        _apiService.get('/products/stats/supplier/$userId'),
+        _apiService.get('/orders/stats/supplier/$userId'),
+        _apiService.get('/rfq/stats/supplier/$userId'),
       ]);
 
       setState(() {
         _stats = {
-          'products': responses[0].isSuccess ? responses[0].data : {'count': 0, 'totalValue': 0},
-          'orders': responses[1].isSuccess ? responses[1].data : {'count': 0, 'totalRevenue': 0},
+          'products': responses[0].isSuccess
+              ? responses[0].data
+              : {'count': 0, 'totalValue': 0},
+          'orders': responses[1].isSuccess
+              ? responses[1].data
+              : {'count': 0, 'totalRevenue': 0},
           'rfqs': responses[2].isSuccess ? responses[2].data : {'count': 0},
         };
         _isLoading = false;
@@ -154,7 +160,8 @@ class _SupplierDataManagementScreenState extends State<SupplierDataManagementScr
               _buildStatCard('Total Revenue',
                   '₹${_stats['orders']?['totalRevenue']?.toStringAsFixed(2) ?? '0.00'}'),
               const SizedBox(width: 16),
-              _buildStatCard('Active Products', '${_stats['products']?['count'] ?? 0}'),
+              _buildStatCard(
+                  'Active Products', '${_stats['products']?['count'] ?? 0}'),
             ],
           ),
         ],
@@ -202,7 +209,8 @@ class _SupplierDataManagementScreenState extends State<SupplierDataManagementScr
         'route': AppRoutes.supplierDataProducts,
         'stats': _stats['products'],
         'description': 'Manage product catalog',
-        'subtitle': '${_stats['products']?['count'] ?? 0} products • ₹${_stats['products']?['totalValue']?.toStringAsFixed(2) ?? '0.00'} value',
+        'subtitle':
+            '${_stats['products']?['count'] ?? 0} products • ₹${_stats['products']?['totalValue']?.toStringAsFixed(2) ?? '0.00'} value',
       },
       {
         'title': 'Customer Orders',
@@ -211,7 +219,8 @@ class _SupplierDataManagementScreenState extends State<SupplierDataManagementScr
         'route': AppRoutes.supplierDataOrders,
         'stats': _stats['orders'],
         'description': 'Manage customer orders',
-        'subtitle': '${_stats['orders']?['count'] ?? 0} orders • ₹${_stats['orders']?['totalRevenue']?.toStringAsFixed(2) ?? '0.00'} revenue',
+        'subtitle':
+            '${_stats['orders']?['count'] ?? 0} orders • ₹${_stats['orders']?['totalRevenue']?.toStringAsFixed(2) ?? '0.00'} revenue',
       },
       {
         'title': 'Quote Requests',
@@ -391,7 +400,8 @@ class _SupplierDataManagementScreenState extends State<SupplierDataManagementScr
     );
   }
 
-  Widget _buildAnalyticsCard(String title, String value, Color color, IconData icon) {
+  Widget _buildAnalyticsCard(
+      String title, String value, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -437,7 +447,8 @@ class _SupplierDataManagementScreenState extends State<SupplierDataManagementScr
                 'Add Product',
                 Icons.add_box,
                 AppColors.primary,
-                () => Navigator.pushNamed(context, AppRoutes.supplierProductAdd),
+                () =>
+                    Navigator.pushNamed(context, AppRoutes.supplierProductAdd),
               ),
             ),
             const SizedBox(width: 12),
@@ -477,7 +488,8 @@ class _SupplierDataManagementScreenState extends State<SupplierDataManagementScr
     );
   }
 
-  Widget _buildQuickActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildQuickActionCard(
+      String title, IconData icon, Color color, VoidCallback onTap) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -532,7 +544,8 @@ class _SupplierDataManagementScreenState extends State<SupplierDataManagementScr
   void _generateReport() {
     // TODO: Implement report generation
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Business report functionality coming soon')),
+      const SnackBar(
+          content: Text('Business report functionality coming soon')),
     );
   }
 }

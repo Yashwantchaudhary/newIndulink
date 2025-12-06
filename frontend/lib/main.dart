@@ -28,6 +28,9 @@ import 'providers/websocket_provider.dart';
 import 'providers/export_provider.dart';
 import 'providers/analytics_provider.dart';
 
+// Core Widgets
+import 'core/widgets/realtime_sync_widget.dart';
+
 // Routes
 import 'routes/app_router.dart';
 import 'routes/app_routes.dart';
@@ -144,25 +147,27 @@ class _IndulinkAppState extends State<IndulinkApp> {
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
-          return MaterialApp(
-            key: ValueKey(
-                themeProvider.themeMode), // Prevents GlobalKey conflicts
-            title: 'INDULINK',
-            debugShowCheckedModeBanner: false,
+          return RealTimeDataSyncWidget(
+            child: MaterialApp(
+              key: ValueKey(
+                  themeProvider.themeMode), // Prevents GlobalKey conflicts
+              title: 'INDULINK',
+              debugShowCheckedModeBanner: false,
 
-            // Theme
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeProvider.themeMode,
+              // Theme
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: themeProvider.themeMode,
 
-            // Navigation
-            navigatorKey: NavigationService().navigatorKey,
-            onGenerateRoute: AppRouter.generateRoute,
-            initialRoute: AppRoutes.splash,
+              // Navigation
+              navigatorKey: NavigationService().navigatorKey,
+              onGenerateRoute: AppRouter.generateRoute,
+              initialRoute: AppRoutes.splash,
 
-            // Localization (for future implementation)
-            // localizationsDelegates: AppLocalizations.localizationsDelegates,
-            // supportedLocales: AppLocalizations.supportedLocales,
+              // Localization (for future implementation)
+              // localizationsDelegates: AppLocalizations.localizationsDelegates,
+              // supportedLocales: AppLocalizations.supportedLocales,
+            ),
           );
         },
       ),

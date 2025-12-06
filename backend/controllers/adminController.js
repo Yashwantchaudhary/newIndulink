@@ -729,8 +729,6 @@ exports.getAllCategories = async (req, res, next) => {
   }
 };
 
-// -------------------- SYSTEM STATS --------------------
-
 /**
  * GET /api/admin/stats
  */
@@ -738,31 +736,63 @@ exports.getSystemStats = async (req, res, next) => {
   try {
     if (!ensureAdmin(req, res)) return;
 
+    // Import additional models
+    const Review = require('../models/Review');
+    const RFQ = require('../models/RFQ');
+    const Message = require('../models/Message');
+    const Notification = require('../models/Notification');
+
     const [
       totalUsers,
       totalProducts,
       totalOrders,
+      totalCategories,
+      totalReviews,
+      totalRFQs,
+      totalMessages,
+      totalNotifications,
       totalRevenueAgg,
       usersByRole,
       recentUsers,
+      totalSuppliers,
+      totalCustomers,
     ] = await Promise.all([
       User.countDocuments({ isActive: true }),
       Product.countDocuments(),
       Order.countDocuments(),
+      Category.countDocuments(),
+      Review.countDocuments(),
+      RFQ.countDocuments(),
+      Message.countDocuments(),
+      Notification.countDocuments(),
       Order.aggregate([
         { $match: { status: 'delivered' } },
         { $group: { _id: null, total: { $sum: '$total' } } },
       ]),
       User.aggregate([{ $group: { _id: '$role', count: { $sum: 1 } } }]),
       User.find({ isActive: true }).select('firstName lastName email role createdAt').sort({ createdAt: -1 }).limit(10).lean(),
+      User.countDocuments({ role: 'supplier', isActive: true }),
+      User.countDocuments({ role: 'customer', isActive: true }),
     ]);
+
+    // Calculate platform commission (10% of total revenue)
+    const totalRevenue = totalRevenueAgg[0]?.total || 0;
+    const platformCommission = totalRevenue * 0.1;
 
     respond(res, {
       data: {
         totalUsers,
+        totalSuppliers,
+        totalCustomers,
         totalProducts,
         totalOrders,
-        totalRevenue: totalRevenueAgg[0]?.total || 0,
+        totalCategories,
+        totalReviews,
+        totalRFQs,
+        totalMessages,
+        totalNotifications,
+        totalRevenue,
+        platformCommission,
         usersByRole,
         recentUsers,
       },

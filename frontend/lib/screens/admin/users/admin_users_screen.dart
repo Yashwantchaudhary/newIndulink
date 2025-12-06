@@ -124,7 +124,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             radius: 24,
             backgroundColor: AppColors.primary,
             child: Text(
-              (user['name'] ?? 'U')[0].toUpperCase(),
+              ((user['firstName'] ?? user['name'] ?? 'U') as String)[0]
+                  .toUpperCase(),
               style: const TextStyle(
                   color: Colors.white, fontWeight: FontWeight.bold),
             ),
@@ -134,7 +135,19 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(user['name'] ?? 'User', style: AppTypography.labelLarge),
+                Text(
+                  () {
+                    final name = user['name'];
+                    if (name != null && (name as String).isNotEmpty) {
+                      return name;
+                    }
+                    final firstName = user['firstName'] ?? '';
+                    final lastName = user['lastName'] ?? '';
+                    final fullName = '$firstName $lastName'.trim();
+                    return fullName.isNotEmpty ? fullName : 'User';
+                  }(),
+                  style: AppTypography.labelLarge,
+                ),
                 Text(user['email'] ?? '',
                     style: AppTypography.bodySmall
                         .copyWith(color: AppColors.textSecondary)),

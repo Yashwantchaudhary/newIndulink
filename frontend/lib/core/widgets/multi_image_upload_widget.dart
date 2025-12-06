@@ -344,7 +344,7 @@ class _MultiImageUploadWidgetState extends State<MultiImageUploadWidget> {
     widget.onImagesSelected(_selectedImages);
   }
 
-  /// Upload selected images to Firebase Storage
+  /// Upload selected images to Backend
   Future<void> uploadImages() async {
     if (_selectedImages.isEmpty) return;
 

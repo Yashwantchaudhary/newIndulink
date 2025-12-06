@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 /// 🔗 API Configuration and Endpoints
 class AppConfig {
   AppConfig._();
@@ -12,9 +14,26 @@ class AppConfig {
   static bool get isDevelopment => environment == 'development';
 
   // ==================== API Base URLs ====================
-  // Change these to your actual backend URLs
-  // For physical device testing, use your computer's IP address instead of localhost
-  static const String devBaseUrl = 'http://localhost:5000/api';
+  // For Android Emulator: 10.0.2.2 maps to localhost on host machine
+  // For iOS Simulator: localhost works directly
+  // For Physical devices: Use your computer's actual IP address (e.g., 192.168.x.x)
+  // For Web: Use localhost
+
+  // Change this to your computer's IP for testing on physical devices
+  static const String _hostIp =
+      '192.168.1.81'; // Your computer's IP for physical device testing
+  static const int _port = 5000;
+
+  static String get devBaseUrl {
+    // Web uses localhost directly
+    if (kIsWeb) {
+      return 'http://localhost:$_port/api';
+    }
+    // Android emulator uses 10.0.2.2 to reach host machine's localhost
+    // For physical device testing, change _hostIp to your computer's IP
+    return 'http://$_hostIp:$_port/api';
+  }
+
   static const String prodBaseUrl = 'https://your-production-api.com/api';
 
   static String get baseUrl => isProduction ? prodBaseUrl : devBaseUrl;
@@ -28,6 +47,7 @@ class AppConfig {
 
   // ==================== Authentication Endpoints ====================
   static const String loginEndpoint = '/auth/login';
+  static const String googleLoginEndpoint = '/auth/google';
   static const String registerEndpoint = '/auth/register';
   static const String logoutEndpoint = '/auth/logout';
   static const String refreshTokenEndpoint = '/auth/refresh';
@@ -39,8 +59,9 @@ class AppConfig {
 
   // ==================== User Endpoints ====================
   static const String userProfileEndpoint = '/users/profile';
+  static const String publicProfileEndpoint = '/users/:id/public-profile';
   static const String updateProfileEndpoint = '/users/profile';
-  static const String uploadProfileImageEndpoint = '/users/profile-image';
+  static const String uploadProfileImageEndpoint = '/users/profile/image';
   static const String userAddressesEndpoint = '/users/addresses';
   static const String userWishlistEndpoint = '/users/wishlist';
   static const String userOrdersEndpoint = '/users/orders';
@@ -60,8 +81,10 @@ class AppConfig {
   // ==================== Cart Endpoints ====================
   static const String cartEndpoint = '/cart';
   static const String addToCartEndpoint = '/cart'; // POST to /cart to add items
-  static const String updateCartEndpoint = '/cart'; // PUT to /cart/:itemId to update
-  static const String removeFromCartEndpoint = '/cart'; // DELETE to /cart/:itemId to remove
+  static const String updateCartEndpoint =
+      '/cart'; // PUT to /cart/:itemId to update
+  static const String removeFromCartEndpoint =
+      '/cart'; // DELETE to /cart/:itemId to remove
   static const String clearCartEndpoint = '/cart'; // DELETE to /cart to clear
 
   // ==================== Order Endpoints ====================
@@ -74,7 +97,7 @@ class AppConfig {
   // ==================== Supplier Endpoints ====================
   static const String supplierProductsEndpoint = '/supplier/products';
   static const String supplierOrdersEndpoint = '/supplier/orders';
-  static const String supplierDashboardEndpoint = '/supplier/dashboard';
+  static const String supplierDashboardEndpoint = '/dashboard/supplier';
   static const String supplierAnalyticsEndpoint = '/supplier/analytics';
   static const String createProductEndpoint = '/supplier/products';
   static const String updateProductEndpoint = '/supplier/products/:id';
@@ -82,7 +105,7 @@ class AppConfig {
   static const String updateOrderStatusEndpoint = '/supplier/orders/:id/status';
 
   // ==================== Admin Endpoints ====================
-  static const String adminDashboardEndpoint = '/admin/dashboard';
+  static const String adminDashboardEndpoint = '/dashboard/admin';
   static const String adminUsersEndpoint = '/admin/users';
   static const String adminProductsEndpoint = '/admin/products';
   static const String adminOrdersEndpoint = '/admin/orders';
@@ -95,7 +118,8 @@ class AppConfig {
   // ==================== Notification Endpoints ====================
   static const String notificationsEndpoint = '/notifications';
   static const String markNotificationReadEndpoint = '/notifications/:id/read';
-  static const String markAllNotificationsReadEndpoint = '/notifications/read-all';
+  static const String markAllNotificationsReadEndpoint =
+      '/notifications/read-all';
 
   // ==================== Message/Chat Endpoints ====================
   static const String conversationsEndpoint = '/conversations';

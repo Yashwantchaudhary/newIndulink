@@ -219,13 +219,14 @@ class _CustomerRFQListScreenState extends State<CustomerRFQListScreen>
               if (rfq.status == 'quoted') ...[
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    '${rfq.quotes.length ?? 0} quote${rfq.quotes.length == 1 ? '' : 's'} received',
+                    '${rfq.quotes.length} quote${rfq.quotes.length == 1 ? '' : 's'} received',
                     style: AppTypography.labelSmall.copyWith(
                       color: AppColors.success,
                       fontWeight: FontWeight.bold,

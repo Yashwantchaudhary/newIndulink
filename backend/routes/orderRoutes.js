@@ -36,7 +36,7 @@ router.get('/:id', protect, getOrder);
 
 // Admin and analytics routes
 router.get('/stats', protect, requireAdmin, getOrderStats);
-router.get('/stats/supplier/:supplierId', protect, requireAdmin, getSupplierOrderStats);
+router.get('/stats/supplier/:supplierId', protect, getSupplierOrderStats);
 router.get('/search', protect, searchOrders);
 router.put('/bulk/status', protect, requireAdmin, bulkUpdateOrderStatus);
 router.get('/export', protect, requireAdmin, exportOrders);

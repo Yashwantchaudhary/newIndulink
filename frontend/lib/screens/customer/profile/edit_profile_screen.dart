@@ -139,6 +139,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Edit Profile'),
@@ -169,7 +170,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       child: CircleAvatar(
                         radius: 60,
                         backgroundColor: AppColors.primaryLightest,
-                        backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+                        backgroundImage: _profileImage != null
+                            ? FileImage(_profileImage!)
+                            : null,
                         child: _profileImage == null
                             ? const Icon(
                                 Icons.person,

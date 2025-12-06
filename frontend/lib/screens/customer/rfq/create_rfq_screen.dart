@@ -9,6 +9,7 @@ import '../../../core/widgets/loading_widgets.dart';
 
 import '../../../providers/rfq_provider.dart';
 import '../../../providers/address_provider.dart';
+import '../../../models/rfq.dart';
 
 /// 📋 Create RFQ Screen
 /// Allows customers to create new Request for Quotes
@@ -46,6 +47,7 @@ class _CreateRFQScreenState extends State<CreateRFQScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('Create RFQ'),
         backgroundColor: Colors.white,

@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
 import '../core/constants/app_config.dart';
 import '../models/user.dart';
 import 'api_service.dart';
@@ -12,6 +15,9 @@ class AuthService {
 
   final ApiService _api = ApiService();
   final StorageService _storage = StorageService();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+  );
 
   // ==================== Login Methods ====================
 
@@ -47,6 +53,45 @@ class AuthService {
     }
   }
 
+  /// Login with Google
+  Future<AuthResult> loginWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        return AuthResult(
+          success: false,
+          message: 'Google sign in cancelled',
+        );
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final response = await _api.post(
+        AppConfig.googleLoginEndpoint,
+        body: {
+          'idToken': googleAuth.idToken,
+          'accessToken': googleAuth.accessToken,
+        },
+        requiresAuth: false,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        return await _handleAuthSuccess(response.data);
+      } else {
+        return AuthResult(
+          success: false,
+          message: response.message ?? 'Google login failed',
+        );
+      }
+    } catch (e) {
+      debugPrint('Google sign in error: $e');
+      return AuthResult(
+        success: false,
+        message: 'An error occurred during Google sign in',
+      );
+    }
+  }
 
   // ==================== Registration ====================
 
@@ -121,7 +166,8 @@ class AuthService {
       if (response.isSuccess && response.data != null) {
         final data = response.data;
         final responseData = data['data'] ?? data;
-        final newAccessToken = responseData['accessToken'] ?? responseData['token'];
+        final newAccessToken =
+            responseData['accessToken'] ?? responseData['token'];
         final newRefreshToken = responseData['refreshToken'];
 
         if (newAccessToken != null) {
@@ -164,6 +210,41 @@ class AuthService {
     }
   }
 
+  /// Update user profile
+  Future<AuthResult> updateProfile(Map<String, dynamic> data) async {
+    try {
+      final response = await _api.put(
+        AppConfig.updateProfileEndpoint,
+        body: data,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        // The backend returns { success: true, message: '...', data: user }
+        final responseData = response.data['data'] ?? response.data;
+
+        // Update local storage with new user data if needed
+        final user = User.fromJson(responseData);
+        await _storage.saveUserName(user.fullName);
+
+        return AuthResult(
+          success: true,
+          message: 'Profile updated successfully',
+          user: user,
+        );
+      } else {
+        return AuthResult(
+          success: false,
+          message: response.message ?? 'Failed to update profile',
+        );
+      }
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        message: 'An error occurred while updating profile',
+      );
+    }
+  }
+
   // ==================== Logout ====================
 
   /// Logout user
@@ -174,7 +255,6 @@ class AuthService {
     } catch (e) {
       // Continue with logout even if API call fails
     }
-
 
     // Clear local storage
     await _storage.clearUserData();

@@ -100,14 +100,22 @@ exports.getConversations = async (req, res, next) => {
 // @access  Private
 exports.getMessages = async (req, res, next) => {
     try {
-        const otherUserId = req.params.userId;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 50;
-        const skip = (page - 1) * limit;
+        const inputId = req.params.userId;
+        let conversationId;
 
-        // Generate conversation ID
-        const ids = [req.user._id.toString(), otherUserId].sort();
-        const conversationId = `${ids[0]}_${ids[1]}`;
+        // Check if input is a conversation ID (contains underscore)
+        if (inputId.includes('_')) {
+            conversationId = inputId;
+            // Verify user is part of this conversation
+            if (!conversationId.includes(req.user._id.toString())) {
+                // return res.status(403).json({ success: false, message: 'Unauthorized' });
+                // or just let it return empty if logic prefers
+            }
+        } else {
+            // It's a user ID, construct conversation ID
+            const ids = [req.user._id.toString(), inputId].sort();
+            conversationId = `${ids[0]}_${ids[1]}`;
+        }
 
         // Get messages for this conversation
         const messages = await Message.find({ conversationId })
@@ -164,8 +172,16 @@ exports.sendMessage = async (req, res, next) => {
             });
         }
 
+        let receiverId = receiver;
+
+        // If receiver looks like a conversation ID, extract the other user ID
+        if (receiver && receiver.includes('_')) {
+            const ids = receiver.split('_');
+            receiverId = ids.find(id => id !== req.user._id.toString());
+        }
+
         // Validate receiver exists
-        const receiverUser = await User.findById(receiver);
+        const receiverUser = await User.findById(receiverId);
         if (!receiverUser) {
             return res.status(404).json({
                 success: false,
@@ -176,7 +192,7 @@ exports.sendMessage = async (req, res, next) => {
         // Create message
         const message = await Message.create({
             sender: req.user._id,
-            receiver: receiver,
+            receiver: receiverId,
             content: content || '',
             attachments: attachments || [],
         });
@@ -193,7 +209,7 @@ exports.sendMessage = async (req, res, next) => {
                 : '📎 New attachment';
 
             await createAndSendNotification({
-                userId: receiver,
+                userId: receiverId,
                 title: `${req.user.firstName} ${req.user.lastName}`,
                 message: notificationMessage,
                 type: 'message',

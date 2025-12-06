@@ -70,6 +70,19 @@ class AuthProvider with ChangeNotifier {
     _setLoading(false);
   }
 
+  /// Refresh user profile data from server
+  Future<void> refreshProfile() async {
+    try {
+      final user = await _authService.getCurrentUser();
+      if (user != null) {
+        _user = user;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Failed to refresh profile: $e');
+    }
+  }
+
   /// Login with email and password
   Future<bool> loginWithEmail({
     required String email,
@@ -103,7 +116,6 @@ class AuthProvider with ChangeNotifier {
       return false;
     }
   }
-
 
   /// Register new user
   Future<bool> register({
@@ -184,12 +196,18 @@ class AuthProvider with ChangeNotifier {
     _clearError();
 
     try {
-      // TODO: Call update profile API
-      // For now, just update local state
-      _user = updatedUser;
-      _setLoading(false);
-      notifyListeners();
-      return true;
+      final result = await _authService.updateProfile(updatedUser.toJson());
+
+      if (result.success && result.user != null) {
+        _user = result.user;
+        _setLoading(false);
+        notifyListeners();
+        return true;
+      } else {
+        _setError(result.message);
+        _setLoading(false);
+        return false;
+      }
     } catch (e) {
       _setError('Failed to update profile');
       _setLoading(false);

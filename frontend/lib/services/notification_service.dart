@@ -13,16 +13,19 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
   final ApiService _apiService = ApiService();
 
   bool _isInitialized = false;
   bool _notificationsEnabled = true;
-  final StreamController<Map<String, dynamic>> _notificationController = StreamController.broadcast();
+  final StreamController<Map<String, dynamic>> _notificationController =
+      StreamController.broadcast();
 
   bool get isInitialized => _isInitialized;
   bool get notificationsEnabled => _notificationsEnabled;
-  Stream<Map<String, dynamic>> get notificationStream => _notificationController.stream;
+  Stream<Map<String, dynamic>> get notificationStream =>
+      _notificationController.stream;
 
   /// Initialize notification service
   Future<void> initialize() async {
@@ -48,9 +51,11 @@ class NotificationService {
 
   /// Initialize local notifications
   Future<void> _initializeLocalNotifications() async {
-    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const AndroidInitializationSettings androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
+    const DarwinInitializationSettings iosSettings =
+        DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
@@ -73,7 +78,8 @@ class NotificationService {
 
   /// Create notification channels for Android
   Future<void> _createNotificationChannels() async {
-    const AndroidNotificationChannel defaultChannel = AndroidNotificationChannel(
+    const AndroidNotificationChannel defaultChannel =
+        AndroidNotificationChannel(
       'default_channel',
       'Default',
       description: 'Default notification channel',
@@ -89,7 +95,8 @@ class NotificationService {
       playSound: true,
     );
 
-    const AndroidNotificationChannel messagesChannel = AndroidNotificationChannel(
+    const AndroidNotificationChannel messagesChannel =
+        AndroidNotificationChannel(
       'messages',
       'Messages',
       description: 'New messages',
@@ -97,7 +104,8 @@ class NotificationService {
       playSound: true,
     );
 
-    const AndroidNotificationChannel promotionsChannel = AndroidNotificationChannel(
+    const AndroidNotificationChannel promotionsChannel =
+        AndroidNotificationChannel(
       'promotions',
       'Promotions',
       description: 'Special offers and promotions',
@@ -114,7 +122,8 @@ class NotificationService {
 
     for (final channel in channels) {
       await _localNotifications
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(channel);
     }
   }
@@ -122,7 +131,8 @@ class NotificationService {
   /// Request notification permissions
   Future<void> _requestPermissions() async {
     await _localNotifications
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(
           alert: true,
           badge: true,
@@ -146,7 +156,8 @@ class NotificationService {
   }) async {
     if (!_notificationsEnabled) return;
 
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
       'default_channel',
       'Default',
       channelDescription: 'Default notification channel',

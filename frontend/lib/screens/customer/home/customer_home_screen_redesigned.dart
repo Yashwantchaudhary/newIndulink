@@ -620,14 +620,13 @@ class _CustomerHomeScreenRedesignedState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         banner['icon'] as IconData,
                         color: Colors.white.withOpacity(0.9),
-                        size: 28,
+                        size: 26,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Text(
                         banner['title'] as String,
                         style: AppTypography.h6.copyWith(
@@ -638,7 +637,6 @@ class _CustomerHomeScreenRedesignedState
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
                       Text(
                         banner['subtitle'] as String,
                         style: AppTypography.h4.copyWith(
@@ -648,7 +646,6 @@ class _CustomerHomeScreenRedesignedState
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
                       Text(
                         banner['description'] as String,
                         style: AppTypography.bodyMedium.copyWith(
@@ -657,7 +654,7 @@ class _CustomerHomeScreenRedesignedState
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       ElevatedButton(
                         onPressed: () {
                           Navigator.push(
@@ -675,8 +672,8 @@ class _CustomerHomeScreenRedesignedState
                                   .first,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
+                            horizontal: 20,
+                            vertical: 10,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
@@ -691,8 +688,8 @@ class _CustomerHomeScreenRedesignedState
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            const Icon(Icons.arrow_forward, size: 18),
+                            const SizedBox(width: 6),
+                            const Icon(Icons.arrow_forward, size: 16),
                           ],
                         ),
                       ),

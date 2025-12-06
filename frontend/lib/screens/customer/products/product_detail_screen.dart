@@ -114,7 +114,6 @@ Download INDULINK app to purchase: https://indulink.com/product/${product.id}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: Consumer<ProductProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {

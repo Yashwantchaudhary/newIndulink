@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import 'package:NEWINDULINK/core/constants/app_colors.dart';
-import 'package:NEWINDULINK/core/constants/app_dimensions.dart';
-import 'package:NEWINDULINK/core/widgets/loading_widgets.dart';
-import 'package:NEWINDULINK/models/user.dart';
-import 'package:NEWINDULINK/providers/auth_provider.dart';
-import 'package:NEWINDULINK/providers/cart_provider.dart';
-import 'package:NEWINDULINK/providers/order_provider.dart';
-import 'package:NEWINDULINK/screens/customer/orders/orders_screen.dart';
+import 'package:newindulink/core/constants/app_colors.dart';
+import 'package:newindulink/core/constants/app_dimensions.dart';
+import 'package:newindulink/core/widgets/loading_widgets.dart';
+import 'package:newindulink/models/user.dart';
+import 'package:newindulink/providers/auth_provider.dart';
+import 'package:newindulink/providers/cart_provider.dart';
+import 'package:newindulink/providers/order_provider.dart';
+import 'package:newindulink/screens/customer/orders/orders_screen.dart';
+import 'package:newindulink/routes/app_routes.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -252,8 +250,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               const Text('No addresses found'),
               const SizedBox(height: 16),
               OutlinedButton.icon(
-                onPressed: () {
-                  // TODO: Navigate to add address screen
+                onPressed: () async {
+                  final result = await Navigator.pushNamed(
+                    context,
+                    AppRoutes.addAddress,
+                  );
+                  if (result == true && context.mounted) {
+                    // Refresh user profile to get new address
+                    await Provider.of<AuthProvider>(context, listen: false)
+                        .refreshProfile();
+                  }
                 },
                 icon: const Icon(Icons.add),
                 label: const Text('Add New Address'),
@@ -278,8 +284,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
               secondary: IconButton(
                 icon: const Icon(Icons.edit),
-                onPressed: () {
-                  // TODO: Edit address
+                onPressed: () async {
+                  final result = await Navigator.pushNamed(
+                    context,
+                    AppRoutes.editAddress,
+                    arguments: address,
+                  );
+                  if (result == true && context.mounted) {
+                    await Provider.of<AuthProvider>(context, listen: false)
+                        .refreshProfile();
+                  }
                 },
               ),
               activeColor: AppColors.primary,

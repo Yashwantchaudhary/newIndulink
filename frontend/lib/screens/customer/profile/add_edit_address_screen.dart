@@ -76,6 +76,7 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text(_isEditing ? 'Edit Address' : 'Add New Address'),
         backgroundColor: Colors.white,
@@ -459,7 +460,9 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
           SnackBar(
             content: Text(
               addressProvider.errorMessage ??
-                  (_isEditing ? 'Failed to update address' : 'Failed to add address'),
+                  (_isEditing
+                      ? 'Failed to update address'
+                      : 'Failed to add address'),
             ),
           ),
         );

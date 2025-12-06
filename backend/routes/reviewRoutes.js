@@ -7,6 +7,7 @@ const {
     deleteReview,
     markReviewHelpful,
     addSupplierResponse,
+    getSupplierReviews,
     getReviewStats,
     getUserReviewStats,
 } = require('../controllers/reviewController');
@@ -25,6 +26,7 @@ router.delete('/:id', protect, requireCustomer, deleteReview);
 router.put('/:id/helpful', protect, markReviewHelpful);
 
 // Supplier routes
+router.get('/supplier/me', protect, requireSupplier, getSupplierReviews);
 router.put('/:id/response', protect, requireSupplier, addSupplierResponse);
 
 // Stats routes

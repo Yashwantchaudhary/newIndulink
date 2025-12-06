@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_dimensions.dart';
-import '../../../core/constants/app_config.dart';
 import '../../../models/product.dart';
-import '../../../services/api_service.dart';
+import '../../../services/product_service.dart';
 import 'supplier_product_add_edit_screen.dart';
 
 /// 📦 Supplier Products List Screen
@@ -25,7 +24,7 @@ class SupplierProductsListScreen extends StatefulWidget {
 
 class _SupplierProductsListScreenState
     extends State<SupplierProductsListScreen> {
-  final ApiService _apiService = ApiService();
+  final ProductService _productService = ProductService();
   bool _isLoading = true;
   String? _error;
   List<Product> _products = [];
@@ -39,47 +38,32 @@ class _SupplierProductsListScreenState
     _loadProducts();
   }
 
-  Future<void> _loadProducts({String? supplierId}) async {
+  Future<void> _loadProducts() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      // Get current supplier ID from storage or use parameter
-      final endpoint = supplierId != null
-          ? '/products/supplier/$supplierId'
-          : AppConfig
-              .supplierProductsEndpoint; // Use supplier-specific endpoint
+      final result = await _productService.getSupplierProducts();
 
-      final response = await _apiService.get(endpoint);
-
-      if (response.isSuccess && response.data != null) {
-        final dataMap = response.data as Map<String, dynamic>;
-        final actualData = dataMap.containsKey('data')
-            ? Map<String, dynamic>.from(dataMap['data'] as Map)
-            : dataMap;
-
-        final List<dynamic> productsJson = actualData.containsKey('products')
-            ? actualData['products']
-            : actualData['data'] ?? [];
-
+      if (mounted) {
         setState(() {
-          _products =
-              productsJson.map((json) => Product.fromJson(json)).toList();
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _error = response.message ?? 'Failed to load products';
+          if (result.success) {
+            _products = result.products;
+          } else {
+            _error = result.message ?? 'Failed to load products';
+          }
           _isLoading = false;
         });
       }
     } catch (e) {
-      setState(() {
-        _error = 'Error loading products: ${e.toString()}';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Error loading products: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -106,24 +90,26 @@ class _SupplierProductsListScreenState
     if (confirmed != true) return;
 
     try {
-      final response = await _apiService.delete(AppConfig.replaceParams(
-          AppConfig.deleteProductEndpoint, {'id': productId}));
+      final success = await _productService.deleteProduct(productId);
 
-      if (response.isSuccess) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Product deleted successfully')),
-        );
-        _loadProducts();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(response.message ?? 'Failed to delete product')),
-        );
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Product deleted successfully')),
+          );
+          _loadProducts();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to delete product')),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
     }
   }
 

@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/constants/app_config.dart';
 import '../../../core/widgets/error_widget.dart';
 import '../../../core/widgets/loading_widgets.dart';
+import '../../../services/api_service.dart';
 
 /// 👥 Customer Supplier Profile View Screen
 /// Shows public supplier information to customers
@@ -40,31 +42,44 @@ class _CustomerSupplierProfileScreenState
     });
 
     try {
-      // TODO: Implement API call to fetch supplier public profile
-      // For now, simulate loading
-      await Future.delayed(const Duration(seconds: 1));
+      final apiService = ApiService();
+      final endpoint = AppConfig.publicProfileEndpoint.replaceAll(
+        ':id',
+        widget.supplierId,
+      );
 
-      // Mock data - replace with actual API call
-      setState(() {
-        _supplierData = {
-          'businessName': 'ABC Building Materials',
-          'contactPerson': 'John Smith',
-          'email': 'contact@abcbuilding.com',
-          'phone': '+977 9800000000',
-          'businessDescription': 'Leading supplier of construction materials with over 10 years of experience. We provide high-quality cement, steel, bricks, and other building materials.',
-          'established': '2015',
-          'totalProducts': 150,
-          'rating': 4.5,
-          'totalReviews': 89,
-          'address': 'Kathmandu, Nepal',
-          'specialties': ['Cement', 'Steel', 'Bricks', 'Sand'],
-          'certifications': ['ISO 9001', 'Quality Certified'],
-        };
-        _isLoading = false;
-      });
+      final response = await apiService.get(endpoint, requiresAuth: true);
+
+      if (response.isSuccess && response.data != null) {
+        final data = response.data['data'];
+
+        setState(() {
+          _supplierData = {
+            'businessName': data['businessName'] ?? 'Business Name',
+            'contactPerson': '${data['firstName']} ${data['lastName']}',
+            'email': data['email'] ?? '',
+            'phone': data['phone'] ?? '',
+            'businessDescription':
+                data['businessDescription'] ?? 'No description available',
+            // Parse date if available, or use placeholder
+            'established': data['createdAt'] != null
+                ? DateTime.parse(data['createdAt']).year.toString()
+                : DateTime.now().year.toString(),
+            'totalProducts': data['totalProducts'] ?? 0,
+            'rating': (data['averageRating'] ?? 0).toDouble(),
+            'totalReviews': data['totalReviews'] ?? 0,
+            'address': data['businessAddress'] ?? 'No address provided',
+            'specialties': List<String>.from(data['services'] ?? []),
+            'certifications': List<String>.from(data['certifications'] ?? []),
+          };
+          _isLoading = false;
+        });
+      } else {
+        throw Exception(response.message ?? 'Failed to load profile');
+      }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to load supplier profile';
+        _errorMessage = 'Failed to load supplier profile: $e';
         _isLoading = false;
       });
     }
@@ -81,7 +96,9 @@ class _CustomerSupplierProfileScreenState
                   message: _errorMessage!,
                   onRetry: _loadSupplierProfile,
                 )
-              : _buildProfileContent(),
+              : _supplierData == null
+                  ? const Center(child: Text('Supplier not found'))
+                  : _buildProfileContent(),
     );
   }
 

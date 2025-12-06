@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../core/constants/app_config.dart';
+import '../services/analytics_service.dart';
 
 /// 📊 Analytics Provider
 /// Manages analytics data and state for the application
@@ -64,7 +65,8 @@ class AnalyticsProvider with ChangeNotifier {
       _setError(null);
 
       final tf = timeframe ?? _selectedTimeframe;
-      final response = await _apiService.get('/analytics/dashboard?timeframe=$tf');
+      final response =
+          await _apiService.get('/analytics/dashboard?timeframe=$tf');
 
       if (response.isSuccess && response.data != null) {
         _dashboardAnalytics = response.data;
@@ -122,7 +124,8 @@ class AnalyticsProvider with ChangeNotifier {
       _setError(null);
 
       final tf = timeframe ?? _selectedTimeframe;
-      final response = await _apiService.get('/analytics/products?timeframe=$tf');
+      final response =
+          await _apiService.get('/analytics/products?timeframe=$tf');
 
       if (response.isSuccess && response.data != null) {
         _productAnalytics = response.data;
@@ -160,34 +163,38 @@ class AnalyticsProvider with ChangeNotifier {
       _setError(null);
 
       final tf = timeframe ?? _selectedTimeframe;
+      final AnalyticsService analyticsService = AnalyticsService();
 
-      // Load sales and product analytics for supplier
-      await Future.wait([
-        loadSalesAnalytics(timeframe: tf),
-        loadProductAnalytics(timeframe: tf),
-      ]);
+      final result = await analyticsService.getSupplierAnalytics();
 
-      // Combine data for supplier dashboard
-      _supplierAnalytics = {
-        'totalRevenue': _salesAnalytics?['summary']?['totalRevenue'] ?? 0,
-        'revenueChange': _calculateSalesGrowth(),
-        'totalOrders': _salesAnalytics?['summary']?['orderCount'] ?? 0,
-        'ordersChange': 0, // Would need historical data
-        'activeProducts': _productAnalytics?['summary']?['activeProducts'] ?? 0,
-        'productsChange': 0, // Would need historical data
-        'averageOrderValue': _salesAnalytics?['summary']?['avgOrderValue'] ?? 0,
-        'aovChange': 0, // Would need historical data
-        'revenueData': _salesAnalytics?['trend'] ?? [],
-        'topProducts': _productAnalytics?['performance']?.take(5) ?? [],
-        'salesByPeriod': _salesAnalytics?['trend'] ?? [],
-        'orderStatusData': [], // Would need order status breakdown
-        'recentSales': [], // Would need recent orders
-        'productPerformance': _productAnalytics?['performance'] ?? [],
-        'inventoryStatus': _productAnalytics?['inventory'] ?? {},
-        'categoryPerformance': [], // Would need category data for supplier
-        'timeframe': tf,
-      };
-
+      if (result.success && result.supplierAnalytics != null) {
+        final analytics = result.supplierAnalytics!;
+        // Convert the strongly typed object back to a Map for the provider's generic Map storage
+        // Ideally refactor provider to store the object, but for minimal change, map it back.
+        // Or even better, let's look at `_supplierAnalytics` type. It is Map<String, dynamic>. A shame.
+        // Let's manually construct the map from the object to ensure all fields are present.
+        _supplierAnalytics = {
+          'totalRevenue': analytics.totalRevenue,
+          'totalOrders': analytics.totalOrders,
+          'activeProducts': analytics.activeProducts,
+          'averageOrderValue': analytics.averageOrderValue,
+          'revenueChange': analytics.revenueChange,
+          'ordersChange': analytics.ordersChange,
+          'productsChange': analytics.productsChange,
+          'aovChange': analytics.aovChange,
+          'revenueData': analytics.revenueData,
+          'topProducts': analytics.topProducts,
+          'salesByPeriod': analytics.salesByPeriod,
+          'orderStatusData': analytics.orderStatusData,
+          'productPerformance': analytics.productPerformance,
+          'inventoryStatus': analytics.inventoryStatus,
+          'categoryPerformance': analytics.categoryPerformance,
+          'recentSales': analytics.recentSales,
+          'timeframe': tf,
+        };
+      } else {
+        _setError(result.message ?? 'Failed to load supplier analytics');
+      }
     } catch (error) {
       _setError('Failed to load supplier analytics');
     } finally {
@@ -244,9 +251,9 @@ class AnalyticsProvider with ChangeNotifier {
       final tf = timeframe ?? _selectedTimeframe;
       final uri = Uri.parse('${AppConfig.baseUrl}/analytics/export/$type')
           .replace(queryParameters: {
-            'format': format,
-            'timeframe': tf,
-          });
+        'format': format,
+        'timeframe': tf,
+      });
 
       // This would need to be implemented with proper file handling
       // For now, return true to indicate success

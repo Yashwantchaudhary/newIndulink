@@ -239,6 +239,52 @@ class ApiService {
     );
   }
 
+  /// Upload multiple files (for product images, documents)
+  Future<ApiResponse> uploadFiles(
+    String endpoint,
+    List<File> files, {
+    Map<String, String>? fields,
+    String fileField = 'files',
+    String method = 'POST',
+  }) async {
+    try {
+      final uri = _buildUri(endpoint, null);
+      final token = await _storage.getAccessToken();
+
+      final request = http.MultipartRequest(method, uri);
+
+      // Add authorization header
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Add files
+      for (var file in files) {
+        final fileStream = http.ByteStream(file.openRead());
+        final fileLength = await file.length();
+        final multipartFile = http.MultipartFile(
+          fileField,
+          fileStream,
+          fileLength,
+          filename: file.path.split('/').last,
+        );
+        request.files.add(multipartFile);
+      }
+
+      // Add additional fields
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      return _handleResponse(response);
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
+
   /// Upload file (for images, documents)
   Future<ApiResponse> uploadFile(
     String endpoint,

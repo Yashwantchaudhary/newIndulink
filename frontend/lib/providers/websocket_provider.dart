@@ -19,6 +19,12 @@ class WebSocketProvider with ChangeNotifier {
   Function(Map<String, dynamic>)? onProductUpdated;
   Function(Map<String, dynamic>)? onNewMessage;
 
+  // Cart & Order real-time callbacks
+  Function(dynamic)? onCartUpdated;
+  Function(dynamic)? onNewOrder;
+  Function(dynamic)? onOrderStatusChanged;
+  Function(dynamic)? onOrderCreated;
+
   WebSocketProvider(this._authProvider) {
     _initializeSocket();
   }
@@ -27,7 +33,7 @@ class WebSocketProvider with ChangeNotifier {
     // WebSocket server URL (adjust for your environment)
     final String serverUrl = const String.fromEnvironment(
       'WEBSOCKET_URL',
-      defaultValue: 'http://10.10.9.113:5000', // Local development
+      defaultValue: 'http://localhost:5000', // Local development
     );
 
     _socket = io.io(serverUrl, <String, dynamic>{
@@ -97,6 +103,28 @@ class WebSocketProvider with ChangeNotifier {
       onNewMessage?.call(data);
     });
 
+    // Cart events
+    _socket!.on('cart:updated', (data) {
+      debugPrint('🛒 Cart updated: $data');
+      onCartUpdated?.call(data);
+    });
+
+    // Order events
+    _socket!.on('order:new', (data) {
+      debugPrint('📦 New order received: $data');
+      onNewOrder?.call(data);
+    });
+
+    _socket!.on('order:updated', (data) {
+      debugPrint('📦 Order status updated: $data');
+      onOrderStatusChanged?.call(data);
+    });
+
+    _socket!.on('order:created', (data) {
+      debugPrint('📦 Order created successfully: $data');
+      onOrderCreated?.call(data);
+    });
+
     // Ping/Pong for connection health
     _socket!.on('pong', (_) {
       debugPrint('🏓 WebSocket pong received');
@@ -109,6 +137,13 @@ class WebSocketProvider with ChangeNotifier {
     final token = await _authProvider.getToken();
     if (token != null) {
       _socket!.emit('authenticate', {'token': token});
+    }
+
+    // Join user-specific room for targeted events
+    final userId = _authProvider.user?.id;
+    if (userId != null) {
+      _socket!.emit('join', userId);
+      debugPrint('👤 Joined user room: user_$userId');
     }
   }
 
@@ -142,12 +177,20 @@ class WebSocketProvider with ChangeNotifier {
     Function(Map<String, dynamic>)? onOrderUpdated,
     Function(Map<String, dynamic>)? onProductUpdated,
     Function(Map<String, dynamic>)? onNewMessage,
+    Function(dynamic)? onCartUpdated,
+    Function(dynamic)? onNewOrder,
+    Function(dynamic)? onOrderStatusChanged,
+    Function(dynamic)? onOrderCreated,
   }) {
     this.onDataChanged = onDataChanged;
     this.onUserDataChanged = onUserDataChanged;
     this.onOrderUpdated = onOrderUpdated;
     this.onProductUpdated = onProductUpdated;
     this.onNewMessage = onNewMessage;
+    this.onCartUpdated = onCartUpdated;
+    this.onNewOrder = onNewOrder;
+    this.onOrderStatusChanged = onOrderStatusChanged;
+    this.onOrderCreated = onOrderCreated;
   }
 
   /// Reconnect when auth state changes

@@ -157,8 +157,8 @@ class AdminDashboardData {
 
     return AdminDashboardData(
       totalUsers: json['totalUsers'] ?? 0,
-      totalSuppliers: usersByRole['supplier'] ?? 0,
-      totalCustomers: usersByRole['customer'] ?? 0,
+      totalSuppliers: json['totalSuppliers'] ?? usersByRole['supplier'] ?? 0,
+      totalCustomers: json['totalCustomers'] ?? usersByRole['customer'] ?? 0,
       totalProducts: json['totalProducts'] ?? 0,
       totalOrders: json['totalOrders'] ?? 0,
       totalRevenue: (json['totalRevenue'] ?? 0).toDouble(),
@@ -169,7 +169,17 @@ class AdminDashboardData {
               .toList()
           : [],
       recentUsers: json['recentUsers'] != null
-          ? List<Map<String, dynamic>>.from(json['recentUsers'])
+          ? (json['recentUsers'] as List).map((e) {
+              final userMap = Map<String, dynamic>.from(e);
+              // Combine first and last name if name is missing but parts exist
+              if (userMap['name'] == null &&
+                  userMap['firstName'] != null &&
+                  userMap['lastName'] != null) {
+                userMap['name'] =
+                    '${userMap['firstName']} ${userMap['lastName']}';
+              }
+              return userMap;
+            }).toList()
           : [],
       topSuppliers: json['topSuppliers'] != null
           ? List<Map<String, dynamic>>.from(json['topSuppliers'])

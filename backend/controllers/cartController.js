@@ -141,6 +141,14 @@ exports.addToCart = async (req, res, next) => {
             // Don't fail the cart operation if admin update fails
         }
 
+        // Socket.io event to customer (update cart across devices)
+        if (req.io) {
+            req.io.to(`user_${req.user.id}`).emit('cart:updated', {
+                itemsCount: cart.items.length,
+                updatedCart: cart
+            });
+        }
+
         res.status(200).json({
             success: true,
             message: 'Item added to cart',

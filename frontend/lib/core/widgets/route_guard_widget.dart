@@ -35,7 +35,9 @@ class _RouteGuardWidgetState extends State<RouteGuardWidget> {
     super.didChangeDependencies();
     if (!_hasInitialized) {
       _hasInitialized = true;
-      _checkAccess();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkAccess();
+      });
     }
   }
 
@@ -45,10 +47,6 @@ class _RouteGuardWidgetState extends State<RouteGuardWidget> {
     // Auth is already initialized in main.dart
 
     if (!mounted) return;
-
-    setState(() {
-      _isChecking = false;
-    });
 
     // Check authentication
     if (widget.requiresAuth && !authProvider.isAuthenticated) {
@@ -73,6 +71,13 @@ class _RouteGuardWidgetState extends State<RouteGuardWidget> {
         _redirectToUnauthorized();
         return;
       }
+    }
+
+    // Access granted - stop checking and show content
+    if (mounted) {
+      setState(() {
+        _isChecking = false;
+      });
     }
   }
 

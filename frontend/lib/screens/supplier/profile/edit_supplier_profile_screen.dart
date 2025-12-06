@@ -16,7 +16,8 @@ class EditSupplierProfileScreen extends StatefulWidget {
   const EditSupplierProfileScreen({super.key});
 
   @override
-  State<EditSupplierProfileScreen> createState() => _EditSupplierProfileScreenState();
+  State<EditSupplierProfileScreen> createState() =>
+      _EditSupplierProfileScreenState();
 }
 
 class _EditSupplierProfileScreenState extends State<EditSupplierProfileScreen> {
@@ -27,6 +28,8 @@ class _EditSupplierProfileScreenState extends State<EditSupplierProfileScreen> {
   late TextEditingController _businessNameController;
   late TextEditingController _businessDescriptionController;
   late TextEditingController _businessAddressController;
+  late TextEditingController _servicesController;
+  late TextEditingController _certificationsController;
   bool _isLoading = false;
   File? _profileImage;
   final ImagePicker _picker = ImagePicker();
@@ -38,9 +41,16 @@ class _EditSupplierProfileScreenState extends State<EditSupplierProfileScreen> {
     _firstNameController = TextEditingController(text: user?.firstName ?? '');
     _lastNameController = TextEditingController(text: user?.lastName ?? '');
     _phoneController = TextEditingController(text: user?.phone ?? '');
-    _businessNameController = TextEditingController(text: user?.businessName ?? '');
-    _businessDescriptionController = TextEditingController(text: user?.businessDescription ?? '');
-    _businessAddressController = TextEditingController(text: user?.businessAddress ?? '');
+    _businessNameController =
+        TextEditingController(text: user?.businessName ?? '');
+    _businessDescriptionController =
+        TextEditingController(text: user?.businessDescription ?? '');
+    _businessAddressController =
+        TextEditingController(text: user?.businessAddress ?? '');
+    _servicesController =
+        TextEditingController(text: user?.services?.join(', ') ?? '');
+    _certificationsController =
+        TextEditingController(text: user?.certifications?.join(', ') ?? '');
   }
 
   @override
@@ -51,6 +61,8 @@ class _EditSupplierProfileScreenState extends State<EditSupplierProfileScreen> {
     _businessNameController.dispose();
     _businessDescriptionController.dispose();
     _businessAddressController.dispose();
+    _servicesController.dispose();
+    _certificationsController.dispose();
     super.dispose();
   }
 
@@ -76,6 +88,20 @@ class _EditSupplierProfileScreenState extends State<EditSupplierProfileScreen> {
         businessName: _businessNameController.text.trim(),
         businessDescription: _businessDescriptionController.text.trim(),
         businessAddress: _businessAddressController.text.trim(),
+        services: _servicesController.text.isNotEmpty
+            ? _servicesController.text
+                .split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .toList()
+            : [],
+        certifications: _certificationsController.text.isNotEmpty
+            ? _certificationsController.text
+                .split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .toList()
+            : [],
       );
 
       final success = await authProvider.updateProfile(updatedUser);
@@ -185,7 +211,9 @@ class _EditSupplierProfileScreenState extends State<EditSupplierProfileScreen> {
                       child: CircleAvatar(
                         radius: 60,
                         backgroundColor: AppColors.primaryLightest,
-                        backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+                        backgroundImage: _profileImage != null
+                            ? FileImage(_profileImage!)
+                            : null,
                         child: _profileImage == null
                             ? const Icon(
                                 Icons.person,
@@ -324,6 +352,26 @@ class _EditSupplierProfileScreenState extends State<EditSupplierProfileScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 20),
+
+              // Services
+              _buildTextField(
+                controller: _servicesController,
+                label: 'Services (comma separated)',
+                icon: Icons.handyman_outlined,
+                maxLines: 2,
+                validator: (value) => null, // Optional
+              ),
+              const SizedBox(height: 20),
+
+              // Certifications
+              _buildTextField(
+                controller: _certificationsController,
+                label: 'Certifications (comma separated)',
+                icon: Icons.verified_outlined,
+                maxLines: 2,
+                validator: (value) => null, // Optional
+              ),
               const SizedBox(height: 40),
 
               // Save Button
@@ -425,11 +473,13 @@ class _EditSupplierProfileScreenState extends State<EditSupplierProfileScreen> {
         fields: {
           'userId': authProvider.user!.id,
         },
+        fileField: 'profileImage',
       );
       final success = response.isSuccess;
 
       if (success) {
         if (mounted) {
+          await authProvider.refreshUser(); // Refresh to get new image URL
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Profile image updated successfully'),

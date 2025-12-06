@@ -30,41 +30,42 @@ import '../screens/customer/cart/checkout_screen.dart';
 import '../screens/customer/orders/orders_screen.dart';
 import '../screens/customer/orders/order_detail_screen.dart';
 import '../screens/customer/profile/profile_screen.dart';
-import '../screens/customer/profile/address_screen.dart';
-import '../screens/customer/profile/add_edit_address_screen.dart';
+import '../screens/customer/data/customer_data_management_screen.dart';
 import '../screens/customer/messages/customer_messages_screen.dart';
 import '../screens/customer/notifications/customer_notifications_screen.dart';
 import '../screens/customer/supplier_profile/customer_supplier_profile_screen.dart';
 import '../screens/customer/products/full_reviews_screen.dart';
-import '../screens/customer/rfq/customer_rfq_list_screen.dart';
-import '../screens/customer/rfq/customer_rfq_detail_screen.dart';
+import '../screens/customer/profile/address_screen.dart';
+import '../screens/customer/profile/add_edit_address_screen.dart';
 import '../screens/customer/rfq/create_rfq_screen.dart';
-import '../screens/customer/data/customer_data_management_screen.dart';
-import '../screens/legal/legal_screen.dart';
-
+import '../screens/customer/rfq/customer_rfq_detail_screen.dart';
+import '../screens/customer/rfq/customer_rfq_list_screen.dart';
 // Screens - Test
 import '../screens/test/test_api_screen.dart';
 
 // Screens - Settings
+// Screens - Settings
 import '../screens/settings/notification_settings_screen.dart';
+import '../screens/legal/privacy_policy_screen.dart';
+import '../screens/legal/terms_of_service_screen.dart';
 
 // Screens - Supplier
+import '../screens/supplier/profile/supplier_profile_screen.dart';
 import '../screens/supplier/dashboard/supplier_dashboard_screen.dart';
+import '../screens/supplier/data/supplier_data_management_screen.dart';
 import '../screens/supplier/products/supplier_products_list_screen.dart';
 import '../screens/supplier/products/supplier_product_add_edit_screen.dart';
 import '../screens/supplier/orders/supplier_orders_screen.dart';
 import '../screens/supplier/orders/supplier_order_detail_screen.dart';
 import '../screens/supplier/analytics/supplier_analytics_screen.dart';
-import '../screens/supplier/profile/supplier_profile_screen.dart';
-import '../screens/supplier/data/supplier_data_management_screen.dart';
-
-// Screens - Admin
-import '../screens/admin/dashboard/admin_dashboard_screen.dart';
+import '../screens/supplier/reviews/supplier_reviews_screen.dart';
+import '../screens/supplier/rfq/supplier_rfq_list_screen.dart';
 import '../screens/admin/users/admin_users_screen.dart';
 import '../screens/admin/products/admin_products_screen.dart';
 import '../screens/admin/categories/admin_categories_screen.dart';
 import '../screens/admin/orders/admin_orders_screen.dart';
 import '../screens/admin/data/admin_data_management_screen.dart';
+import '../screens/admin/dashboard/admin_dashboard_screen.dart';
 
 /// 🧭 App Router
 /// Centralized route generation and navigation logic
@@ -353,6 +354,32 @@ class AppRouter {
           settings: settings,
         );
 
+      case AppRoutes.supplierReviews:
+        return _buildPageRoute(
+          SupplierRouteGuard(child: const SupplierReviewsScreen()),
+          settings: settings,
+        );
+
+      // Supplier RFQ Routes & Data Management Aliases
+      case AppRoutes.supplierRfqList:
+      case AppRoutes.supplierDataRfqs:
+        return _buildPageRoute(
+          SupplierRouteGuard(child: const SupplierRFQListScreen()),
+          settings: settings,
+        );
+
+      case AppRoutes.supplierDataProducts:
+        return _buildPageRoute(
+          SupplierRouteGuard(child: const SupplierProductsListScreen()),
+          settings: settings,
+        );
+
+      case AppRoutes.supplierDataOrders:
+        return _buildPageRoute(
+          SupplierRouteGuard(child: const SupplierOrdersScreen()),
+          settings: settings,
+        );
+
       // ==================== Admin Routes ====================
       case AppRoutes.adminDashboard:
         return _buildPageRoute(
@@ -392,56 +419,18 @@ class AppRouter {
         );
 
       case AppRoutes.adminDataUsers:
-        return _buildPageRoute(
-          AdminRouteGuard(child: const AdminDataManagementScreen()), // TODO: Create specific screen
-          settings: settings,
-        );
-
       case AppRoutes.adminDataProducts:
-        return _buildPageRoute(
-          AdminRouteGuard(child: const AdminDataManagementScreen()), // TODO: Create specific screen
-          settings: settings,
-        );
-
       case AppRoutes.adminDataCategories:
-        return _buildPageRoute(
-          AdminRouteGuard(child: const AdminDataManagementScreen()), // TODO: Create specific screen
-          settings: settings,
-        );
-
       case AppRoutes.adminDataOrders:
-        return _buildPageRoute(
-          AdminRouteGuard(child: const AdminDataManagementScreen()), // TODO: Create specific screen
-          settings: settings,
-        );
-
       case AppRoutes.adminDataReviews:
-        return _buildPageRoute(
-          AdminRouteGuard(child: const AdminDataManagementScreen()), // TODO: Create specific screen
-          settings: settings,
-        );
-
       case AppRoutes.adminDataRfqs:
-        return _buildPageRoute(
-          AdminRouteGuard(child: const AdminDataManagementScreen()), // TODO: Create specific screen
-          settings: settings,
-        );
-
       case AppRoutes.adminDataMessages:
-        return _buildPageRoute(
-          AdminRouteGuard(child: const AdminDataManagementScreen()), // TODO: Create specific screen
-          settings: settings,
-        );
-
       case AppRoutes.adminDataNotifications:
-        return _buildPageRoute(
-          AdminRouteGuard(child: const AdminDataManagementScreen()), // TODO: Create specific screen
-          settings: settings,
-        );
-
       case AppRoutes.adminDataBadges:
+        // All specific data management routes currently map to the central hub
+        // Future implementation can route to specific tabs/screens if needed
         return _buildPageRoute(
-          AdminRouteGuard(child: const AdminDataManagementScreen()), // TODO: Create specific screen
+          AdminRouteGuard(child: const AdminDataManagementScreen()),
           settings: settings,
         );
 
@@ -473,7 +462,6 @@ class AppRouter {
       fullscreenDialog: fullscreenDialog,
     );
   }
-
 
   /// Build 404 Not Found screen
   static Widget _build404Screen(String routeName) {

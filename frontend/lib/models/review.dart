@@ -1,11 +1,13 @@
 import 'package:equatable/equatable.dart';
 import 'user.dart';
+import 'product.dart';
 
 /// 📝 Review Model
 /// Represents a product review with rating, comments, and metadata
 class Review extends Equatable {
   final String id;
   final String productId;
+  final Product? product;
   final User customer;
   final String? orderId;
   final int rating;
@@ -23,6 +25,7 @@ class Review extends Equatable {
   const Review({
     required this.id,
     required this.productId,
+    this.product,
     required this.customer,
     this.orderId,
     required this.rating,
@@ -42,7 +45,11 @@ class Review extends Equatable {
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
       id: json['_id'] ?? json['id'] ?? '',
-      productId: json['product'] ?? '',
+      productId: json['product'] is String
+          ? json['product']
+          : json['product']?['_id'] ?? '',
+      product:
+          json['product'] is Map ? Product.fromJson(json['product']) : null,
       customer: User.fromJson(json['customer'] ?? {}),
       orderId: json['order'],
       rating: json['rating'] ?? 0,
@@ -62,8 +69,10 @@ class Review extends Equatable {
       response: json['response'] != null
           ? SupplierResponse.fromJson(json['response'])
           : null,
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
+      createdAt:
+          DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      updatedAt:
+          DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
     );
   }
 
@@ -125,6 +134,7 @@ class Review extends Equatable {
   List<Object?> get props => [
         id,
         productId,
+        product,
         customer,
         orderId,
         rating,
@@ -144,6 +154,7 @@ class Review extends Equatable {
   Review copyWith({
     String? id,
     String? productId,
+    Product? product,
     User? customer,
     String? orderId,
     int? rating,
@@ -161,6 +172,7 @@ class Review extends Equatable {
     return Review(
       id: id ?? this.id,
       productId: productId ?? this.productId,
+      product: product ?? this.product,
       customer: customer ?? this.customer,
       orderId: orderId ?? this.orderId,
       rating: rating ?? this.rating,
@@ -247,7 +259,8 @@ class SupplierResponse extends Equatable {
   factory SupplierResponse.fromJson(Map<String, dynamic> json) {
     return SupplierResponse(
       comment: json['comment'] ?? '',
-      respondedAt: DateTime.parse(json['respondedAt'] ?? DateTime.now().toIso8601String()),
+      respondedAt: DateTime.parse(
+          json['respondedAt'] ?? DateTime.now().toIso8601String()),
     );
   }
 
@@ -330,5 +343,6 @@ class ReviewSubmission extends Equatable {
   }
 
   @override
-  List<Object?> get props => [productId, orderId, rating, title, comment, imagePaths];
+  List<Object?> get props =>
+      [productId, orderId, rating, title, comment, imagePaths];
 }

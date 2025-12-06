@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../core/constants/app_config.dart';
 import '../models/product.dart';
 import '../models/category.dart';
@@ -59,7 +61,9 @@ class ProductService {
           totalPages: data['totalPages'] ?? 1,
         );
       } else {
-        return ProductResult(success: false, message: response.message ?? 'Failed to fetch products');
+        return ProductResult(
+            success: false,
+            message: response.message ?? 'Failed to fetch products');
       }
     } catch (e) {
       return ProductResult(success: false, message: 'Error: ${e.toString()}');
@@ -84,7 +88,9 @@ class ProductService {
 
         return ProductResult(success: true, products: products);
       } else {
-        return ProductResult(success: false, message: response.message ?? 'Failed to fetch featured products');
+        return ProductResult(
+            success: false,
+            message: response.message ?? 'Failed to fetch featured products');
       }
     } catch (e) {
       return ProductResult(success: false, message: 'Error: ${e.toString()}');
@@ -101,25 +107,32 @@ class ProductService {
     double? maxPrice,
   }) async {
     try {
-      final params = <String, String>{
-        'q': query,
-        'page': page.toString(),
-        'limit': limit.toString(),
+      final body = <String, dynamic>{
+        'query': query,
+        'page': page,
+        'limit': limit,
+        'filters': {},
       };
-      if (category != null) params['category'] = category;
-      if (minPrice != null) params['minPrice'] = minPrice.toString();
-      if (maxPrice != null) params['maxPrice'] = maxPrice.toString();
 
-      final response = await _api.get(
+      if (category != null) body['filters']['categories'] = [category];
+
+      if (minPrice != null || maxPrice != null) {
+        body['filters']['priceRange'] = {};
+        if (minPrice != null) body['filters']['priceRange']['min'] = minPrice;
+        if (maxPrice != null) body['filters']['priceRange']['max'] = maxPrice;
+      }
+
+      final response = await _api.post(
         AppConfig.searchProductsEndpoint,
-        params: params,
+        body: body,
         requiresAuth: false,
         retries: 2,
       );
 
       if (response.isSuccess && response.data != null) {
         final data = response.data;
-        final productsJson = data['products'] ?? data['results'] ?? [];
+        // Controller returns { success: true, data: [products] }
+        final productsJson = data['data'] ?? data['products'] ?? [];
         final products = (productsJson as List)
             .map((json) => Product.fromJson(json))
             .toList();
@@ -128,9 +141,13 @@ class ProductService {
           await _storage.addSearchQuery(query);
         }
 
-        return ProductResult(success: true, products: products, total: data['total'] ?? products.length);
+        return ProductResult(
+            success: true,
+            products: products,
+            total: data['total'] ?? products.length);
       } else {
-        return ProductResult(success: false, message: response.message ?? 'Search failed');
+        return ProductResult(
+            success: false, message: response.message ?? 'Search failed');
       }
     } catch (e) {
       return ProductResult(success: false, message: 'Error: ${e.toString()}');
@@ -140,18 +157,22 @@ class ProductService {
   /// Get product details by ID
   Future<ProductDetailResult> getProductDetails(String productId) async {
     try {
-      final endpoint = AppConfig.replaceParams(AppConfig.productDetailsEndpoint, {'id': productId});
-      final response = await _api.get(endpoint, requiresAuth: false, retries: 2);
+      final endpoint = AppConfig.replaceParams(
+          AppConfig.productDetailsEndpoint, {'id': productId});
+      final response =
+          await _api.get(endpoint, requiresAuth: false, retries: 2);
 
       if (response.isSuccess && response.data != null) {
         final product = Product.fromJson(response.data);
         await _storage.addRecentlyViewed(productId);
         return ProductDetailResult(success: true, product: product);
       } else {
-        return ProductDetailResult(success: false, message: response.message ?? 'Product not found');
+        return ProductDetailResult(
+            success: false, message: response.message ?? 'Product not found');
       }
     } catch (e) {
-      return ProductDetailResult(success: false, message: 'Error: ${e.toString()}');
+      return ProductDetailResult(
+          success: false, message: 'Error: ${e.toString()}');
     }
   }
 
@@ -160,14 +181,20 @@ class ProductService {
   /// Get all categories
   Future<CategoryResult> getCategories() async {
     try {
-      final response = await _api.get(AppConfig.categoriesEndpoint, requiresAuth: false, retries: 2);
+      final response = await _api.get(AppConfig.categoriesEndpoint,
+          requiresAuth: false, retries: 2);
 
       if (response.isSuccess && response.data != null) {
-        final categoriesJson = response.data['categories'] ?? response.data ?? [];
-        final categories = (categoriesJson as List).map((json) => Category.fromJson(json)).toList();
+        final categoriesJson =
+            response.data['categories'] ?? response.data ?? [];
+        final categories = (categoriesJson as List)
+            .map((json) => Category.fromJson(json))
+            .toList();
         return CategoryResult(success: true, categories: categories);
       } else {
-        return CategoryResult(success: false, message: response.message ?? 'Failed to fetch categories');
+        return CategoryResult(
+            success: false,
+            message: response.message ?? 'Failed to fetch categories');
       }
     } catch (e) {
       return CategoryResult(success: false, message: 'Error: ${e.toString()}');
@@ -181,7 +208,8 @@ class ProductService {
     int limit = 20,
   }) async {
     try {
-      final endpoint = AppConfig.replaceParams(AppConfig.categoryProductsEndpoint, {'id': categoryId});
+      final endpoint = AppConfig.replaceParams(
+          AppConfig.categoryProductsEndpoint, {'id': categoryId});
       final response = await _api.get(
         endpoint,
         params: {'page': page.toString(), 'limit': limit.toString()},
@@ -192,10 +220,17 @@ class ProductService {
       if (response.isSuccess && response.data != null) {
         final data = response.data;
         final productsJson = data['products'] ?? [];
-        final products = (productsJson as List).map((json) => Product.fromJson(json)).toList();
-        return ProductResult(success: true, products: products, total: data['total'] ?? products.length);
+        final products = (productsJson as List)
+            .map((json) => Product.fromJson(json))
+            .toList();
+        return ProductResult(
+            success: true,
+            products: products,
+            total: data['total'] ?? products.length);
       } else {
-        return ProductResult(success: false, message: response.message ?? 'Failed to fetch products');
+        return ProductResult(
+            success: false,
+            message: response.message ?? 'Failed to fetch products');
       }
     } catch (e) {
       return ProductResult(success: false, message: 'Error: ${e.toString()}');
@@ -216,6 +251,133 @@ class ProductService {
       return ProductResult(success: true, products: []);
     } catch (e) {
       return ProductResult(success: false, message: 'Error: ${e.toString()}');
+    }
+  }
+
+  // ==================== Supplier Product Management ====================
+
+  /// Get supplier's own products
+  Future<ProductResult> getSupplierProducts(
+      {int page = 1, int limit = 20}) async {
+    try {
+      final response = await _api.get(
+        AppConfig.supplierProductsEndpoint,
+        params: {'page': page.toString(), 'limit': limit.toString()},
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final dataMap = response.data as Map<String, dynamic>;
+        final actualData = dataMap.containsKey('data')
+            ? Map<String, dynamic>.from(dataMap['data'] as Map)
+            : dataMap;
+
+        final List<dynamic> productsJson = actualData.containsKey('products')
+            ? actualData['products']
+            : actualData['data'] ?? [];
+
+        final products =
+            productsJson.map((json) => Product.fromJson(json)).toList();
+
+        return ProductResult(
+          success: true,
+          products: products,
+          total: actualData['total'] ?? products.length,
+          page: actualData['page'] ?? page,
+          totalPages: actualData['totalPages'] ?? 1,
+        );
+      } else {
+        return ProductResult(
+            success: false,
+            message: response.message ?? 'Failed to fetch supplier products');
+      }
+    } catch (e) {
+      return ProductResult(success: false, message: 'Error: ${e.toString()}');
+    }
+  }
+
+  /// Create a new product (Supplier)
+  Future<ProductResult> createProduct(
+    Map<String, String> fields,
+    List<File> images,
+  ) async {
+    try {
+      final response = await _api.uploadFiles(
+        AppConfig.createProductEndpoint,
+        images,
+        fields: fields,
+        fileField: 'images',
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final productJson = response.data['product'] ?? response.data;
+        final product = Product.fromJson(productJson);
+        return ProductResult(success: true, products: [product]);
+      } else {
+        return ProductResult(
+          success: false,
+          message: response.message ?? 'Failed to create product',
+        );
+      }
+    } catch (e) {
+      return ProductResult(success: false, message: 'Error: ${e.toString()}');
+    }
+  }
+
+  /// Update an existing product (Supplier)
+  Future<ProductResult> updateProduct(
+    String productId,
+    Map<String, String> fields,
+    List<File> images,
+  ) async {
+    try {
+      final endpoint = AppConfig.replaceParams(
+        AppConfig.updateProductEndpoint,
+        {'id': productId},
+      );
+
+      // If no new images, we use a regular PUT request (if backend supports it, verify later)
+      // But typically unified endpoint is better.
+      // If images present, use Multipart PUT.
+
+      final response = images.isNotEmpty
+          ? await _api.uploadFiles(
+              endpoint,
+              images,
+              fields: fields,
+              fileField: 'images',
+              method: 'PUT',
+            )
+          : await _api.put(
+              endpoint,
+              body: fields,
+            );
+
+      if (response.isSuccess && response.data != null) {
+        final productJson = response.data['product'] ?? response.data;
+        final product = Product.fromJson(productJson);
+        return ProductResult(success: true, products: [product]);
+      } else {
+        return ProductResult(
+          success: false,
+          message: response.message ?? 'Failed to update product',
+        );
+      }
+    } catch (e) {
+      return ProductResult(success: false, message: 'Error: ${e.toString()}');
+    }
+  }
+
+  /// Delete a product (Supplier)
+  Future<bool> deleteProduct(String productId) async {
+    try {
+      final endpoint = AppConfig.replaceParams(
+        AppConfig.deleteProductEndpoint,
+        {'id': productId},
+      );
+      final response = await _api.delete(endpoint);
+      return response.isSuccess;
+    } catch (e) {
+      return false;
     }
   }
 }
@@ -254,5 +416,6 @@ class CategoryResult {
   final String? message;
   final List<Category> categories;
 
-  CategoryResult({required this.success, this.message, this.categories = const []});
+  CategoryResult(
+      {required this.success, this.message, this.categories = const []});
 }

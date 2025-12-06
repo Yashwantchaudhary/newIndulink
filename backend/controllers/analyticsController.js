@@ -26,19 +26,9 @@ exports.getUserAnalytics = async (req, res, next) => {
 exports.getSalesAnalytics = async (req, res, next) => {
     try {
         const timeframe = req.query.timeframe || '30d';
-        const data = await analyticsService.getSalesAnalytics(timeframe);
+        const supplierId = req.user.role === 'supplier' ? req.user.id : null;
 
-        // For suppliers, filter data to only show their products
-        if (req.user.role === 'supplier') {
-            data.bySupplier = data.bySupplier.filter(
-                supplier => supplier._id.toString() === req.user.id
-            );
-            data.topProducts = await analyticsService.getTopProducts(
-                analyticsService.getStartDate(timeframe),
-                10,
-                req.user.id
-            );
-        }
+        const data = await analyticsService.getSalesAnalytics(timeframe, supplierId);
 
         res.status(200).json({
             success: true,
@@ -55,14 +45,9 @@ exports.getSalesAnalytics = async (req, res, next) => {
 exports.getProductAnalytics = async (req, res, next) => {
     try {
         const timeframe = req.query.timeframe || '30d';
-        const data = await analyticsService.getProductAnalytics(timeframe);
+        const supplierId = req.user.role === 'supplier' ? req.user.id : null;
 
-        // For suppliers, filter data to only show their products
-        if (req.user.role === 'supplier') {
-            data.performance = data.performance.filter(
-                product => product.supplier?.toString() === req.user.id
-            );
-        }
+        const data = await analyticsService.getProductAnalytics(timeframe, supplierId);
 
         res.status(200).json({
             success: true,
@@ -104,20 +89,10 @@ exports.getDashboardAnalytics = async (req, res, next) => {
             systemAnalytics
         ] = await Promise.all([
             req.user.role === 'admin' ? analyticsService.getUserAnalytics(timeframe) : null,
-            analyticsService.getSalesAnalytics(timeframe),
-            analyticsService.getProductAnalytics(timeframe),
+            analyticsService.getSalesAnalytics(timeframe, req.user.role === 'supplier' ? req.user.id : null),
+            analyticsService.getProductAnalytics(timeframe, req.user.role === 'supplier' ? req.user.id : null),
             req.user.role === 'admin' ? analyticsService.getSystemAnalytics('24h') : null
         ]);
-
-        // Filter data based on user role
-        if (req.user.role === 'supplier') {
-            salesAnalytics.bySupplier = salesAnalytics.bySupplier.filter(
-                supplier => supplier._id.toString() === req.user.id
-            );
-            productAnalytics.performance = productAnalytics.performance.filter(
-                product => product.supplier?.toString() === req.user.id
-            );
-        }
 
         const dashboard = {
             user: userAnalytics,

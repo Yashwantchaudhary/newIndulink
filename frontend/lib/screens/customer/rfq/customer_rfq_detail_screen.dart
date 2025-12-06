@@ -10,6 +10,7 @@ import '../../../core/widgets/error_widget.dart';
 import '../../../core/widgets/loading_widgets.dart';
 
 import '../../../providers/rfq_provider.dart';
+import '../../../models/rfq.dart';
 
 /// 📋 Customer RFQ Detail Screen
 /// Shows detailed view of a specific RFQ with quotes

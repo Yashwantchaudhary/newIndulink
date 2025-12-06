@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Product = require('../models/Product');
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
@@ -10,6 +11,56 @@ exports.getProfile = async (req, res, next) => {
         res.status(200).json({
             success: true,
             data: user,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get public user profile
+// @route   GET /api/users/:id/public-profile
+// @access  Public
+exports.getPublicProfile = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.params.id)
+            .select('firstName lastName email phone role profileImage businessName businessDescription businessAddress businessLicense services certifications createdAt');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found',
+            });
+        }
+
+        // Get supplier stats
+        const totalProducts = await Product.countDocuments({
+            supplier: user._id,
+            status: 'active'
+        });
+
+        const stats = await Product.aggregate([
+            { $match: { supplier: user._id, status: 'active' } },
+            {
+                $group: {
+                    _id: null,
+                    averageRating: { $avg: '$averageRating' },
+                    totalReviews: { $sum: '$totalReviews' }
+                }
+            }
+        ]);
+
+        const averageRating = stats.length > 0 ? (Math.round(stats[0].averageRating * 10) / 10) : 0;
+        const totalReviews = stats.length > 0 ? stats[0].totalReviews : 0;
+
+        // Convert mongoose document to object and add stats
+        const userData = user.toObject();
+        userData.totalProducts = totalProducts;
+        userData.averageRating = averageRating;
+        userData.totalReviews = totalReviews;
+
+        res.status(200).json({
+            success: true,
+            data: userData,
         });
     } catch (error) {
         next(error);
@@ -34,6 +85,8 @@ exports.updateProfile = async (req, res, next) => {
             updateData.businessName = businessName;
             updateData.businessDescription = businessDescription;
             updateData.businessAddress = businessAddress;
+            if (req.body.services) updateData.services = req.body.services;
+            if (req.body.certifications) updateData.certifications = req.body.certifications;
         }
 
         const user = await User.findByIdAndUpdate(req.user.id, updateData, {

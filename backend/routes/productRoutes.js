@@ -9,6 +9,7 @@ const {
     getMyProducts,
     getProductBySKU,
     getProductStats,
+    getSupplierProductStats,
     advancedProductSearch,
     bulkUpdateProducts,
     bulkDeleteProducts,
@@ -22,6 +23,7 @@ router.get('/', getProducts);
 router.post('/search', advancedProductSearch);
 router.get('/barcode/:sku', getProductBySKU);
 router.get('/stats', getProductStats);
+router.get('/stats/supplier/:supplierId', protect, getSupplierProductStats);
 router.get('/:id', getProduct);
 
 // Protected routes (require authentication)

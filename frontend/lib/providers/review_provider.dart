@@ -47,7 +47,8 @@ class ReviewProvider with ChangeNotifier {
   }
 
   /// Fetch reviews for a product
-  Future<void> fetchProductReviews(String productId, {int page = 1, int limit = 10}) async {
+  Future<void> fetchProductReviews(String productId,
+      {int page = 1, int limit = 10}) async {
     _setLoading(true);
     _clearError();
 
@@ -101,7 +102,8 @@ class ReviewProvider with ChangeNotifier {
       // TODO: Handle image uploads when implementing multi-image upload
       // For now, we'll skip images
 
-      final response = await _apiService.post(AppConfig.addReviewEndpoint, body: requestData);
+      final response = await _apiService.post(AppConfig.addReviewEndpoint,
+          body: requestData);
 
       if (response.isSuccess) {
         // Refresh reviews after successful submission
@@ -121,7 +123,8 @@ class ReviewProvider with ChangeNotifier {
   }
 
   /// Update an existing review
-  Future<bool> updateReview(String reviewId, {
+  Future<bool> updateReview(
+    String reviewId, {
     int? rating,
     String? title,
     String? comment,
@@ -135,7 +138,8 @@ class ReviewProvider with ChangeNotifier {
       if (title != null) updateData['title'] = title;
       if (comment != null) updateData['comment'] = comment;
 
-      final response = await _apiService.put('/api/reviews/$reviewId', body: updateData);
+      final response =
+          await _apiService.put('/reviews/$reviewId', body: updateData);
 
       if (response.isSuccess) {
         // Update local review
@@ -170,7 +174,7 @@ class ReviewProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _apiService.delete('/api/reviews/$reviewId');
+      final response = await _apiService.delete('/reviews/$reviewId');
 
       if (response.isSuccess) {
         // Remove from local list
@@ -193,13 +197,14 @@ class ReviewProvider with ChangeNotifier {
   /// Mark review as helpful
   Future<bool> markReviewHelpful(String reviewId) async {
     try {
-      final response = await _apiService.put('/api/reviews/$reviewId/helpful');
+      final response = await _apiService.put('/reviews/$reviewId/helpful');
 
       if (response.isSuccess && response.data != null) {
         // Update local review helpful count
         final index = _reviews.indexWhere((r) => r.id == reviewId);
         if (index != -1) {
-          final newHelpfulCount = response.data['helpfulCount'] ?? _reviews[index].helpfulCount;
+          final newHelpfulCount =
+              response.data['helpfulCount'] ?? _reviews[index].helpfulCount;
           final updatedReview = _reviews[index].copyWith(
             helpfulCount: newHelpfulCount,
           );

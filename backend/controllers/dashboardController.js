@@ -340,7 +340,7 @@ exports.getAdminDashboard = async (req, res, next) => {
             totalUsers: totalActiveUsers,
             totalSuppliers,
             totalCustomers,
-            totalProducts: 0, // TODO: Get actual product count
+            totalProducts: await Product.countDocuments(),
             totalOrders: platformAnalytics[0]?.totalOrders || 0,
             totalRevenue: platformAnalytics[0]?.totalPlatformRevenue || 0,
             platformCommission: platformRevenue,

@@ -7,10 +7,7 @@ import '../../../core/constants/app_dimensions.dart';
 import '../../../core/widgets/multi_image_upload_widget.dart';
 import '../../../models/product.dart';
 import '../../../models/category.dart';
-import '../../../services/api_service.dart';
 import '../../../services/product_service.dart';
-import '../../../services/image_service.dart';
-import '../../../routes/navigation_service.dart';
 
 /// ✏️ Supplier Product Add/Edit Screen
 /// Comprehensive form for creating/editing products
@@ -28,9 +25,7 @@ class SupplierProductAddEditScreen extends StatefulWidget {
 class _SupplierProductAddEditScreenState
     extends State<SupplierProductAddEditScreen> {
   final _formKey = GlobalKey<FormState>();
-  final ApiService _apiService = ApiService();
   final ProductService _productService = ProductService();
-  final ImageService _imageService = ImageService();
 
   bool _isLoading = false;
   bool _isCategoriesLoading = false;
@@ -47,7 +42,6 @@ class _SupplierProductAddEditScreenState
   // Image management
   final List<File> _selectedImages = [];
   final List<String> _uploadedImageUrls = [];
-  late final MultiImageUploadWidget _imageUploadWidget;
 
   final List<Category> _categories = [];
   String _selectedCategoryId = '';
@@ -129,74 +123,94 @@ class _SupplierProductAddEditScreenState
   Future<void> _saveProduct() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_selectedCategoryId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a category')),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Upload images first if any new images selected
-      List<String> imageUrls = List.from(_uploadedImageUrls);
-      if (_selectedImages.isNotEmpty) {
-        final uploadedUrls = await _imageService.uploadMultipleImagesToBackend(
-          _selectedImages,
-          folder: 'products',
-          onProgress: (progress, currentIndex) {
-            // Optional: Update UI with upload progress
-            // Example: setState(() => _uploadProgress = progress);
-          },
-        );
-        imageUrls.addAll(uploadedUrls);
-      }
-
-      final productData = {
+      final productFields = {
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
-        'price': double.parse(_priceController.text),
-        'compareAtPrice': _compareAtPriceController.text.isNotEmpty
-            ? double.parse(_compareAtPriceController.text)
-            : null,
-        'stock': int.parse(_stockController.text),
-        'sku': _skuController.text.trim(),
+        'price': _priceController
+            .text, // Backend handles string to number conversion
+        'stock': _stockController.text,
         'category': _selectedCategoryId,
-        'isFeatured': _isFeatured,
-        'images': imageUrls,
+        'isFeatured': _isFeatured.toString(),
       };
 
-      // If editing, include product ID
-      final isEdit = _isEditMode;
-      final endpoint =
-          isEdit ? '/api/products/${widget.product!.id}' : '/api/products';
+      if (_compareAtPriceController.text.isNotEmpty) {
+        productFields['compareAtPrice'] = _compareAtPriceController.text;
+      }
 
-      final response = isEdit
-          ? await _apiService.put(endpoint, body: productData)
-          : await _apiService.post(endpoint, body: productData);
+      if (_skuController.text.isNotEmpty) {
+        productFields['sku'] = _skuController.text.trim();
+      }
 
-      if (response.isSuccess) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isEdit
-                ? 'Product updated successfully'
-                : 'Product created successfully'),
-          ),
+      ProductResult result;
+
+      if (_isEditMode) {
+        // For updates, we pass new images. Existing images are effectively kept by backend logic if not replaced
+        // Note: The current backend implementation appends new images.
+        // If we want to replace, we might need a different logic or delete separately.
+        // For now, we follow the "upload new images if any" pattern.
+        result = await _productService.updateProduct(
+          widget.product!.id,
+          productFields,
+          _selectedImages,
         );
-        NavigationService().pop(true);
       } else {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.message ?? 'Failed to save product')),
+        if (_selectedImages.isEmpty) {
+          if (!mounted) {
+            setState(() => _isLoading = false);
+            return;
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please select at least one image')),
+          );
+          setState(() => _isLoading = false);
+          return;
+        }
+        result = await _productService.createProduct(
+          productFields,
+          _selectedImages,
         );
       }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    } finally {
+
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
+
+        if (result.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_isEditMode
+                  ? 'Product updated successfully'
+                  : 'Product created successfully'),
+            ),
+          );
+          Navigator.pop(context, true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result.message ?? 'Failed to save product')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
       }
     }
   }

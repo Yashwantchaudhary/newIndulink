@@ -9,6 +9,7 @@ const Review = require('../models/Review');
 const RFQ = require('../models/RFQ');
 const Message = require('../models/Message');
 const Notification = require('../models/Notification');
+const mongoose = require('mongoose');
 
 class AnalyticsService {
     // ==================== USER ANALYTICS ====================
@@ -168,7 +169,7 @@ class AnalyticsService {
 
     // ==================== SALES ANALYTICS ====================
 
-    async getSalesAnalytics(timeframe = '30d') {
+    async getSalesAnalytics(timeframe = '30d', supplierId = null) {
         const startDate = this.getStartDate(timeframe);
 
         const [
@@ -180,13 +181,13 @@ class AnalyticsService {
             salesTrend,
             topProducts
         ] = await Promise.all([
-            this.getTotalRevenue(startDate),
-            this.getOrderCount(startDate),
-            this.getAvgOrderValue(startDate),
-            this.getSalesByCategory(startDate),
-            this.getSalesBySupplier(startDate),
-            this.getSalesTrend(timeframe),
-            this.getTopProducts(startDate)
+            this.getTotalRevenue(startDate, supplierId),
+            this.getOrderCount(startDate, supplierId),
+            this.getAvgOrderValue(startDate, supplierId),
+            this.getSalesByCategory(startDate, supplierId),
+            this.getSalesBySupplier(startDate, supplierId),
+            this.getSalesTrend(timeframe, supplierId),
+            this.getTopProducts(startDate, 10, supplierId)
         ]);
 
         return {
@@ -194,7 +195,7 @@ class AnalyticsService {
                 totalRevenue,
                 orderCount,
                 avgOrderValue,
-                conversionRate: await this.getConversionRate(timeframe)
+                conversionRate: await this.getConversionRate(timeframe, supplierId)
             },
             byCategory: salesByCategory,
             bySupplier: salesBySupplier,
@@ -204,22 +205,85 @@ class AnalyticsService {
         };
     }
 
-    async getTotalRevenue(startDate) {
-        const result = await Order.aggregate([
-            { $match: { createdAt: { $gte: startDate }, status: 'delivered' } },
-            { $group: { _id: null, total: { $sum: '$total' } } }
-        ]);
+    async getTotalRevenue(startDate, supplierId = null) {
+        let pipeline = [
+            { $match: { createdAt: { $gte: startDate }, status: 'delivered' } }
+        ];
+
+        if (supplierId) {
+            pipeline.push(
+                { $unwind: '$items' },
+                {
+                    $lookup: {
+                        from: 'products',
+                        localField: 'items.product',
+                        foreignField: '_id',
+                        as: 'product'
+                    }
+                },
+                { $unwind: '$product' },
+                { $match: { 'product.supplier': new mongoose.Types.ObjectId(supplierId) } },
+                { $group: { _id: null, total: { $sum: { $multiply: ['$items.quantity', '$items.price'] } } } }
+            );
+        } else {
+            pipeline.push({ $group: { _id: null, total: { $sum: '$total' } } });
+        }
+
+        const result = await Order.aggregate(pipeline);
         return result[0]?.total || 0;
     }
 
-    async getOrderCount(startDate) {
+    async getOrderCount(startDate, supplierId = null) {
+        if (supplierId) {
+            const result = await Order.aggregate([
+                { $match: { createdAt: { $gte: startDate }, status: { $ne: 'cancelled' } } },
+                { $unwind: '$items' },
+                {
+                    $lookup: {
+                        from: 'products',
+                        localField: 'items.product',
+                        foreignField: '_id',
+                        as: 'product'
+                    }
+                },
+                { $unwind: '$product' },
+                { $match: { 'product.supplier': new mongoose.Types.ObjectId(supplierId) } },
+                { $group: { _id: '$items.product' } }, // Distinct products
+                { $group: { _id: null, count: { $sum: 1 } } } // Count distinct products? No, we want distinct ORDERS.
+            ]);
+            // Re-think: Orders containing supplier products.
+            const uniqueOrderIds = await Order.aggregate([
+                { $match: { createdAt: { $gte: startDate }, status: { $ne: 'cancelled' } } },
+                { $unwind: '$items' },
+                {
+                    $lookup: {
+                        from: 'products',
+                        localField: 'items.product',
+                        foreignField: '_id',
+                        as: 'product'
+                    }
+                },
+                { $unwind: '$product' },
+                { $match: { 'product.supplier': new mongoose.Types.ObjectId(supplierId) } },
+                { $group: { _id: '$_id' } }
+            ]);
+            return uniqueOrderIds.length;
+        }
+
         return await Order.countDocuments({
             createdAt: { $gte: startDate },
             status: { $ne: 'cancelled' }
         });
     }
 
-    async getAvgOrderValue(startDate) {
+    async getAvgOrderValue(startDate, supplierId = null) {
+        // For supplier: Total Revenue / Order Count
+        if (supplierId) {
+            const revenue = await this.getTotalRevenue(startDate, supplierId);
+            const count = await this.getOrderCount(startDate, supplierId);
+            return count > 0 ? revenue / count : 0;
+        }
+
         const result = await Order.aggregate([
             { $match: { createdAt: { $gte: startDate }, status: 'delivered' } },
             { $group: { _id: null, avgValue: { $avg: '$total' }, count: { $sum: 1 } } }
@@ -227,8 +291,8 @@ class AnalyticsService {
         return result[0]?.avgValue || 0;
     }
 
-    async getSalesByCategory(startDate) {
-        const result = await Order.aggregate([
+    async getSalesByCategory(startDate, supplierId = null) {
+        const pipeline = [
             { $match: { createdAt: { $gte: startDate }, status: 'delivered' } },
             { $unwind: '$items' },
             {
@@ -248,7 +312,14 @@ class AnalyticsService {
                     as: 'category'
                 }
             },
-            { $unwind: '$category' },
+            { $unwind: '$category' }
+        ];
+
+        if (supplierId) {
+            pipeline.push({ $match: { 'product.supplier': new mongoose.Types.ObjectId(supplierId) } });
+        }
+
+        pipeline.push(
             {
                 $group: {
                     _id: '$category._id',
@@ -265,13 +336,15 @@ class AnalyticsService {
                 }
             },
             { $sort: { revenue: -1 } }
-        ]);
+        );
 
-        return result;
+        return await Order.aggregate(pipeline);
     }
 
-    async getSalesBySupplier(startDate) {
-        const result = await Order.aggregate([
+    async getSalesBySupplier(startDate, supplierId = null) {
+        // If supplierId is provided, we only show data for THAT supplier (which is just one entry)
+        // Checks if req.user matches supplier?
+        const pipeline = [
             { $match: { createdAt: { $gte: startDate }, status: 'delivered' } },
             { $unwind: '$items' },
             {
@@ -291,11 +364,18 @@ class AnalyticsService {
                     as: 'supplier'
                 }
             },
-            { $unwind: '$supplier' },
+            { $unwind: '$supplier' }
+        ];
+
+        if (supplierId) {
+            pipeline.push({ $match: { 'product.supplier': new mongoose.Types.ObjectId(supplierId) } });
+        }
+
+        pipeline.push(
             {
                 $group: {
                     _id: '$supplier._id',
-                    name: { $first: '$supplier.name' },
+                    name: { $first: '$supplier.businessName' }, // Use businessName for suppliers
                     revenue: { $sum: { $multiply: ['$items.quantity', '$items.price'] } },
                     orders: { $addToSet: '$_id' }
                 }
@@ -308,17 +388,17 @@ class AnalyticsService {
                 }
             },
             { $sort: { revenue: -1 } }
-        ]);
+        );
 
-        return result;
+        return await Order.aggregate(pipeline);
     }
 
-    async getSalesTrend(timeframe) {
+    async getSalesTrend(timeframe, supplierId = null) {
         const periods = this.getGrowthPeriods(timeframe);
         const trendData = [];
 
         for (const period of periods) {
-            const revenue = await this.getTotalRevenue(period.start);
+            const revenue = await this.getTotalRevenue(period.start, supplierId);
             trendData.push({
                 period: period.label,
                 revenue,
@@ -329,8 +409,8 @@ class AnalyticsService {
         return trendData;
     }
 
-    async getTopProducts(startDate, limit = 10) {
-        const result = await Order.aggregate([
+    async getTopProducts(startDate, limit = 10, supplierId = null) {
+        const pipeline = [
             { $match: { createdAt: { $gte: startDate }, status: 'delivered' } },
             { $unwind: '$items' },
             {
@@ -341,7 +421,14 @@ class AnalyticsService {
                     as: 'product'
                 }
             },
-            { $unwind: '$product' },
+            { $unwind: '$product' }
+        ];
+
+        if (supplierId) {
+            pipeline.push({ $match: { 'product.supplier': new mongoose.Types.ObjectId(supplierId) } });
+        }
+
+        pipeline.push(
             {
                 $group: {
                     _id: '$product._id',
@@ -363,17 +450,25 @@ class AnalyticsService {
             },
             { $sort: { revenue: -1 } },
             { $limit: limit }
-        ]);
+        );
 
-        return result;
+        return await Order.aggregate(pipeline);
     }
 
-    async getConversionRate(timeframe) {
+    async getConversionRate(timeframe, supplierId = null) {
         const startDate = this.getStartDate(timeframe);
 
+        // For suppliers, conversion rate might be Orders / Viewers of their products.
+        // We lack detailed view tracking by supplier.
+        // For now we will return 0 or global conversion if we can't calculate.
+
+        if (supplierId) {
+            // Placeholder: return 0 or improved logic later
+            return 0;
+        }
+
         const [totalVisitors, totalOrders] = await Promise.all([
-            // This would typically come from a separate analytics service
-            // For now, we'll use a proxy based on user registrations
+            // More accurate visitor tracking needed
             User.countDocuments({ createdAt: { $gte: startDate } }),
             Order.countDocuments({ createdAt: { $gte: startDate } })
         ]);
@@ -383,7 +478,7 @@ class AnalyticsService {
 
     // ==================== PRODUCT ANALYTICS ====================
 
-    async getProductAnalytics(timeframe = '30d') {
+    async getProductAnalytics(timeframe = '30d', supplierId = null) {
         const startDate = this.getStartDate(timeframe);
 
         const [
@@ -394,12 +489,18 @@ class AnalyticsService {
             categoryPerformance,
             inventoryStatus
         ] = await Promise.all([
-            Product.countDocuments(),
-            Product.countDocuments({ isActive: true }),
-            Product.countDocuments({ stock: { $lt: 10 } }),
-            this.getProductPerformance(startDate),
-            this.getCategoryPerformance(startDate),
-            this.getInventoryStatus()
+            supplierId
+                ? Product.countDocuments({ supplier: supplierId })
+                : Product.countDocuments(),
+            supplierId
+                ? Product.countDocuments({ supplier: supplierId, isActive: true })
+                : Product.countDocuments({ isActive: true }),
+            supplierId
+                ? Product.countDocuments({ supplier: supplierId, stock: { $lt: 10 } })
+                : Product.countDocuments({ stock: { $lt: 10 } }),
+            this.getProductPerformance(startDate, supplierId),
+            this.getCategoryPerformance(startDate, supplierId),
+            this.getInventoryStatus(supplierId)
         ]);
 
         return {
@@ -416,8 +517,14 @@ class AnalyticsService {
         };
     }
 
-    async getProductPerformance(startDate) {
-        const result = await Product.aggregate([
+    async getProductPerformance(startDate, supplierId = null) {
+        const pipeline = [];
+
+        if (supplierId) {
+            pipeline.push({ $match: { supplier: new mongoose.Types.ObjectId(supplierId) } });
+        }
+
+        pipeline.push(
             {
                 $lookup: {
                     from: 'orders',
@@ -458,12 +565,86 @@ class AnalyticsService {
                 }
             },
             { $sort: { revenue: -1 } }
-        ]);
+        );
 
-        return result;
+        return await Product.aggregate(pipeline);
     }
 
-    async getCategoryPerformance(startDate) {
+    async getCategoryPerformance(startDate, supplierId = null) {
+        // This calculates revenue per category. 
+        // If supplierId, find categories of supplier products and their revenue.
+        // It's easier to start from Orders like getSalesByCategory rather than starting from Categories.
+        // But the original method starts from Category.
+
+        // Let's rewrite using Order aggregation for efficiency and consistency if filtering by supplier.
+        // Re-using logic similar to getSalesByCategory but formatting might be key.
+
+        // Actually, the original implementation starts from Category which ensures we show categories even with 0 revenue?
+        // No, it uses $lookup 'products' first.
+
+        // If filtering by supplier, starting from Category is hard because we need to filter which products match the supplier.
+        // Let's stick to the Order-based approach used in getSalesByCategory, effectively duplicating it or calling it?
+        // getSalesByCategory returns { name, revenue, orderCount }.
+        // getCategoryPerformance returns { name, productCount, revenue, quantitySold }.
+
+        // Let's modify to start from Products if supplierId is present?
+
+        const pipeline = [];
+
+        if (supplierId) {
+            // Find categories via products of this supplier
+            // This is complex to aggregate starting from Category.
+            // Simplified approach: Start from Product, group by Category.
+            pipeline.push({ $match: { supplier: new mongoose.Types.ObjectId(supplierId) } });
+            pipeline.push(
+                {
+                    $lookup: {
+                        from: 'categories',
+                        localField: 'category',
+                        foreignField: '_id',
+                        as: 'categoryDoc'
+                    }
+                },
+                { $unwind: '$categoryDoc' },
+                {
+                    $lookup: {
+                        from: 'orders',
+                        let: { productId: '$_id' },
+                        pipeline: [
+                            { $match: { createdAt: { $gte: startDate }, status: 'delivered' } },
+                            { $unwind: '$items' },
+                            { $match: { $expr: { $eq: ['$items.product', '$$productId'] } } },
+                            {
+                                $group: {
+                                    _id: null,
+                                    revenue: { $sum: { $multiply: ['$items.quantity', '$items.price'] } },
+                                    quantity: { $sum: '$items.quantity' }
+                                }
+                            }
+                        ],
+                        as: 'sales'
+                    }
+                },
+                {
+                    $addFields: {
+                        salesData: { $arrayElemAt: ['$sales', 0] }
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$categoryDoc._id',
+                        name: { $first: '$categoryDoc.name' },
+                        productCount: { $sum: 1 },
+                        revenue: { $sum: { $ifNull: ['$salesData.revenue', 0] } },
+                        quantitySold: { $sum: { $ifNull: ['$salesData.quantity', 0] } }
+                    }
+                },
+                { $sort: { revenue: -1 } }
+            );
+            return await Product.aggregate(pipeline);
+        }
+
+        // Original logic for admin (global)
         const result = await Category.aggregate([
             {
                 $lookup: {
@@ -521,8 +702,14 @@ class AnalyticsService {
         return result;
     }
 
-    async getInventoryStatus() {
+    async getInventoryStatus(supplierId = null) {
+        const matchStage = {};
+        if (supplierId) {
+            matchStage.supplier = new mongoose.Types.ObjectId(supplierId);
+        }
+
         const result = await Product.aggregate([
+            { $match: matchStage },
             {
                 $group: {
                     _id: {

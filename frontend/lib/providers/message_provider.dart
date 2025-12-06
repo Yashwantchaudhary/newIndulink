@@ -46,7 +46,8 @@ class MessageProvider with ChangeNotifier {
       final response = await _apiService.get('/messages/conversations');
 
       if (response.success) {
-        final List<dynamic> items = response.data['conversations'] ?? [];
+        final List<dynamic> items =
+            response.data['data'] ?? response.data['conversations'] ?? [];
         _conversations =
             items.map((item) => Conversation.fromJson(item)).toList();
       } else {
@@ -69,11 +70,12 @@ class MessageProvider with ChangeNotifier {
 
     try {
       final response = await _apiService.get(
-        '/messages/conversations/$conversationId/messages',
+        '/messages/conversation/$conversationId',
       );
 
       if (response.success) {
-        final List<dynamic> items = response.data['messages'] ?? [];
+        final List<dynamic> items =
+            response.data['data'] ?? response.data['messages'] ?? [];
         _currentMessages = items.map((item) => Message.fromJson(item)).toList();
       } else {
         _setError(response.message ?? 'Failed to load messages');
@@ -96,13 +98,15 @@ class MessageProvider with ChangeNotifier {
 
     try {
       final response = await _apiService.post(
-        '/messages/conversations/$conversationId/messages',
-        body: {'content': content},
+        '/messages',
+        body: {'receiver': conversationId, 'content': content},
       );
 
       if (response.success) {
         // Add message to current messages
-        final newMessage = Message.fromJson(response.data['message']);
+        final messageData =
+            response.data['data'] ?? response.data['message'] ?? response.data;
+        final newMessage = Message.fromJson(messageData);
         _currentMessages.add(newMessage);
         notifyListeners();
         return true;
@@ -120,7 +124,7 @@ class MessageProvider with ChangeNotifier {
   /// Mark conversation as read
   Future<void> markAsRead(String conversationId) async {
     try {
-      await _apiService.put('/messages/conversations/$conversationId/read');
+      await _apiService.put('/messages/read/$conversationId');
 
       // Update local state
       final index = _conversations.indexWhere((c) => c.id == conversationId);

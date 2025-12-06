@@ -13,10 +13,12 @@ class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
 
   @override
-  State<NotificationSettingsScreen> createState() => _NotificationSettingsScreenState();
+  State<NotificationSettingsScreen> createState() =>
+      _NotificationSettingsScreenState();
 }
 
-class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
+class _NotificationSettingsScreenState
+    extends State<NotificationSettingsScreen> {
   bool _notificationsEnabled = true;
   bool _orderUpdates = true;
   bool _newMessages = true;
@@ -42,7 +44,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         _notificationsEnabled = settings['enabled'] ?? true;
       });
     } catch (error) {
-      print('Failed to load notification settings: $error');
+      debugPrint('Failed to load notification settings: $error');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -59,11 +61,9 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            enabled
-                ? 'Push notifications enabled'
-                : 'Push notifications disabled'
-          ),
+          content: Text(enabled
+              ? 'Push notifications enabled'
+              : 'Push notifications disabled'),
         ),
       );
     } catch (error) {
@@ -82,10 +82,10 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
 
     try {
       await context.read<NotificationProvider>().sendTestNotification(
-        title: 'Test Notification',
-        body: 'This is a test push notification from INDULINK',
-        type: 'test',
-      );
+            title: 'Test Notification',
+            body: 'This is a test push notification from INDULINK',
+            type: 'test',
+          );
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -153,7 +153,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     title: 'Product Updates',
                     subtitle: 'Back in stock and price changes',
                     value: _productUpdates,
-                    onChanged: (value) => setState(() => _productUpdates = value),
+                    onChanged: (value) =>
+                        setState(() => _productUpdates = value),
                     enabled: _notificationsEnabled,
                   ),
                   _buildSettingCard(
@@ -179,7 +180,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     padding: const EdgeInsets.all(AppDimensions.paddingM),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                      borderRadius:
+                          BorderRadius.circular(AppDimensions.radiusM),
                       border: Border.all(color: AppColors.border),
                     ),
                     child: Column(
@@ -187,18 +189,22 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                       children: [
                         Text(
                           'Test Notification',
-                          style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.bold),
+                          style: AppTypography.labelLarge
+                              .copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Send a test notification to verify your settings',
-                          style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+                          style: AppTypography.bodyMedium
+                              .copyWith(color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: 16),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            onPressed: _notificationsEnabled ? _sendTestNotification : null,
+                            onPressed: _notificationsEnabled
+                                ? _sendTestNotification
+                                : null,
                             icon: const Icon(Icons.send),
                             label: const Text('Send Test Notification'),
                             style: ElevatedButton.styleFrom(
@@ -206,7 +212,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                                borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusM),
                               ),
                             ),
                           ),
@@ -222,7 +229,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     padding: const EdgeInsets.all(AppDimensions.paddingM),
                     decoration: BoxDecoration(
                       color: AppColors.background,
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                      borderRadius:
+                          BorderRadius.circular(AppDimensions.radiusM),
                       border: Border.all(color: AppColors.borderLight),
                     ),
                     child: Column(
@@ -238,7 +246,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                             const SizedBox(width: 8),
                             Text(
                               'About Notifications',
-                              style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.bold),
+                              style: AppTypography.labelLarge
+                                  .copyWith(fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -307,14 +316,18 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   title,
                   style: AppTypography.labelLarge.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: enabled ? AppColors.textPrimary : AppColors.textSecondary,
+                    color: enabled
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: AppTypography.bodySmall.copyWith(
-                    color: enabled ? AppColors.textSecondary : AppColors.textDisabled,
+                    color: enabled
+                        ? AppColors.textSecondary
+                        : AppColors.textDisabled,
                   ),
                 ),
               ],

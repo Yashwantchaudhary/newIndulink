@@ -1,4 +1,3 @@
-import '../core/constants/app_config.dart';
 import '../models/rfq.dart';
 import 'api_service.dart';
 
@@ -68,13 +67,21 @@ class RFQService {
 
       if (response.isSuccess && response.data != null) {
         final dataMap = response.data as Map<String, dynamic>;
-        final actualData = dataMap.containsKey('data')
-            ? Map<String, dynamic>.from(dataMap['data'] as Map)
-            : dataMap;
+        List<dynamic> rfqsJson = [];
 
-        final rfqsJson = actualData['rfqs'] ?? actualData['data'] ?? [];
-        final rfqs =
-            (rfqsJson as List).map((json) => RFQ.fromJson(json)).toList();
+        if (dataMap.containsKey('data') && dataMap['data'] is List) {
+          rfqsJson = dataMap['data'] as List;
+        } else if (dataMap.containsKey('data') && dataMap['data'] is Map) {
+          // Handle case where data is wrapped in another object like { data: { rfqs: [] } }
+          final innerData = dataMap['data'] as Map;
+          rfqsJson = innerData['rfqs'] ?? innerData['data'] ?? [];
+        } else {
+          rfqsJson = dataMap['rfqs'] ?? [];
+        }
+
+        final rfqs = (rfqsJson)
+            .map((json) => RFQ.fromJson(json as Map<String, dynamic>))
+            .toList();
 
         return RFQListResult(
           success: true,

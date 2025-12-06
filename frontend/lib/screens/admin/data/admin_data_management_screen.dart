@@ -16,7 +16,8 @@ class AdminDataManagementScreen extends StatefulWidget {
   const AdminDataManagementScreen({super.key});
 
   @override
-  State<AdminDataManagementScreen> createState() => _AdminDataManagementScreenState();
+  State<AdminDataManagementScreen> createState() =>
+      _AdminDataManagementScreenState();
 }
 
 class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
@@ -33,22 +34,29 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
   Future<void> _loadDataStats() async {
     setState(() => _isLoading = true);
     try {
-      // Load comprehensive stats from admin stats endpoint
       final response = await _apiService.get(AppConfig.adminDashboardEndpoint);
 
       if (response.isSuccess && response.data != null) {
-        final statsData = response.data;
+        // Handle both wrapped and unwrapped responses
+        final Map<String, dynamic> dataMap = response.data is Map
+            ? Map<String, dynamic>.from(response.data as Map)
+            : <String, dynamic>{};
+
+        final Map<String, dynamic> statsData =
+            dataMap.containsKey('data') && dataMap['data'] is Map
+                ? Map<String, dynamic>.from(dataMap['data'] as Map)
+                : dataMap;
 
         setState(() {
           _stats = {
             'users': {'count': statsData['totalUsers'] ?? 0},
             'products': {'count': statsData['totalProducts'] ?? 0},
-            'categories': {'count': 0}, // Categories count not available in current stats
+            'categories': {'count': statsData['totalCategories'] ?? 0},
             'orders': {'count': statsData['totalOrders'] ?? 0},
-            'reviews': {'count': 0}, // Reviews count not available in current stats
-            'rfqs': {'count': 0}, // RFQs count not available in current stats
-            'messages': {'count': 0}, // Messages count not available in current stats
-            'notifications': {'count': 0}, // Notifications count not available in current stats
+            'reviews': {'count': statsData['totalReviews'] ?? 0},
+            'rfqs': {'count': statsData['totalRFQs'] ?? 0},
+            'messages': {'count': statsData['totalMessages'] ?? 0},
+            'notifications': {'count': statsData['totalNotifications'] ?? 0},
           };
           _isLoading = false;
         });
@@ -64,7 +72,7 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
   Widget build(BuildContext context) {
     return AdminLayout(
       title: 'Data Management',
-      currentIndex: 0, // Custom index for data management
+      currentIndex: 0,
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RealtimeDataRefresher(
@@ -195,12 +203,13 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
   }
 
   Widget _buildDataCollectionsGrid() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final collections = [
       {
         'title': 'Users',
         'icon': Icons.people,
         'color': AppColors.primary,
-        'route': AppRoutes.adminDataUsers,
+        'route': AppRoutes.adminUsers,
         'stats': _stats['users'],
         'description': 'Manage user accounts and roles',
       },
@@ -208,7 +217,7 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
         'title': 'Products',
         'icon': Icons.inventory,
         'color': AppColors.secondary,
-        'route': AppRoutes.adminDataProducts,
+        'route': AppRoutes.adminProducts,
         'stats': _stats['products'],
         'description': 'Manage product catalog',
       },
@@ -216,7 +225,7 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
         'title': 'Categories',
         'icon': Icons.category,
         'color': AppColors.success,
-        'route': AppRoutes.adminDataCategories,
+        'route': AppRoutes.adminCategories,
         'stats': _stats['categories'],
         'description': 'Manage product categories',
       },
@@ -224,7 +233,7 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
         'title': 'Orders',
         'icon': Icons.receipt_long,
         'color': AppColors.warning,
-        'route': AppRoutes.adminDataOrders,
+        'route': AppRoutes.adminOrders,
         'stats': _stats['orders'],
         'description': 'Manage customer orders',
       },
@@ -265,7 +274,7 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
         'icon': Icons.badge,
         'color': AppColors.successLight,
         'route': AppRoutes.adminDataBadges,
-        'stats': {'count': 0}, // Placeholder
+        'stats': {'count': 0},
         'description': 'Manage user badges',
       },
     ];
@@ -275,7 +284,10 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
       children: [
         Text(
           'Data Collections',
-          style: AppTypography.h5.copyWith(fontWeight: FontWeight.bold),
+          style: AppTypography.h5.copyWith(
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+          ),
         ),
         const SizedBox(height: 16),
         GridView.builder(
@@ -285,7 +297,7 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 1.2,
+            childAspectRatio: 0.95,
           ),
           itemCount: collections.length,
           itemBuilder: (context, index) {
@@ -298,12 +310,14 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
   }
 
   Widget _buildCollectionCard(Map<String, dynamic> collection) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.cardDark : Colors.white,
         borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+            color: isDark ? AppColors.dividerDark : AppColors.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -344,22 +358,28 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
             collection['title'],
             style: AppTypography.labelLarge.copyWith(
               fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            collection['description'],
-            style: AppTypography.caption.copyWith(
-              color: AppColors.textSecondary,
+          Flexible(
+            child: Text(
+              collection['description'],
+              style: AppTypography.caption.copyWith(
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
-          const Spacer(),
+          const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, collection['route']),
+              onPressed: () =>
+                  Navigator.pushNamed(context, collection['route']),
               style: ElevatedButton.styleFrom(
                 backgroundColor: collection['color'],
                 foregroundColor: Colors.white,
@@ -377,12 +397,16 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
   }
 
   Widget _buildQuickActions() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Quick Actions',
-          style: AppTypography.h5.copyWith(fontWeight: FontWeight.bold),
+          style: AppTypography.h5.copyWith(
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+          ),
         ),
         const SizedBox(height: 16),
         Row(
@@ -419,35 +443,43 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
     );
   }
 
-  Widget _buildQuickActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+  Widget _buildQuickActionCard(
+      String title, IconData icon, Color color, VoidCallback onTap) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.cardDark : Colors.white,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+          border: Border.all(
+              color: isDark ? AppColors.dividerDark : AppColors.border),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 24),
             ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: AppTypography.bodyMedium.copyWith(
-              fontWeight: FontWeight.w500,
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: AppTypography.bodyMedium.copyWith(
+                fontWeight: FontWeight.w500,
+                color:
+                    isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
-    ).asGestureDetector(onTap: onTap);
+    );
   }
 
   void _exportData() {
@@ -465,18 +497,8 @@ class _AdminDataManagementScreenState extends State<AdminDataManagementScreen> {
   }
 
   void _createBackup() {
-    // TODO: Implement backup functionality
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Backup functionality coming soon')),
-    );
-  }
-}
-
-extension GestureDetectorExtension on Widget {
-  Widget asGestureDetector({required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: this,
     );
   }
 }

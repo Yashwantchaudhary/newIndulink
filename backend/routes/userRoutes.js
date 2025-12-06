@@ -18,10 +18,15 @@ const {
     getNotificationPreferences,
     updateLanguage,
     getLanguage,
+    getLanguage,
     getUserStats,
+    getPublicProfile,
 } = require('../controllers/userController');
 const { protect, requireCustomer, requireAdmin } = require('../middleware/authMiddleware');
 const { uploadSingle } = require('../middleware/upload');
+
+// Public routes
+router.get('/:id/public-profile', getPublicProfile);
 
 // Profile routes
 router.get('/profile', protect, getProfile);

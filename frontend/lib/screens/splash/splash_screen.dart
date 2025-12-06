@@ -6,7 +6,6 @@ import '../../core/constants/app_typography.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
-import '../role_selection/role_selection_screen.dart';
 import '../../routes/app_routes.dart';
 
 /// 🎬 Premium Splash Screen
@@ -96,11 +95,16 @@ class _SplashScreenState extends State<SplashScreen>
       if (authProvider.isLoading) {
         // Check again in 1 second if still loading
         Timer(const Duration(seconds: 1), () {
-          if (mounted && !authProvider.isLoading) {
-            _performNavigation(authProvider);
-          } else if (mounted) {
-            // Force navigation after timeout
-            _performNavigation(authProvider);
+          if (mounted) {
+            // Fetch provider again to get latest state
+            final updatedProvider =
+                Provider.of<AuthProvider>(context, listen: false);
+            if (!updatedProvider.isLoading) {
+              _performNavigation(updatedProvider);
+            } else {
+              // Force navigation after timeout
+              _performNavigation(updatedProvider);
+            }
           }
         });
         return;
@@ -111,13 +115,17 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _performNavigation(AuthProvider authProvider) {
-    if (authProvider.isAuthenticated && authProvider.user != null) {
-      // Navigate to appropriate dashboard based on role
-      _navigateToDashboard(authProvider.user!.role);
-    } else {
-      // Navigate to role selection
-      Navigator.of(context).pushReplacementNamed(AppRoutes.roleSelection);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      if (authProvider.isAuthenticated && authProvider.user != null) {
+        // Navigate to appropriate dashboard based on role
+        _navigateToDashboard(authProvider.user!.role);
+      } else {
+        // Navigate to role selection
+        Navigator.of(context).pushReplacementNamed(AppRoutes.roleSelection);
+      }
+    });
   }
 
   void _navigateToDashboard(UserRole role) {

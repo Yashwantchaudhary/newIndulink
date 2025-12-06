@@ -95,7 +95,6 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-
   void _navigateToDashboard() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final userRole = authProvider.user?.role ?? widget.selectedRole;
@@ -120,6 +119,7 @@ class _LoginScreenState extends State<LoginScreen>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Container(
         width: size.width,
         height: size.height,
@@ -384,7 +384,6 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ),
               ),
-
             ],
           ),
         ),

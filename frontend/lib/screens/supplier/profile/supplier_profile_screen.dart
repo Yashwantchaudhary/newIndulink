@@ -109,6 +109,14 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                               user.businessAddress ?? 'Not set'),
                           _buildInfoTile('Business License',
                               user.businessLicense ?? 'Not set'),
+                          if (user.services != null &&
+                              user.services!.isNotEmpty)
+                            _buildInfoTile(
+                                'Services', user.services!.join(', ')),
+                          if (user.certifications != null &&
+                              user.certifications!.isNotEmpty)
+                            _buildInfoTile('Certifications',
+                                user.certifications!.join(', ')),
                         ],
                       ),
                     ),

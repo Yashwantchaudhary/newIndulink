@@ -20,6 +20,40 @@ const {
 
 // Initialize Express app
 const app = express();
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require('socket.io');
+
+const io = new Server(server, {
+    cors: {
+        origin: ["http://localhost:3000", "http://127.0.0.1:3000", "*"], // Allow all for Flutter app
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+        credentials: true
+    }
+});
+
+// Socket.io connection handler
+io.on('connection', (socket) => {
+    console.log(`🔌 New client connected: ${socket.id}`);
+
+    // Join user-specific room if authenticated (client should emit 'join' event)
+    socket.on('join', (userId) => {
+        if (userId) {
+            socket.join(`user_${userId}`);
+            console.log(`👤 Socket ${socket.id} joined room: user_${userId}`);
+        }
+    });
+
+    socket.on('disconnect', () => {
+        console.log(`❌ Client disconnected: ${socket.id}`);
+    });
+});
+
+// Make io available in routes
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
 
 // Connect to Database
 connectDatabase();
@@ -140,6 +174,9 @@ app.use('/api/payments', require('./routes/paymentRoutes'));
 // Seeding Routes (Admin only - for development/testing)
 app.use('/api/seed', require('./routes/seedingRoutes'));
 
+// 📤 Upload Routes (Authenticated users)
+app.use('/api/upload', require('./routes/uploadRoutes'));
+
 
 // Health Check Route
 app.get('/health', (req, res) => {
@@ -197,7 +234,7 @@ app.use(errorHandler);
 
 // Start Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`
 ╔═══════════════════════════════════════════════════════╗
 ║                                                       ║

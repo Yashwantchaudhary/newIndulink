@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:NEWINDULINK/models/category.dart' as models;
+import 'package:newindulink/models/category.dart' as models;
 import '../services/api_service.dart';
 
 class CategoryProvider with ChangeNotifier {

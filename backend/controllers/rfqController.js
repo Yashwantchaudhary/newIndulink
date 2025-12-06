@@ -5,32 +5,39 @@ const Notification = require('../models/Notification');
 
 // @desc    Create a new RFQ
 // @route   POST /api/rfq
-// @access  Private (Buyer only)
+// @access  Private (Customer only)
 exports.createRFQ = async (req, res) => {
     try {
-        const { products, idealPrice, quantity, deliveryDate, description, attachments } = req.body;
+        const { items, deliveryAddress, notes, expiresAt } = req.body;
 
-        // Validate buyer role
-        if (req.user.role !== 'buyer') {
+        // Validate customer role (using 'customer' instead of 'buyer' to match User model)
+        if (req.user.role !== 'customer') {
             return res.status(403).json({
                 success: false,
-                message: 'Only buyers can create RFQs'
+                message: 'Only customers can create RFQs'
+            });
+        }
+
+        if (!items || items.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'RFQ must have at least one item'
             });
         }
 
         // Create RFQ
         const rfq = await RFQ.create({
-            buyer: req.user._id,
-            products,
-            idealPrice,
-            quantity,
-            deliveryDate,
-            description,
-            attachments,
+            customerId: req.user._id, // Matches schema 'customerId'
+            items,
+            deliveryAddress,
+            notes,
+            expiresAt,
             status: 'pending'
         });
 
-        await rfq.populate('products buyer', 'name email companyName');
+        // Populate details for response
+        await rfq.populate('customerId', 'firstName lastName email businessName');
+        // Note: 'items.productId' population might need deep populate if needed immediately
 
         // Send notification to all suppliers
         const suppliers = await User.find({ role: 'supplier', isActive: true });
@@ -39,11 +46,13 @@ exports.createRFQ = async (req, res) => {
             user: supplier._id,
             type: 'rfq',
             title: 'New RFQ Request',
-            message: `New RFQ request for ${products.length} product(s)`,
+            message: `New RFQ request for ${items.length} product(s)`,
             data: { rfqId: rfq._id }
         }));
 
-        await Notification.insertMany(notifications);
+        if (notifications.length > 0) {
+            await Notification.insertMany(notifications);
+        }
 
         res.status(201).json({
             success: true,
@@ -60,7 +69,7 @@ exports.createRFQ = async (req, res) => {
     }
 };
 
-// @desc    Get all RFQs (for buyer - their RFQs, for supplier - all pending RFQs)
+// @desc    Get all RFQs (for customer - their RFQs, for supplier - all pending RFQs)
 // @route   GET /api/rfq
 // @access  Private
 exports.getRFQs = async (req, res) => {
@@ -70,8 +79,8 @@ exports.getRFQs = async (req, res) => {
 
         let query = {};
 
-        if (req.user.role === 'buyer') {
-            query.buyer = req.user._id;
+        if (req.user.role === 'customer') {
+            query.customerId = req.user._id;
         }
 
         if (status) {
@@ -79,9 +88,12 @@ exports.getRFQs = async (req, res) => {
         }
 
         const rfqs = await RFQ.find(query)
-            .populate('buyer', 'name email companyName')
-            .populate('products', 'name images price')
-            .populate('quotes.supplier', 'name email companyName')
+            .populate('customerId', 'firstName lastName email businessName')
+            .populate({
+                path: 'items.productId',
+                select: 'title images price'
+            })
+            .populate('quotes.supplierId', 'firstName lastName email businessName')
             .sort({ createdAt: -1 })
             .limit(parseInt(limit))
             .skip(skip);
@@ -113,9 +125,12 @@ exports.getRFQs = async (req, res) => {
 exports.getRFQById = async (req, res) => {
     try {
         const rfq = await RFQ.findById(req.params.id)
-            .populate('buyer', 'name email companyName phone')
-            .populate('products', 'name images price description')
-            .populate('quotes.supplier', 'name email companyName phone rating');
+            .populate('customerId', 'firstName lastName email businessName phone')
+            .populate({
+                path: 'items.productId',
+                select: 'title images price description'
+            })
+            .populate('quotes.supplierId', 'firstName lastName email businessName phone rating');
 
         if (!rfq) {
             return res.status(404).json({
@@ -125,7 +140,7 @@ exports.getRFQById = async (req, res) => {
         }
 
         // Check authorization
-        if (req.user.role === 'buyer' && rfq.buyer._id.toString() !== req.user._id.toString()) {
+        if (req.user.role === 'customer' && rfq.customerId._id.toString() !== req.user._id.toString()) {
             return res.status(403).json({
                 success: false,
                 message: 'Not authorized to view this RFQ'
@@ -151,7 +166,7 @@ exports.getRFQById = async (req, res) => {
 // @access  Private (Supplier only)
 exports.submitQuote = async (req, res) => {
     try {
-        const { price, deliveryTime, description, validUntil } = req.body;
+        const { items, totalAmount, validUntil, notes } = req.body;
 
         // Validate supplier role
         if (req.user.role !== 'supplier') {
@@ -179,15 +194,15 @@ exports.submitQuote = async (req, res) => {
 
         // Check if supplier already submitted a quote
         const existingQuoteIndex = rfq.quotes.findIndex(
-            q => q.supplier.toString() === req.user._id.toString()
+            q => q.supplierId.toString() === req.user._id.toString()
         );
 
         const quote = {
-            supplier: req.user._id,
-            price,
-            deliveryTime,
-            description,
+            supplierId: req.user._id,
+            items,
+            totalAmount,
             validUntil,
+            notes,
             submittedAt: new Date()
         };
 
@@ -202,9 +217,9 @@ exports.submitQuote = async (req, res) => {
         rfq.status = 'quoted';
         await rfq.save();
 
-        // Notify buyer
+        // Notify customer
         await Notification.create({
-            user: rfq.buyer,
+            user: rfq.customerId,
             type: 'quote',
             title: 'New Quote Received',
             message: `You received a quote for your RFQ`,
@@ -212,7 +227,7 @@ exports.submitQuote = async (req, res) => {
         });
 
         const updatedRFQ = await RFQ.findById(rfq._id)
-            .populate('quotes.supplier', 'name email companyName rating');
+            .populate('quotes.supplierId', 'firstName lastName email businessName rating');
 
         res.status(200).json({
             success: true,
@@ -245,8 +260,8 @@ exports.acceptQuote = async (req, res) => {
             });
         }
 
-        // Check if user is the buyer
-        if (rfq.buyer.toString() !== req.user._id.toString()) {
+        // Check if user is the customer
+        if (rfq.customerId.toString() !== req.user._id.toString()) {
             return res.status(403).json({
                 success: false,
                 message: 'Not authorized to accept quotes for this RFQ'
@@ -284,7 +299,7 @@ exports.acceptQuote = async (req, res) => {
         });
 
         const updatedRFQ = await RFQ.findById(rfq._id)
-            .populate('quotes.supplier', 'name email companyName');
+            .populate('quotes.supplierId', 'firstName lastName email businessName');
 
         res.status(200).json({
             success: true,
@@ -317,8 +332,8 @@ exports.updateRFQStatus = async (req, res) => {
             });
         }
 
-        // Check if user is the buyer
-        if (rfq.buyer.toString() !== req.user._id.toString()) {
+        // Check if user is the customer
+        if (rfq.customerId.toString() !== req.user._id.toString()) {
             return res.status(403).json({
                 success: false,
                 message: 'Not authorized to update this RFQ'
@@ -357,8 +372,8 @@ exports.deleteRFQ = async (req, res) => {
             });
         }
 
-        // Check if user is the buyer
-        if (rfq.buyer.toString() !== req.user._id.toString()) {
+        // Check if user is the customer
+        if (rfq.customerId.toString() !== req.user._id.toString()) {
             return res.status(403).json({
                 success: false,
                 message: 'Not authorized to delete this RFQ'

@@ -3,11 +3,10 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.hostelfinder.app"
+    namespace = "com.indulink.app"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -22,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.hostelfinder.app"
+        applicationId = "com.indulink.app"
         minSdk = flutter.minSdkVersion
         targetSdk = 34
         versionCode = 1
@@ -41,8 +40,6 @@ android {
 }
 
 dependencies {
-    implementation("com.google.firebase:firebase-messaging")
-    implementation("com.google.firebase:firebase-analytics")
     implementation("androidx.multidex:multidex:2.0.1")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
@@ -50,3 +47,4 @@ dependencies {
 flutter {
     source = "../.."
 }
+

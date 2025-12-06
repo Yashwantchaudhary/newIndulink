@@ -339,3 +339,45 @@ exports.getUserReviewStats = async (req, res, next) => {
         next(error);
     }
 };
+// @desc    Get supplier reviews
+// @route   GET /api/reviews/supplier/me
+// @access  Private (Supplier)
+exports.getSupplierReviews = async (req, res, next) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        // Find all products by this supplier
+        const products = await Product.find({ supplier: req.user.id }).select('_id');
+        const productIds = products.map(p => p._id);
+
+        const filter = { product: { $in: productIds } };
+
+        // Filter by status if provided
+        if (req.query.status) {
+            filter.status = req.query.status;
+        }
+
+        // Find reviews for these products
+        const reviews = await Review.find(filter)
+            .populate('product', 'title images')
+            .populate('customer', 'firstName lastName profileImage')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const total = await Review.countDocuments(filter);
+
+        res.status(200).json({
+            success: true,
+            count: reviews.length,
+            total,
+            page,
+            pages: Math.ceil(total / limit),
+            data: reviews,
+        });
+    } catch (error) {
+        next(error);
+    }
+};

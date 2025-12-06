@@ -116,6 +116,14 @@ const userSchema = new mongoose.Schema(
         businessLicense: {
             type: String,
         },
+        services: [{
+            type: String,
+            trim: true
+        }],
+        certifications: [{
+            type: String,
+            trim: true
+        }],
         // Common fields
         addresses: [addressSchema],
         isEmailVerified: {

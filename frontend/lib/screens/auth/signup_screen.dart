@@ -73,8 +73,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
       password: _passwordController.text,
       phone: _phoneController.text.trim(),
       role: widget.selectedRole,
-      businessName: widget.selectedRole == UserRole.supplier ? _businessNameController.text.trim() : null,
-      businessDescription: widget.selectedRole == UserRole.supplier ? _businessDescriptionController.text.trim() : null,
+      businessName: widget.selectedRole == UserRole.supplier
+          ? _businessNameController.text.trim()
+          : null,
+      businessDescription: widget.selectedRole == UserRole.supplier
+          ? _businessDescriptionController.text.trim()
+          : null,
     );
 
     if (mounted) {
@@ -101,6 +105,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Container(
         decoration: const BoxDecoration(
           color: Colors.blue,
@@ -414,7 +419,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
-                                Navigator.pushNamed(context, '/terms-of-service');
+                                Navigator.pushNamed(
+                                    context, '/terms-of-service');
                               },
                           ),
                           TextSpan(

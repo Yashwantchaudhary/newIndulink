@@ -72,9 +72,9 @@ async function seedBasicData() {
     ]);
     console.log(`✅ Seeded ${categories.length} categories`);
 
-    // Seed Users
+    // Seed Users (using create() to trigger pre-save hooks for password hashing)
     console.log('👥 Seeding users...');
-    const users = await User.insertMany([
+    const usersData = [
       {
         firstName: 'Admin',
         lastName: 'User',
@@ -133,7 +133,10 @@ async function seedBasicData() {
         isActive: true,
         isEmailVerified: true
       }
-    ]);
+    ];
+
+    // Use create() instead of insertMany() to trigger pre-save middleware for password hashing
+    const users = await User.create(usersData);
     console.log(`✅ Seeded ${users.length} users`);
 
     // Seed Products

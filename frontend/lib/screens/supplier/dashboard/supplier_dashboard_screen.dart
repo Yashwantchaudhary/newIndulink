@@ -204,8 +204,10 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
               Text(
                 'Overview of your business',
                 style: AppTypography.bodyMedium.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.9),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.9),
                 ),
               ),
             ],
@@ -509,7 +511,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
         'icon': Icons.bar_chart,
         'color': AppColors.success
       },
-      {'title': 'Messages', 'icon': Icons.message, 'color': AppColors.info},
+      {'title': 'Reviews', 'icon': Icons.star, 'color': AppColors.info},
       {
         'title': 'Business Data',
         'icon': Icons.storage,
@@ -557,10 +559,10 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                       Navigator.pushNamed(context, '/supplier/orders');
                       break;
                     case 'Analytics':
-                      // TODO: Navigate to analytics screen
+                      Navigator.pushNamed(context, AppRoutes.supplierAnalytics);
                       break;
-                    case 'Messages':
-                      // TODO: Navigate to messages screen
+                    case 'Reviews':
+                      Navigator.pushNamed(context, AppRoutes.supplierReviews);
                       break;
                     case 'Business Data':
                       Navigator.pushNamed(

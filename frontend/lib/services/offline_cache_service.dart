@@ -121,9 +121,11 @@ class OfflineCacheService {
     // Create indexes for performance
     await db.execute('CREATE INDEX idx_cache_key ON cache_entries(key)');
     await db.execute('CREATE INDEX idx_cache_type ON cache_entries(type)');
-    await db.execute('CREATE INDEX idx_cache_expires ON cache_entries(expires_at)');
+    await db
+        .execute('CREATE INDEX idx_cache_expires ON cache_entries(expires_at)');
     await db.execute('CREATE INDEX idx_sync_status ON sync_queue(status)');
-    await db.execute('CREATE INDEX idx_user_data ON user_data(user_id, data_type)');
+    await db
+        .execute('CREATE INDEX idx_user_data ON user_data(user_id, data_type)');
   }
 
   /// Handle database upgrades
@@ -136,8 +138,10 @@ class OfflineCacheService {
 
   /// Setup connectivity monitoring
   Future<void> _setupConnectivityMonitoring() async {
-    _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
-      final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
+    _connectivity.onConnectivityChanged
+        .listen((List<ConnectivityResult> results) {
+      final result =
+          results.isNotEmpty ? results.first : ConnectivityResult.none;
       final wasOnline = _isOnline;
       _isOnline = result != ConnectivityResult.none;
 
@@ -154,8 +158,9 @@ class OfflineCacheService {
   /// Check current connectivity status
   Future<void> _checkConnectivity() async {
     try {
-      final result = await _connectivity.checkConnectivity();
-      _isOnline = result != ConnectivityResult.none;
+      final results = await _connectivity.checkConnectivity();
+      _isOnline =
+          results.isNotEmpty && results.first != ConnectivityResult.none;
     } catch (error) {
       debugPrint('❌ Connectivity check failed: $error');
       _isOnline = false;
@@ -182,7 +187,9 @@ class OfflineCacheService {
   // ==================== CACHE OPERATIONS ====================
 
   /// Store data in cache
-  Future<bool> set(String key, dynamic data, {
+  Future<bool> set(
+    String key,
+    dynamic data, {
     String type = 'general',
     Duration? ttl,
     int priority = 0,
@@ -240,7 +247,8 @@ class OfflineCacheService {
       final expiresAt = entry['expires_at'] as int?;
 
       // Check if expired
-      if (expiresAt != null && DateTime.now().millisecondsSinceEpoch > expiresAt) {
+      if (expiresAt != null &&
+          DateTime.now().millisecondsSinceEpoch > expiresAt) {
         await delete(key);
         return null;
       }
@@ -403,11 +411,15 @@ class OfflineCacheService {
       // Parse operation data
       final operationType = operation['operation'] as String;
       final endpoint = operation['endpoint'] as String;
-      final data = operation['data'] != null ? jsonDecode(operation['data']) : null;
-      final headers = operation['headers'] != null ? jsonDecode(operation['headers']) : null;
+      final data =
+          operation['data'] != null ? jsonDecode(operation['data']) : null;
+      final headers = operation['headers'] != null
+          ? jsonDecode(operation['headers'])
+          : null;
 
       // Execute operation (this would integrate with your API service)
-      final success = await _executeSyncOperation(operationType, endpoint, data, headers);
+      final success =
+          await _executeSyncOperation(operationType, endpoint, data, headers);
 
       if (success) {
         // Mark as completed
@@ -423,10 +435,7 @@ class OfflineCacheService {
         final newRetryCount = (operation['retry_count'] as int) + 1;
         await _database!.update(
           'sync_queue',
-          {
-            'status': 'pending',
-            'retry_count': newRetryCount
-          },
+          {'status': 'pending', 'retry_count': newRetryCount},
           where: 'id = ?',
           whereArgs: [operation['id']],
         );
@@ -446,11 +455,13 @@ class OfflineCacheService {
   }
 
   /// Execute sync operation (integrates with API service)
-  Future<bool> _executeSyncOperation(String operation, String endpoint, dynamic data, Map<String, String>? headers) async {
+  Future<bool> _executeSyncOperation(String operation, String endpoint,
+      dynamic data, Map<String, String>? headers) async {
     // This would integrate with your actual API service
     // For now, return true to simulate success
     debugPrint('🔄 Executing sync operation: $operation $endpoint');
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulate network delay
+    await Future.delayed(
+        const Duration(milliseconds: 500)); // Simulate network delay
     return true;
   }
 
@@ -522,7 +533,8 @@ class OfflineCacheService {
   // ==================== FILE CACHE ====================
 
   /// Cache file to local storage
-  Future<String?> cacheFile(String url, List<int> bytes, {String? filename}) async {
+  Future<String?> cacheFile(String url, List<int> bytes,
+      {String? filename}) async {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final cacheDir = Directory('${directory.path}/cache/files');
@@ -633,7 +645,8 @@ class OfflineCacheService {
     if (!_isInitialized || _database == null) return 0;
 
     try {
-      final result = await _database!.rawQuery('SELECT SUM(size) as total FROM cache_entries');
+      final result = await _database!
+          .rawQuery('SELECT SUM(size) as total FROM cache_entries');
       return (result.first['total'] as int?) ?? 0;
     } catch (error) {
       return 0;

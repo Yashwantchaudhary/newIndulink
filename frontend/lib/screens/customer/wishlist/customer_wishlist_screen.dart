@@ -75,7 +75,8 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
 
   Future<void> _removeFromWishlist(String productId) async {
     try {
-      final response = await _apiService.delete('${AppConfig.wishlistEndpoint}/$productId');
+      final response =
+          await _apiService.delete('${AppConfig.wishlistEndpoint}/$productId');
 
       if (response.isSuccess) {
         setState(() {
@@ -158,7 +159,8 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.read<WishlistProvider>().errorMessage ?? 'Failed to clear wishlist'),
+            content: Text(context.read<WishlistProvider>().errorMessage ??
+                'Failed to clear wishlist'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -178,7 +180,6 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('My Wishlist'),
         flexibleSpace: Container(

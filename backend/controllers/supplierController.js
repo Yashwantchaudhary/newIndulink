@@ -121,18 +121,15 @@ const deleteProduct = async (req, res) => {
 
 // ==================== ORDER MANAGEMENT ====================
 
-// Get supplier's orders (orders containing supplier's products)
+// Get supplier's orders
 const getSupplierOrders = async (req, res) => {
     try {
-        // Find orders that contain products from this supplier
-        const orders = await Order.find({
-            'items.product': {
-                $in: await Product.find({ supplier: req.user._id }).distinct('_id')
-            }
-        })
-        .populate('user', 'firstName lastName email')
-        .populate('items.product', 'name price images')
-        .sort({ createdAt: -1 });
+        // Orders are split by supplier at creation, so we can directly filter by supplier field
+        // This is more efficient than searching through product items
+        const orders = await Order.find({ supplier: req.user._id })
+            .populate('customer', 'firstName lastName email phone') // Fixed: populate 'customer', not 'user'
+            .populate('items.product', 'title price images') // consistent with other controllers
+            .sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,
@@ -153,8 +150,8 @@ const getSupplierOrders = async (req, res) => {
 const getOrderDetails = async (req, res) => {
     try {
         const order = await Order.findById(req.params.id)
-            .populate('user', 'firstName lastName email phone')
-            .populate('items.product', 'name price images sku')
+            .populate('customer', 'firstName lastName email phone') // Fixed: populate 'customer'
+            .populate('items.product', 'title price images sku')
             .populate('shippingAddress');
 
         if (!order) {
@@ -164,12 +161,9 @@ const getOrderDetails = async (req, res) => {
             });
         }
 
-        // Check if order contains supplier's products
-        const hasSupplierProducts = order.items.some(item =>
-            item.product && item.product.supplier && item.product.supplier.toString() === req.user._id.toString()
-        );
-
-        if (!hasSupplierProducts) {
+        // Check if order belongs to supplier
+        // Since orders are split by supplier, direct check is sufficient
+        if (order.supplier.toString() !== req.user._id.toString()) {
             return res.status(403).json({
                 success: false,
                 message: 'Not authorized to view this order'
@@ -212,12 +206,8 @@ const updateOrderStatus = async (req, res) => {
             });
         }
 
-        // Check if order contains supplier's products
-        const hasSupplierProducts = order.items.some(item =>
-            item.product && item.product.supplier && item.product.supplier.toString() === req.user._id.toString()
-        );
-
-        if (!hasSupplierProducts) {
+        // Check if order belongs to supplier
+        if (order.supplier.toString() !== req.user._id.toString()) {
             return res.status(403).json({
                 success: false,
                 message: 'Not authorized to update this order'
@@ -248,54 +238,103 @@ const getSupplierAnalytics = async (req, res) => {
     try {
         const supplierId = req.user._id;
 
-        // Product statistics
+        // 1. Basic Counts
         const totalProducts = await Product.countDocuments({ supplier: supplierId });
-        const activeProducts = await Product.countDocuments({
-            supplier: supplierId,
-            isActive: true
-        });
+        const activeProducts = await Product.countDocuments({ supplier: supplierId, isActive: true });
 
-        // Order statistics
-        const totalOrders = await Order.countDocuments({
-            'items.product': {
-                $in: await Product.find({ supplier: supplierId }).distinct('_id')
-            }
-        });
+        // Product IDs for filtering orders
+        const supplierProducts = await Product.find({ supplier: supplierId }).select('_id title price images');
+        const supplierProductIds = supplierProducts.map(p => p._id);
 
-        // Revenue calculation
-        const orders = await Order.find({
-            'items.product': {
-                $in: await Product.find({ supplier: supplierId }).distinct('_id')
-            },
-            status: { $in: ['delivered', 'shipped'] }
-        });
+        // Orders involving this supplier
+        const orders = await Order.find({ supplier: supplierId });
 
+        const totalOrders = orders.length;
+
+        // 2. Revenue Calculation
         let totalRevenue = 0;
+        // Filter delivered orders for revenue
+        const deliveredOrders = orders.filter(o => o.status === 'delivered');
+
+        // Calculate revenue only from this supplier's items in the orders
+        // Note: In the new 'split order' model, order.total is already specific to the supplier
+        deliveredOrders.forEach(order => {
+            totalRevenue += order.total;
+        });
+
+        const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+        // 3. Revenue Trend (Last 6 months)
+        const revenueData = await getRevenueTrend(supplierId);
+
+        // 4. Order Status Distribution
+        const orderStatusData = await Order.aggregate([
+            { $match: { supplier: supplierId } },
+            { $group: { _id: '$status', count: { $sum: 1 } } },
+            { $project: { status: '$_id', count: 1, _id: 0 } }
+        ]);
+
+        // 5. Top Products
+        // Calculate sales count per product
+        const productSales = {};
         orders.forEach(order => {
             order.items.forEach(item => {
-                if (item.product && item.product.supplier && item.product.supplier.toString() === supplierId.toString()) {
-                    totalRevenue += item.price * item.quantity;
+                const pid = item.product.toString();
+                // Since this order is specific to supplier, all items are theirs
+                if (!productSales[pid]) {
+                    productSales[pid] = {
+                        name: item.productSnapshot?.title || 'Unknown',
+                        sold: 0,
+                        revenue: 0
+                    };
                 }
+                productSales[pid].sold += item.quantity;
+                productSales[pid].revenue += item.subtotal;
             });
         });
+
+        const topProducts = Object.values(productSales)
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 5);
+
+        // 6. Recent Sales
+        const recentSales = await Order.find({ supplier: supplierId })
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .populate('customer', 'firstName lastName')
+            .lean();
+
+        const formattedRecentSales = recentSales.map(order => ({
+            orderNumber: order.orderNumber,
+            customerName: order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : 'Guest',
+            amount: order.total,
+            date: order.createdAt
+        }));
 
         res.status(200).json({
             success: true,
             message: 'Supplier analytics retrieved successfully',
             data: {
-                products: {
-                    total: totalProducts,
-                    active: activeProducts
-                },
-                orders: {
-                    total: totalOrders
-                },
-                revenue: {
-                    total: totalRevenue
-                }
+                totalRevenue,
+                totalOrders,
+                activeProducts,
+                averageOrderValue,
+                revenueChange: 0, // Placeholder for historical comparison
+                ordersChange: 0,
+                productsChange: 0,
+                aovChange: 0,
+                revenueData, // List<double>
+                topProducts,
+                salesByPeriod: [], // Can implement breakdown if needed
+                orderStatusData,
+                productPerformance: topProducts, // Reuse top products
+                inventoryStatus: [], // Can implement stock low alerts
+                categoryPerformance: [],
+                recentSales: formattedRecentSales
             }
         });
     } catch (error) {
+        console.error('Analytics Error:', error);
         res.status(500).json({
             success: false,
             message: 'Error retrieving analytics',
@@ -303,6 +342,33 @@ const getSupplierAnalytics = async (req, res) => {
         });
     }
 };
+
+// Helper for Revenue Trend (Last 6 months)
+async function getRevenueTrend(supplierId) {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const result = await Order.aggregate([
+        {
+            $match: {
+                supplier: supplierId,
+                status: 'delivered',
+                createdAt: { $gte: sixMonthsAgo }
+            }
+        },
+        {
+            $group: {
+                _id: { $month: '$createdAt' },
+                total: { $sum: '$total' }
+            }
+        },
+        { $sort: { _id: 1 } }
+    ]);
+
+    // Map to simple array of values (simplified for this use case)
+    // Ideally we should map to specific months, but for the chart we just return values
+    return result.map(r => r.total);
+}
 
 // Get sales report
 const getSalesReport = async (req, res) => {
@@ -325,8 +391,8 @@ const getSalesReport = async (req, res) => {
             },
             status: { $in: ['delivered', 'shipped'] }
         })
-        .populate('items.product', 'name sku')
-        .sort({ createdAt: -1 });
+            .populate('items.product', 'name sku')
+            .sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,

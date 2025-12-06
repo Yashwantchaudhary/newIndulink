@@ -9,6 +9,7 @@ const {
   updateRFQStatus,
   deleteRFQ,
   uploadAttachments,
+  getSupplierRFQStats,
 } = require('../controllers/rfqController');
 const { protect } = require('../middleware/authMiddleware');
 // Use the centralized uploads utility (adjust path if needed)
@@ -17,6 +18,7 @@ const uploads = require('../middleware/upload');
 // RFQ routes
 router.post('/', protect, createRFQ);
 router.get('/', protect, getRFQs);
+router.get('/stats/supplier/:supplierId', protect, getSupplierRFQStats);
 router.get('/:id', protect, getRFQById);
 router.post('/:id/quote', protect, submitQuote);
 router.put('/:id/accept/:quoteId', protect, acceptQuote);

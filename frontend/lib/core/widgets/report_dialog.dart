@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../constants/app_typography.dart';
+import '../../services/report_service.dart';
 
 /// 📋 Report Dialog Widget
 /// Allows users to report inappropriate content with reasons
@@ -172,7 +173,8 @@ class _ReportDialogState extends State<ReportDialog> {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                        borderRadius:
+                            BorderRadius.circular(AppDimensions.radiusM),
                       ),
                     ),
                     child: const Text('Cancel'),
@@ -189,7 +191,8 @@ class _ReportDialogState extends State<ReportDialog> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                        borderRadius:
+                            BorderRadius.circular(AppDimensions.radiusM),
                       ),
                       elevation: 0,
                     ),
@@ -199,7 +202,8 @@ class _ReportDialogState extends State<ReportDialog> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : const Text('Submit Report'),
@@ -233,7 +237,9 @@ class _ReportDialogState extends State<ReportDialog> {
         child: Row(
           children: [
             Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              isSelected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
               color: isSelected ? AppColors.primary : AppColors.textSecondary,
               size: 20,
             ),
@@ -259,16 +265,25 @@ class _ReportDialogState extends State<ReportDialog> {
     setState(() => _isSubmitting = true);
 
     try {
-      // TODO: Implement actual report submission API call
-      // For now, simulate API call
-      await Future.delayed(const Duration(seconds: 1));
+      // Use ReportService to submit
+      final success = await ReportService().submitReport(
+        targetId: widget.contentId,
+        targetType: widget.contentType,
+        reason: _selectedReason!,
+        description: _detailsController.text,
+      );
+
+      if (!success) {
+        throw Exception('Server returned error');
+      }
 
       // Simulate success
       if (mounted) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Report submitted successfully. Thank you for helping keep our community safe.'),
+            content: Text(
+                'Report submitted successfully. Thank you for helping keep our community safe.'),
             backgroundColor: AppColors.success,
             duration: Duration(seconds: 4),
           ),

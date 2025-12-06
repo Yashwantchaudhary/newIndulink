@@ -102,7 +102,18 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              order['user']?['fullName'] ?? 'Customer',
+                              () {
+                                final customer =
+                                    order['customer'] ?? order['user'];
+                                if (customer == null) return 'Customer';
+                                if (customer['fullName'] != null) {
+                                  return customer['fullName'];
+                                }
+                                final name =
+                                    '${customer['firstName'] ?? ''} ${customer['lastName'] ?? ''}'
+                                        .trim();
+                                return name.isNotEmpty ? name : 'Customer';
+                              }(),
                               style: AppTypography.bodyMedium,
                             ),
                             Text(

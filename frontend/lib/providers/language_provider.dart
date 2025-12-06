@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../services/storage_service.dart';
 
 /// 🌐 Language Provider
 /// Manages app localization and language preferences
@@ -8,6 +9,8 @@ class LanguageProvider with ChangeNotifier {
     LanguageOption(code: 'en', name: 'English', nativeName: 'English'),
     LanguageOption(code: 'ne', name: 'Nepali', nativeName: 'नेपाली'),
   ];
+
+  final StorageService _storage = StorageService();
 
   // State
   String _languageCode = 'en'; // Default to English
@@ -21,9 +24,13 @@ class LanguageProvider with ChangeNotifier {
 
   /// Initialize language from storage
   Future<void> init() async {
-    // For now, default to English
-    // TODO: Load from storage when implemented
-    _languageCode = 'en';
+    final savedCode = await _storage.getLanguageCode();
+    if (savedCode != null &&
+        supportedLanguages.any((lang) => lang.code == savedCode)) {
+      _languageCode = savedCode;
+    } else {
+      _languageCode = 'en';
+    }
     notifyListeners();
   }
 
@@ -35,7 +42,7 @@ class LanguageProvider with ChangeNotifier {
     }
 
     _languageCode = code;
-    // TODO: Save to storage
+    await _storage.saveLanguageCode(code);
     notifyListeners();
   }
 

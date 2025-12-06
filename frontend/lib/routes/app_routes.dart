@@ -85,6 +85,9 @@ class AppRoutes {
   // Supplier Analytics
   static const String supplierAnalytics = '/supplier/analytics';
 
+  // Supplier Reviews
+  static const String supplierReviews = '/supplier/reviews';
+
   // Supplier RFQ
   static const String supplierRfqList = '/supplier/rfq';
   static const String supplierRfqDetail = '/supplier/rfq/detail';

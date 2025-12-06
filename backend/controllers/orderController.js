@@ -92,12 +92,29 @@ exports.createOrder = async (req, res, next) => {
 
             createdOrders.push(order);
 
-            // Send notification to supplier about new order pending approval
+            // Send notification and Socket event to supplier
             try {
+                // Socket.io emission
+                if (req.io) {
+                    req.io.to(`user_${supplierId}`).emit('order:new', {
+                        message: 'New order received',
+                        orderId: order._id,
+                        orderNumber: order.orderNumber
+                    });
+                }
+
                 await sendOrderStatusNotification(supplierId, order._id.toString(), 'pending_approval');
             } catch (notificationError) {
-                console.error('Failed to send new order notification to supplier:', notificationError);
+                console.error('Failed to send new order notification/socket to supplier:', notificationError);
             }
+        }
+
+        // Notify customer via Socket
+        if (req.io) {
+            req.io.to(`user_${req.user.id}`).emit('order:created', {
+                message: 'Order created successfully',
+                orders: createdOrders.map(o => o._id)
+            });
         }
 
         // Clear cart
@@ -278,8 +295,17 @@ exports.updateOrderStatus = async (req, res, next) => {
                 supplierNote: supplierNote,
             });
         } catch (notificationError) {
-            console.error('Failed to send order status notification:', notificationError);
             // Don't fail the request if notification fails
+        }
+
+        // Socket.io event to customer
+        if (req.io) {
+            req.io.to(`user_${order.customer.toString()}`).emit('order:updated', {
+                orderId: order._id,
+                status: status,
+                orderNumber: order.orderNumber,
+                message: `Order #${order.orderNumber} status updated to ${status}`
+            });
         }
 
         res.status(200).json({

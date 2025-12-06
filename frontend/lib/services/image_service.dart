@@ -17,24 +17,6 @@ class ImageService {
 
   final ImagePicker _picker = ImagePicker();
 
-  /// Get content type from file extension
-  String _getContentType(String filePath) {
-    final extension = path.extension(filePath).toLowerCase();
-    switch (extension) {
-      case '.jpg':
-      case '.jpeg':
-        return 'image/jpeg';
-      case '.png':
-        return 'image/png';
-      case '.gif':
-        return 'image/gif';
-      case '.webp':
-        return 'image/webp';
-      default:
-        return 'image/jpeg';
-    }
-  }
-
   /// Request necessary permissions for image operations
   Future<bool> requestPermissions() async {
     final cameraStatus = await Permission.camera.request();
@@ -105,7 +87,10 @@ class ImageService {
       );
 
       if (pickedFiles.length > maxImages) {
-        return pickedFiles.take(maxImages).map((file) => File(file.path)).toList();
+        return pickedFiles
+            .take(maxImages)
+            .map((file) => File(file.path))
+            .toList();
       }
 
       return pickedFiles.map((file) => File(file.path)).toList();
@@ -178,7 +163,8 @@ class ImageService {
     Function(double)? onProgress,
   }) async {
     try {
-      final String actualFileName = fileName ?? '${DateTime.now().millisecondsSinceEpoch}_${path.basename(imageFile.path)}';
+      final String actualFileName = fileName ??
+          '${DateTime.now().millisecondsSinceEpoch}_${path.basename(imageFile.path)}';
 
       // Create multipart request
       final uri = Uri.parse('${AppConfig.baseUrl}/upload/image');
@@ -205,7 +191,8 @@ class ImageService {
         final data = jsonDecode(response.body);
         return data['url'];
       } else {
-        debugPrint('Error uploading image: ${response.statusCode} - ${response.body}');
+        debugPrint(
+            'Error uploading image: ${response.statusCode} - ${response.body}');
         return null;
       }
     } catch (e) {
@@ -256,7 +243,8 @@ class ImageService {
     try {
       final bytes = await imageFile.readAsBytes();
       final decodedImage = await decodeImageFromList(bytes);
-      return Size(decodedImage.width.toDouble(), decodedImage.height.toDouble());
+      return Size(
+          decodedImage.width.toDouble(), decodedImage.height.toDouble());
     } catch (e) {
       debugPrint('Error getting image dimensions: $e');
       return null;
@@ -264,13 +252,21 @@ class ImageService {
   }
 
   /// Validate image file
-  Future<bool> validateImage(File imageFile, {
+  Future<bool> validateImage(
+    File imageFile, {
     int maxSizeInMB = 10,
-    List<String> allowedExtensions = const ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+    List<String> allowedExtensions = const [
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'webp'
+    ],
   }) async {
     try {
       // Check file extension
-      final String extension = path.extension(imageFile.path).toLowerCase().replaceAll('.', '');
+      final String extension =
+          path.extension(imageFile.path).toLowerCase().replaceAll('.', '');
       if (!allowedExtensions.contains(extension)) {
         return false;
       }

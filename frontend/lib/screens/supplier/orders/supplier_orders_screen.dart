@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_dimensions.dart';
-import '../../../core/constants/app_config.dart';
 import '../../../models/order.dart';
-import '../../../services/api_service.dart';
+import '../../../services/order_service.dart';
 
 /// 📦 Supplier Orders Screen
 /// Manage orders with filters and status tracking
@@ -21,7 +20,7 @@ class SupplierOrdersScreen extends StatefulWidget {
 }
 
 class _SupplierOrdersScreenState extends State<SupplierOrdersScreen> {
-  final ApiService _apiService = ApiService();
+  final OrderService _orderService = OrderService();
   bool _isLoading = true;
   String? _error;
   List<Order> _orders = [];
@@ -40,28 +39,25 @@ class _SupplierOrdersScreenState extends State<SupplierOrdersScreen> {
     });
 
     try {
-      final response = await _apiService.get(AppConfig.supplierOrdersEndpoint);
+      final result = await _orderService.getSupplierOrders();
 
-      if (response.isSuccess && response.data != null) {
-        final List<dynamic> ordersJson = response.data is List
-            ? response.data
-            : response.data['orders'] ?? [];
-
+      if (mounted) {
         setState(() {
-          _orders = ordersJson.map((json) => Order.fromJson(json)).toList();
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _error = response.message ?? 'Failed to load orders';
+          if (result.success) {
+            _orders = result.orders;
+          } else {
+            _error = result.message ?? 'Failed to load orders';
+          }
           _isLoading = false;
         });
       }
     } catch (e) {
-      setState(() {
-        _error = 'Error loading orders: ${e.toString()}';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Error loading orders: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
     }
   }
 
