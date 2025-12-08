@@ -15,6 +15,7 @@ const {
     getSalesReport,
     // Profile Management
     updateSupplierProfile,
+    getActiveCartItems,
 } = require('../controllers/supplierController');
 const { getSupplierDashboard } = require('../controllers/dashboardController');
 const { protect, requireSupplier } = require('../middleware/authMiddleware');
@@ -25,6 +26,8 @@ router.use(protect);
 router.use(requireSupplier);
 
 // ==================== PRODUCT MANAGEMENT ====================
+// ==================== PRODUCT MANAGEMENT ====================
+router.get('/products/active-carts', getActiveCartItems);
 router.get('/products', getMyProducts);
 router.post('/products', uploadMultiple('images', 5), compressProductImages, createProduct);
 router.put('/products/:id', uploadMultiple('images', 5), compressProductImages, updateProduct);

@@ -40,7 +40,8 @@ class _SupplierOrderDetailScreenState extends State<SupplierOrderDetailScreen> {
       Navigator.pop(context, true);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(provider.errorMessage ?? 'Failed to update status')),
+        SnackBar(
+            content: Text(provider.errorMessage ?? 'Failed to update status')),
       );
     }
   }
@@ -233,9 +234,8 @@ class _SupplierOrderDetailScreenState extends State<SupplierOrderDetailScreen> {
             ),
           ] else if (order.status == OrderStatus.processing) ...[
             ElevatedButton(
-              onPressed:
-                  isUpdating ? null : () => _updateStatus(OrderStatus.shipped),
-              child: const Text('Mark as Shipped'),
+              onPressed: isUpdating ? null : () => _showShipOrderDialog(order),
+              child: const Text('Ship Order'),
             ),
           ] else if (order.status == OrderStatus.shipped) ...[
             ElevatedButton(
@@ -332,5 +332,76 @@ class _SupplierOrderDetailScreenState extends State<SupplierOrderDetailScreen> {
       default:
         return Icons.pending;
     }
+  }
+
+  void _showShipOrderDialog(Order order) {
+    final trackingNumberController = TextEditingController();
+    final carrierController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ship Order'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: trackingNumberController,
+                decoration: const InputDecoration(
+                  labelText: 'Tracking Number',
+                  hintText: 'Enter tracking number',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: carrierController,
+                decoration: const InputDecoration(
+                  labelText: 'Carrier',
+                  hintText: 'e.g., FedEx, DHL, UPS',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              final provider = context.read<OrderProvider>();
+              final success = await provider.updateOrderTracking(
+                orderId: order.id,
+                trackingNumber: trackingNumberController.text.trim().isEmpty
+                    ? null
+                    : trackingNumberController.text.trim(),
+                carrier: carrierController.text.trim().isEmpty
+                    ? null
+                    : carrierController.text.trim(),
+                estimatedDelivery: DateTime.now().add(const Duration(days: 7)),
+              );
+
+              if (success && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Order shipped successfully')),
+                );
+                Navigator.pop(context, true);
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content: Text(
+                          provider.errorMessage ?? 'Failed to ship order')),
+                );
+              }
+            },
+            child: const Text('Ship'),
+          ),
+        ],
+      ),
+    );
   }
 }

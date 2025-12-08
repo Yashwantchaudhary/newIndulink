@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../routes/app_routes.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/error_widget.dart';
@@ -67,6 +68,28 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               children: [
                 _buildOrderHeader(order),
                 const SizedBox(height: 16),
+                if (order.status != OrderStatus.cancelled) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.orderTracking,
+                          arguments: order.id,
+                        );
+                      },
+                      icon: const Icon(Icons.location_on),
+                      label: const Text('Track Order'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 _buildOrderItems(order),
                 const SizedBox(height: 16),
                 _buildShippingDetails(order),

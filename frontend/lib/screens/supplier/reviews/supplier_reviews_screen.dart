@@ -100,7 +100,7 @@ class _SupplierReviewsScreenState extends State<SupplierReviewsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'by ${review.customer?.fullName ?? 'Anonymous'} on ${DateFormat('MMM dd, yyyy').format(review.createdAt)}',
+                    'by ${review.customer.firstName} ${review.customer.lastName} on ${DateFormat('MMM dd, yyyy').format(review.createdAt)}',
                     style: AppTypography.caption,
                   ),
                   const SizedBox(height: 12),
@@ -123,6 +123,15 @@ class _SupplierReviewsScreenState extends State<SupplierReviewsScreen> {
                           Text(review.response!.comment),
                         ],
                       ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: OutlinedButton.icon(
+                        onPressed: () => _showReplyDialog(review),
+                        icon: const Icon(Icons.reply, size: 16),
+                        label: const Text('Reply'),
+                      ),
                     ),
                 ],
               ),
@@ -131,5 +140,72 @@ class _SupplierReviewsScreenState extends State<SupplierReviewsScreen> {
         },
       ),
     );
+  }
+
+  void _showReplyDialog(Review review) {
+    final TextEditingController replyController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reply to Review'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Replying to: ${review.comment}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  color: Colors.grey, fontStyle: FontStyle.italic),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: replyController,
+              decoration: const InputDecoration(
+                hintText: 'Enter your response...',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (replyController.text.trim().isNotEmpty) {
+                Navigator.pop(context);
+                await _submitReply(review.id, replyController.text.trim());
+              }
+            },
+            child: const Text('Send Reply'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitReply(String reviewId, String reply) async {
+    setState(() => _isLoading = true);
+    final result = await _reviewService.replyToReview(reviewId, reply);
+    if (mounted) {
+      if (result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Response posted successfully')),
+        );
+        _loadReviews(); // Reload to show the response
+      } else {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Failed to post response'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 }

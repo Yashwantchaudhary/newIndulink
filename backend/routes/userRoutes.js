@@ -18,7 +18,7 @@ const {
     getNotificationPreferences,
     updateLanguage,
     getLanguage,
-    getLanguage,
+
     getUserStats,
     getPublicProfile,
 } = require('../controllers/userController');

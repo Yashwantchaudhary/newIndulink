@@ -29,6 +29,7 @@ import '../screens/customer/cart/cart_screen.dart';
 import '../screens/customer/cart/checkout_screen.dart';
 import '../screens/customer/orders/orders_screen.dart';
 import '../screens/customer/orders/order_detail_screen.dart';
+import '../screens/customer/orders/order_tracking_screen.dart';
 import '../screens/customer/profile/profile_screen.dart';
 import '../screens/customer/data/customer_data_management_screen.dart';
 import '../screens/customer/messages/customer_messages_screen.dart';
@@ -191,6 +192,13 @@ class AppRouter {
         final orderId = arguments as String;
         return _buildPageRoute(
           CustomerRouteGuard(child: OrderDetailScreen(orderId: orderId)),
+          settings: settings,
+        );
+
+      case AppRoutes.orderTracking:
+        final orderId = arguments as String;
+        return _buildPageRoute(
+          CustomerRouteGuard(child: OrderTrackingScreen(orderId: orderId)),
           settings: settings,
         );
 

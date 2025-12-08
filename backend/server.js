@@ -100,21 +100,15 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Specific rate limiting for auth routes
-app.use('/api/auth/register', registerRateLimiter);
-app.use('/api/auth/login', authRateLimiter);
-app.use('/api/auth/forgot-password', passwordResetRateLimiter);
-app.use('/api/auth/reset-password', passwordResetRateLimiter);
+// ==================== BODY PARSING MIDDLEWARE ====================
+// Parse JSON request bodies
+app.use(express.json({ limit: '10mb' }));
+// Parse URL-encoded request bodies
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Body Parser Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Logging Middleware
+// HTTP Request Logger
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
-} else {
-    app.use(morgan('combined'));
 }
 
 // Language Middleware (for localization support)

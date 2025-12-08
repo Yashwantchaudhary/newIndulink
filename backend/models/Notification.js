@@ -29,7 +29,10 @@ const notificationSchema = new mongoose.Schema({
       'rfq_response',
       'promotion',
       'maintenance',
-      'test'
+      'test',
+      'rfq',
+      'quote',
+      'quote_accepted'
     ],
     default: 'system'
   },
@@ -100,13 +103,13 @@ notificationSchema.index({ createdAt: -1 });
 notificationSchema.index({ type: 1 });
 
 // Virtual for delivery rate
-notificationSchema.virtual('deliveryRate').get(function() {
+notificationSchema.virtual('deliveryRate').get(function () {
   if (this.deliveryStats.totalTokens === 0) return 0;
   return (this.deliveryStats.successCount / this.deliveryStats.totalTokens) * 100;
 });
 
 // Static method to get notification stats
-notificationSchema.statics.getStats = async function(timeframe = '30d') {
+notificationSchema.statics.getStats = async function (timeframe = '30d') {
   const startDate = this.getStartDate(timeframe);
 
   const stats = await this.aggregate([
@@ -146,7 +149,7 @@ notificationSchema.statics.getStats = async function(timeframe = '30d') {
 };
 
 // Helper method to get start date
-notificationSchema.statics.getStartDate = function(timeframe) {
+notificationSchema.statics.getStartDate = function (timeframe) {
   const now = new Date();
   const units = {
     '1h': 1 * 60 * 60 * 1000,
@@ -161,7 +164,7 @@ notificationSchema.statics.getStartDate = function(timeframe) {
 };
 
 // Pre-save middleware
-notificationSchema.pre('save', function(next) {
+notificationSchema.pre('save', function (next) {
   // Calculate total tokens if delivery stats exist
   if (this.deliveryStats && this.deliveryStats.successCount !== undefined && this.deliveryStats.failureCount !== undefined) {
     this.deliveryStats.totalTokens = this.deliveryStats.successCount + this.deliveryStats.failureCount;
@@ -170,7 +173,7 @@ notificationSchema.pre('save', function(next) {
 });
 
 // Instance method to mark as sent
-notificationSchema.methods.markAsSent = function(stats) {
+notificationSchema.methods.markAsSent = function (stats) {
   this.status = 'sent';
   this.sentAt = new Date();
   this.deliveryStats = stats;
@@ -178,7 +181,7 @@ notificationSchema.methods.markAsSent = function(stats) {
 };
 
 // Instance method to mark as failed
-notificationSchema.methods.markAsFailed = function(error) {
+notificationSchema.methods.markAsFailed = function (error) {
   this.status = 'failed';
   this.error = error;
   return this.save();

@@ -138,8 +138,11 @@ class ReviewProvider with ChangeNotifier {
       if (title != null) updateData['title'] = title;
       if (comment != null) updateData['comment'] = comment;
 
-      final response =
-          await _apiService.put('/reviews/$reviewId', body: updateData);
+      final endpoint = AppConfig.replaceParams(
+        AppConfig.updateReviewEndpoint,
+        {'id': reviewId},
+      );
+      final response = await _apiService.put(endpoint, body: updateData);
 
       if (response.isSuccess) {
         // Update local review
@@ -174,7 +177,11 @@ class ReviewProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _apiService.delete('/reviews/$reviewId');
+      final endpoint = AppConfig.replaceParams(
+        AppConfig.deleteReviewEndpoint,
+        {'id': reviewId},
+      );
+      final response = await _apiService.delete(endpoint);
 
       if (response.isSuccess) {
         // Remove from local list
@@ -197,7 +204,11 @@ class ReviewProvider with ChangeNotifier {
   /// Mark review as helpful
   Future<bool> markReviewHelpful(String reviewId) async {
     try {
-      final response = await _apiService.put('/reviews/$reviewId/helpful');
+      final endpoint = AppConfig.replaceParams(
+        AppConfig.markReviewHelpfulEndpoint,
+        {'id': reviewId},
+      );
+      final response = await _apiService.put(endpoint);
 
       if (response.isSuccess && response.data != null) {
         // Update local review helpful count

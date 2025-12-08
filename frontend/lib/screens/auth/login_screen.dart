@@ -111,7 +111,10 @@ class _LoginScreenState extends State<LoginScreen>
         break;
     }
 
-    Navigator.of(context).pushReplacementNamed(routeName);
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      routeName,
+      (route) => false,
+    );
   }
 
   @override

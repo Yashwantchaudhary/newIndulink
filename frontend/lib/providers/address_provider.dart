@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
+import '../core/constants/app_config.dart';
 
 /// 📍 Address Provider
 /// Manages user addresses for delivery and billing
@@ -31,7 +32,7 @@ class AddressProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _apiService.get('/addresses');
+      final response = await _apiService.get(AppConfig.addressesEndpoint);
 
       if (response.success) {
         final List<dynamic> items = response.data['addresses'] ?? [];
@@ -54,7 +55,7 @@ class AddressProvider with ChangeNotifier {
 
     try {
       final response = await _apiService.post(
-        '/addresses',
+        AppConfig.addAddressEndpoint,
         body: address.toJson(),
       );
 
@@ -77,8 +78,12 @@ class AddressProvider with ChangeNotifier {
     _clearError();
 
     try {
+      final endpoint = AppConfig.replaceParams(
+        AppConfig.updateAddressEndpoint,
+        {'id': address.id},
+      );
       final response = await _apiService.put(
-        '/addresses/${address.id}',
+        endpoint,
         body: address.toJson(),
       );
 
@@ -101,7 +106,11 @@ class AddressProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _apiService.delete('/addresses/$addressId');
+      final endpoint = AppConfig.replaceParams(
+        AppConfig.deleteAddressEndpoint,
+        {'id': addressId},
+      );
+      final response = await _apiService.delete(endpoint);
 
       if (response.success) {
         _addresses.removeWhere((a) => a.id == addressId);
@@ -123,9 +132,11 @@ class AddressProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _apiService.put(
-        '/addresses/$addressId/set-default',
+      final endpoint = AppConfig.replaceParams(
+        AppConfig.setDefaultAddressEndpoint,
+        {'id': addressId},
       );
+      final response = await _apiService.put(endpoint);
 
       if (response.success) {
         _defaultAddressId = addressId;

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../routes/app_routes.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/auth_provider.dart';
 
 /// 📐 Admin Layout Widget
 /// Provides consistent layout with bottom navigation for all admin screens
@@ -20,8 +22,42 @@ class AdminLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(title),
         backgroundColor: AppColors.primary,
+        actions: [
+          IconButton(
+            onPressed: () {
+              // Confirm logout
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        context.read<AuthProvider>().logout();
+                        Navigator.of(context).pushNamedAndRemoveUntil(
+                          AppRoutes.login,
+                          (route) => false,
+                        );
+                      },
+                      child: const Text('Logout'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            icon: const Icon(Icons.logout),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: child,
       bottomNavigationBar: _buildBottomNavigation(context),

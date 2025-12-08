@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
+import 'package:provider/provider.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_dimensions.dart';
@@ -8,6 +10,8 @@ import '../../../core/constants/app_config.dart';
 import '../../../routes/app_routes.dart';
 import '../../../models/dashboard.dart';
 import '../../../services/api_service.dart';
+import '../../../services/product_service.dart';
+import '../../../providers/auth_provider.dart';
 
 /// 📊 Supplier Dashboard Screen
 /// Modern dashboard with analytics, revenue stats, and quick actions
@@ -25,9 +29,11 @@ class SupplierDashboardScreen extends StatefulWidget {
 
 class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
   final ApiService _apiService = ApiService();
+  final ProductService _productService = ProductService();
   bool _isLoading = true;
   String? _error;
   SupplierDashboardData? _dashboardData;
+  Map<String, dynamic>? _activeCartData;
 
   @override
   void initState() {
@@ -44,6 +50,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
     try {
       final response =
           await _apiService.get(AppConfig.supplierDashboardEndpoint);
+      final activeCartData = await _productService.getActiveCartItems();
 
       if (response.isSuccess && response.data != null) {
         setState(() {
@@ -52,6 +59,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
               ? Map<String, dynamic>.from(dataMap['data'] as Map)
               : dataMap;
           _dashboardData = SupplierDashboardData.fromJson(actualData);
+          _activeCartData = activeCartData;
           _isLoading = false;
         });
       } else {
@@ -130,6 +138,11 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
               // Stats Cards
               SliverToBoxAdapter(
                 child: _buildStatsSection(),
+              ),
+
+              // Active Cart Section
+              SliverToBoxAdapter(
+                child: _buildActiveCartSection(),
               ),
 
               // Revenue Chart
@@ -900,5 +913,165 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
       default:
         return AppColors.statusPending;
     }
+  }
+
+  Widget _buildActiveCartSection() {
+    if (_activeCartData == null) {
+      return const SizedBox.shrink();
+    }
+
+    final totalItems = _activeCartData!['totalItems'] as int? ?? 0;
+    final totalPotentialRevenue =
+        _activeCartData!['totalPotentialRevenue'] as num? ?? 0;
+    final uniqueCarts = _activeCartData!['uniqueCartsCount'] as int? ?? 0;
+    final topProducts = _activeCartData!['topProducts'] as List<dynamic>? ?? [];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.pageHorizontalPadding,
+        vertical: 16,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.shopping_cart_checkout,
+                  color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Live Cart Monitoring',
+                style: AppTypography.h5.copyWith(
+                  fontWeight: AppTypography.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+              border: Border.all(
+                  color:
+                      Theme.of(context).colorScheme.primary.withOpacity(0.2)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildCartStatItem(
+                        'Active Carts',
+                        uniqueCarts.toString(),
+                        Icons.people,
+                        Colors.blue,
+                      ),
+                    ),
+                    Container(
+                      height: 40,
+                      width: 1,
+                      color: Theme.of(context).dividerColor,
+                    ),
+                    Expanded(
+                      child: _buildCartStatItem(
+                        'Total Items',
+                        totalItems.toString(),
+                        Icons.layers,
+                        Colors.orange,
+                      ),
+                    ),
+                    Container(
+                      height: 40,
+                      width: 1,
+                      color: Theme.of(context).dividerColor,
+                    ),
+                    Expanded(
+                      child: _buildCartStatItem(
+                        'Potential Value',
+                        '₹$totalPotentialRevenue',
+                        Icons.currency_rupee,
+                        Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+                if (topProducts.isNotEmpty) ...[
+                  const Divider(height: 32),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Most Added Products',
+                      style: AppTypography.labelLarge.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ...topProducts.take(3).map((product) {
+                    final p = product as Map<String, dynamic>;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              p['name'] ?? 'Unknown Product',
+                              style: AppTypography.bodyMedium,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            '${p['count']} in carts',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: AppTypography.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCartStatItem(
+      String label, String value, IconData icon, Color color) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 24),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: AppTypography.h6.copyWith(
+            fontWeight: AppTypography.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
   }
 }

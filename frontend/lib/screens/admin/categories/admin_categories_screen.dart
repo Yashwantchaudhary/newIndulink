@@ -28,7 +28,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
   Future<void> _loadCategories() async {
     setState(() => _isLoading = true);
     try {
-      final response = await _apiService.get(AppConfig.adminCategoriesEndpoint);
+      final response = await _apiService.get(AppConfig.categoriesEndpoint);
       if (response.isSuccess && response.data != null) {
         setState(() {
           final dataMap = response.data as Map<String, dynamic>;

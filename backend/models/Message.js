@@ -20,7 +20,6 @@ const messageSchema = new mongoose.Schema(
         },
         conversationId: {
             type: String,
-            required: true,
             index: true,
         },
         isRead: {

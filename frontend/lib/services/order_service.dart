@@ -34,10 +34,23 @@ class OrderService {
       );
 
       if (response.isSuccess && response.data != null) {
-        final order = Order.fromJson(response.data);
-        return OrderResult(success: true, order: order, message: 'Order placed successfully');
+        // Backend returns: { success: true, data: [order1, order2] }
+        final responseData = response.data;
+        Order? order;
+
+        if (responseData['data'] is List &&
+            (responseData['data'] as List).isNotEmpty) {
+          order = Order.fromJson(responseData['data'][0]);
+        } else if (responseData['data'] is Map) {
+          order = Order.fromJson(responseData['data']);
+        }
+
+        return OrderResult(
+            success: true, order: order, message: 'Order placed successfully');
       } else {
-        return OrderResult(success: false, message: response.message ?? 'Failed to create order');
+        return OrderResult(
+            success: false,
+            message: response.message ?? 'Failed to create order');
       }
     } catch (e) {
       return OrderResult(success: false, message: 'Error: ${e.toString()}');
@@ -57,15 +70,22 @@ class OrderService {
       };
       if (status != null) params['status'] = status.value;
 
-      final response = await _api.get(AppConfig.ordersEndpoint, params: params, retries: 2);
+      final response =
+          await _api.get(AppConfig.ordersEndpoint, params: params, retries: 2);
 
       if (response.isSuccess && response.data != null) {
         final data = response.data;
-        final ordersJson = data['orders'] ?? data['data'] ?? [];
-        final orders = (ordersJson as List).map((json) => Order.fromJson(json)).toList();
-        return OrderListResult(success: true, orders: orders, total: data['total'] ?? orders.length);
+        final ordersJson = data['data'] ?? data['orders'] ?? [];
+        final orders =
+            (ordersJson as List).map((json) => Order.fromJson(json)).toList();
+        return OrderListResult(
+            success: true,
+            orders: orders,
+            total: data['total'] ?? orders.length);
       } else {
-        return OrderListResult(success: false, message: response.message ?? 'Failed to fetch orders');
+        return OrderListResult(
+            success: false,
+            message: response.message ?? 'Failed to fetch orders');
       }
     } catch (e) {
       return OrderListResult(success: false, message: 'Error: ${e.toString()}');
@@ -75,14 +95,16 @@ class OrderService {
   /// Get order details by ID
   Future<OrderResult> getOrderDetails(String orderId) async {
     try {
-      final endpoint = AppConfig.replaceParams(AppConfig.orderDetailsEndpoint, {'id': orderId});
+      final endpoint = AppConfig.replaceParams(
+          AppConfig.orderDetailsEndpoint, {'id': orderId});
       final response = await _api.get(endpoint, retries: 2);
 
       if (response.isSuccess && response.data != null) {
         final order = Order.fromJson(response.data);
         return OrderResult(success: true, order: order);
       } else {
-        return OrderResult(success: false, message: response.message ?? 'Order not found');
+        return OrderResult(
+            success: false, message: response.message ?? 'Order not found');
       }
     } catch (e) {
       return OrderResult(success: false, message: 'Error: ${e.toString()}');
@@ -92,14 +114,21 @@ class OrderService {
   /// Cancel order
   Future<OrderResult> cancelOrder(String orderId) async {
     try {
-      final endpoint = AppConfig.replaceParams(AppConfig.cancelOrderEndpoint, {'id': orderId});
+      final endpoint = AppConfig.replaceParams(
+          AppConfig.cancelOrderEndpoint, {'id': orderId});
       final response = await _api.put(endpoint, retries: 2);
 
       if (response.isSuccess) {
-        final order = response.data != null ? Order.fromJson(response.data) : null;
-        return OrderResult(success: true, order: order, message: 'Order cancelled successfully');
+        final order =
+            response.data != null ? Order.fromJson(response.data) : null;
+        return OrderResult(
+            success: true,
+            order: order,
+            message: 'Order cancelled successfully');
       } else {
-        return OrderResult(success: false, message: response.message ?? 'Failed to cancel order');
+        return OrderResult(
+            success: false,
+            message: response.message ?? 'Failed to cancel order');
       }
     } catch (e) {
       return OrderResult(success: false, message: 'Error: ${e.toString()}');
@@ -109,7 +138,8 @@ class OrderService {
   /// Track order
   Future<OrderTrackingResult> trackOrder(String orderId) async {
     try {
-      final endpoint = AppConfig.replaceParams(AppConfig.trackOrderEndpoint, {'id': orderId});
+      final endpoint = AppConfig.replaceParams(
+          AppConfig.trackOrderEndpoint, {'id': orderId});
       final response = await _api.get(endpoint, retries: 2);
 
       if (response.isSuccess && response.data != null) {
@@ -118,7 +148,9 @@ class OrderService {
           success: true,
           status: OrderStatus.fromString(data['status'] ?? 'pending'),
           statusHistory: data['statusHistory'] != null
-              ? (data['statusHistory'] as List).map((e) => OrderStatusHistory.fromJson(e)).toList()
+              ? (data['statusHistory'] as List)
+                  .map((e) => OrderStatusHistory.fromJson(e))
+                  .toList()
               : [],
           trackingNumber: data['trackingNumber'],
           estimatedDelivery: data['estimatedDelivery'] != null
@@ -126,10 +158,13 @@ class OrderService {
               : null,
         );
       } else {
-        return OrderTrackingResult(success: false, message: response.message ?? 'Failed to track order');
+        return OrderTrackingResult(
+            success: false,
+            message: response.message ?? 'Failed to track order');
       }
     } catch (e) {
-      return OrderTrackingResult(success: false, message: 'Error: ${e.toString()}');
+      return OrderTrackingResult(
+          success: false, message: 'Error: ${e.toString()}');
     }
   }
 
@@ -148,15 +183,26 @@ class OrderService {
       };
       if (status != null) params['status'] = status.value;
 
-      final response = await _api.get(AppConfig.supplierOrdersEndpoint, params: params, retries: 2);
+      final response = await _api.get(AppConfig.supplierOrdersEndpoint,
+          params: params, retries: 2);
 
       if (response.isSuccess && response.data != null) {
         final data = response.data;
-        final ordersJson = data['orders'] ?? [];
-        final orders = (ordersJson as List).map((json) => Order.fromJson(json)).toList();
-        return OrderListResult(success: true, orders: orders, total: data['total'] ?? orders.length);
+        // Backend returns { success: true, data: [orders] }
+        // We need to handle both 'orders' key (legacy) and 'data' key (standard)
+        final ordersJson = data['data'] ?? data['orders'] ?? [];
+
+        final orders =
+            (ordersJson as List).map((json) => Order.fromJson(json)).toList();
+
+        return OrderListResult(
+            success: true,
+            orders: orders,
+            total: data['total'] ?? data['count'] ?? orders.length);
       } else {
-        return OrderListResult(success: false, message: response.message ?? 'Failed to fetch supplier orders');
+        return OrderListResult(
+            success: false,
+            message: response.message ?? 'Failed to fetch supplier orders');
       }
     } catch (e) {
       return OrderListResult(success: false, message: 'Error: ${e.toString()}');
@@ -170,7 +216,8 @@ class OrderService {
     String? notes,
   }) async {
     try {
-      final endpoint = AppConfig.replaceParams(AppConfig.updateOrderStatusEndpoint, {'id': orderId});
+      final endpoint = AppConfig.replaceParams(
+          AppConfig.updateOrderStatusEndpoint, {'id': orderId});
       final response = await _api.put(
         endpoint,
         body: {'status': status.value, if (notes != null) 'notes': notes},
@@ -178,10 +225,59 @@ class OrderService {
       );
 
       if (response.isSuccess) {
-        final order = response.data != null ? Order.fromJson(response.data) : null;
-        return OrderResult(success: true, order: order, message: 'Order status updated');
+        final order =
+            response.data != null ? Order.fromJson(response.data) : null;
+        return OrderResult(
+            success: true, order: order, message: 'Order status updated');
       } else {
-        return OrderResult(success: false, message: response.message ?? 'Failed to update order status');
+        return OrderResult(
+            success: false,
+            message: response.message ?? 'Failed to update order status');
+      }
+    } catch (e) {
+      return OrderResult(success: false, message: 'Error: ${e.toString()}');
+    }
+  }
+
+  /// Update order tracking (supplier/admin only)
+  Future<OrderResult> updateOrderTracking({
+    required String orderId,
+    String? trackingNumber,
+    String? carrier,
+    String? trackingUrl,
+    DateTime? estimatedDelivery,
+  }) async {
+    try {
+      final endpoint = AppConfig.replaceParams(
+          AppConfig.updateOrderTrackingEndpoint, {'id': orderId});
+      final body = <String, dynamic>{};
+
+      if (trackingNumber != null) body['trackingNumber'] = trackingNumber;
+      if (carrier != null) body['carrier'] = carrier;
+      if (trackingUrl != null) body['trackingUrl'] = trackingUrl;
+      if (estimatedDelivery != null)
+        body['estimatedDelivery'] = estimatedDelivery.toIso8601String();
+
+      if (body.isEmpty) {
+        return OrderResult(
+            success: false, message: 'No tracking information provided');
+      }
+
+      final response = await _api.put(
+        endpoint,
+        body: body,
+        retries: 2,
+      );
+
+      if (response.isSuccess) {
+        final order =
+            response.data != null ? Order.fromJson(response.data) : null;
+        return OrderResult(
+            success: true, order: order, message: 'Order tracking updated');
+      } else {
+        return OrderResult(
+            success: false,
+            message: response.message ?? 'Failed to update order tracking');
       }
     } catch (e) {
       return OrderResult(success: false, message: 'Error: ${e.toString()}');
@@ -205,7 +301,11 @@ class OrderListResult {
   final List<Order> orders;
   final int? total;
 
-  OrderListResult({required this.success, this.message, this.orders = const [], this.total});
+  OrderListResult(
+      {required this.success,
+      this.message,
+      this.orders = const [],
+      this.total});
 }
 
 /// 📋 Order Tracking Result

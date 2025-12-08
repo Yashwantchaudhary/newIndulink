@@ -8,7 +8,6 @@ import 'core/theme/app_theme.dart';
 // Services
 import 'services/storage_service.dart';
 import 'services/notification_service.dart';
-import 'services/cached_api_service.dart';
 
 // Providers
 import 'providers/auth_provider.dart';
@@ -48,14 +47,6 @@ void main() async {
     debugPrint('Notification service initialized successfully');
   } catch (e) {
     debugPrint('Notification service initialization error: $e');
-  }
-
-  // Initialize Cached API Service
-  try {
-    await CachedApiService().initialize();
-    debugPrint('Cached API service initialized successfully');
-  } catch (e) {
-    debugPrint('Cached API service initialization error: $e');
   }
 
   // Set system UI overlay style

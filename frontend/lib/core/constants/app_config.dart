@@ -21,7 +21,7 @@ class AppConfig {
 
   // Change this to your computer's IP for testing on physical devices
   static const String _hostIp =
-      '192.168.1.81'; // Your computer's IP for physical device testing
+      '192.168.18.161'; // Your computer's IP for physical device testing
   static const int _port = 5000;
 
   static String get devBaseUrl {
@@ -37,6 +37,12 @@ class AppConfig {
   static const String prodBaseUrl = 'https://your-production-api.com/api';
 
   static String get baseUrl => isProduction ? prodBaseUrl : devBaseUrl;
+
+  static String get serverUrl {
+    if (isProduction) return 'https://your-production-api.com';
+    if (kIsWeb) return 'http://localhost:$_port';
+    return 'http://$_hostIp:$_port';
+  }
 
   // ==================== API Version ====================
   static const String apiVersion = 'v1';
@@ -65,14 +71,24 @@ class AppConfig {
   static const String userAddressesEndpoint = '/users/addresses';
   static const String userWishlistEndpoint = '/users/wishlist';
   static const String userOrdersEndpoint = '/users/orders';
+  static const String addressesEndpoint = '/addresses';
+  static const String addAddressEndpoint = '/addresses';
+  static const String updateAddressEndpoint = '/addresses/:id';
+  static const String deleteAddressEndpoint = '/addresses/:id';
+  static const String setDefaultAddressEndpoint = '/addresses/:id/set-default';
 
   // ==================== Product Endpoints ====================
   static const String productsEndpoint = '/products';
   static const String productDetailsEndpoint = '/products/:id';
   static const String featuredProductsEndpoint = '/products/featured';
   static const String searchProductsEndpoint = '/products/search';
-  static const String productReviewsEndpoint = '/products/:id/reviews';
-  static const String addReviewEndpoint = '/products/:id/reviews';
+  static const String productReviewsEndpoint = '/reviews/product/:id';
+  static const String addReviewEndpoint = '/reviews';
+  static const String updateReviewEndpoint = '/reviews/:id';
+  static const String deleteReviewEndpoint = '/reviews/:id';
+  static const String markReviewHelpfulEndpoint = '/reviews/:id/helpful';
+  static const String supplierReviewsEndpoint = '/reviews/supplier/me';
+  static const String replyToReviewEndpoint = '/reviews/:id/response';
 
   // ==================== Category Endpoints ====================
   static const String categoriesEndpoint = '/categories';
@@ -103,6 +119,7 @@ class AppConfig {
   static const String updateProductEndpoint = '/supplier/products/:id';
   static const String deleteProductEndpoint = '/supplier/products/:id';
   static const String updateOrderStatusEndpoint = '/supplier/orders/:id/status';
+  static const String updateOrderTrackingEndpoint = '/orders/:id/tracking';
 
   // ==================== Admin Endpoints ====================
   static const String adminDashboardEndpoint = '/dashboard/admin';
@@ -122,9 +139,12 @@ class AppConfig {
       '/notifications/read-all';
 
   // ==================== Message/Chat Endpoints ====================
-  static const String conversationsEndpoint = '/conversations';
-  static const String messagesEndpoint = '/conversations/:id/messages';
-  static const String sendMessageEndpoint = '/conversations/:id/messages';
+  static const String conversationsEndpoint = '/messages/conversations';
+  static const String conversationMessagesEndpoint =
+      '/messages/conversation/:userId';
+  static const String sendMessageEndpoint = '/messages';
+  static const String markMessagesReadEndpoint =
+      '/messages/read/:conversationId';
 
   // ==================== RFQ (Request for Quotation) Endpoints ====================
   static const String rfqEndpoint = '/rfq';

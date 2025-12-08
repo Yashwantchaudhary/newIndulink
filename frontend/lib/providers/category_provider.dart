@@ -21,8 +21,12 @@ class CategoryProvider with ChangeNotifier {
       final response = await _apiService.get('/categories');
 
       if (response.success) {
-        final List<dynamic> items = response.data['categories'] ?? [];
-        _categories = items.map((item) => models.Category.fromJson(item)).toList();
+        // API returns { success: true, data: [...categories] }
+        final List<dynamic> items = response.data is List
+            ? response.data
+            : (response.data['data'] ?? response.data['categories'] ?? []);
+        _categories =
+            items.map((item) => models.Category.fromJson(item)).toList();
       } else {
         _setError(response.message ?? 'Failed to load categories');
       }

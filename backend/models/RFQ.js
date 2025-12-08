@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 
 const rfqItemSchema = new mongoose.Schema({
@@ -62,7 +63,7 @@ const rfqSchema = new mongoose.Schema(
         items: [rfqItemSchema],
         status: {
             type: String,
-            enum: ['pending', 'quoted', 'accepted', 'rejected', 'closed'],
+            enum: ['pending', 'quoted', 'accepted', 'rejected', 'closed', 'awarded'],
             default: 'pending',
         },
         quotes: [quoteSchema],
@@ -91,8 +92,8 @@ const rfqSchema = new mongoose.Schema(
     }
 );
 
-// Generate RFQ number before saving
-rfqSchema.pre('save', async function (next) {
+// Generate RFQ number before validation
+rfqSchema.pre('validate', async function (next) {
     if (this.isNew) {
         const count = await mongoose.model('RFQ').countDocuments();
         this.rfqNumber = `RFQ${Date.now()}${String(count + 1).padStart(4, '0')}`;

@@ -43,10 +43,10 @@ exports.createRFQ = async (req, res) => {
         const suppliers = await User.find({ role: 'supplier', isActive: true });
 
         const notifications = suppliers.map(supplier => ({
-            user: supplier._id,
+            targetUsers: [supplier._id],
             type: 'rfq',
             title: 'New RFQ Request',
-            message: `New RFQ request for ${items.length} product(s)`,
+            body: `New RFQ request for ${items.length} product(s)`,
             data: { rfqId: rfq._id }
         }));
 
@@ -219,10 +219,10 @@ exports.submitQuote = async (req, res) => {
 
         // Notify customer
         await Notification.create({
-            user: rfq.customerId,
+            targetUsers: [rfq.customerId],
             type: 'quote',
             title: 'New Quote Received',
-            message: `You received a quote for your RFQ`,
+            body: `You received a quote for your RFQ`,
             data: { rfqId: rfq._id }
         });
 
@@ -291,10 +291,11 @@ exports.acceptQuote = async (req, res) => {
 
         // Notify supplier
         await Notification.create({
-            user: quote.supplier,
+            targetUsers: [quote.supplierId], // Fixed: quote.supplier might be undefined if not populated or path differs? schema has supplierId
+            // Checking Quote Schema: supplierId is the field.
             type: 'quote_accepted',
             title: 'Quote Accepted',
-            message: 'Your quote has been accepted!',
+            body: 'Your quote has been accepted!',
             data: { rfqId: rfq._id }
         });
 

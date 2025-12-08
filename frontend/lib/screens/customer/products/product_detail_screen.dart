@@ -52,7 +52,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     context.read<CartProvider>().addToCart(product, quantity: _quantity);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${product.title} added to cart'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${product.title} added to cart'),
+            const SizedBox(height: 4),
+            Text(
+              'Saves to Cart Only. Visible to: Customer. Not Visible to: Supplier or Admin yet.',
+              style: TextStyle(fontSize: 10, color: Colors.white70),
+            ),
+          ],
+        ),
         action: SnackBarAction(
           label: 'VIEW CART',
           onPressed: () {
@@ -62,6 +73,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             );
           },
         ),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
@@ -785,15 +797,12 @@ Download INDULINK app to purchase: https://indulink.com/product/${product.id}
     );
   }
 
-  Map<int, int> _calculateRatingDistribution(List reviews) {
+  Map<int, int> _calculateRatingDistribution(List<Review> reviews) {
     final distribution = <int, int>{1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
 
     for (final review in reviews) {
-      if (review is Map && review.containsKey('rating')) {
-        final rating = review['rating'] as int;
-        if (distribution.containsKey(rating)) {
-          distribution[rating] = distribution[rating]! + 1;
-        }
+      if (distribution.containsKey(review.rating)) {
+        distribution[review.rating] = distribution[review.rating]! + 1;
       }
     }
 

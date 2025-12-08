@@ -117,6 +117,10 @@ exports.getMessages = async (req, res, next) => {
             conversationId = `${ids[0]}_${ids[1]}`;
         }
 
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const skip = (page - 1) * limit;
+
         // Get messages for this conversation
         const messages = await Message.find({ conversationId })
             .populate('sender', 'firstName lastName profileImage businessName role')

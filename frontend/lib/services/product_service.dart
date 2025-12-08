@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' hide Category;
 
 import '../core/constants/app_config.dart';
 import '../models/product.dart';
@@ -186,7 +187,7 @@ class ProductService {
 
       if (response.isSuccess && response.data != null) {
         final categoriesJson =
-            response.data['categories'] ?? response.data ?? [];
+            response.data['data'] ?? response.data['categories'] ?? [];
         final categories = (categoriesJson as List)
             .map((json) => Category.fromJson(json))
             .toList();
@@ -266,14 +267,42 @@ class ProductService {
       );
 
       if (response.isSuccess && response.data != null) {
-        final dataMap = response.data as Map<String, dynamic>;
-        final actualData = dataMap.containsKey('data')
-            ? Map<String, dynamic>.from(dataMap['data'] as Map)
-            : dataMap;
+        List<dynamic> productsJson = [];
+        int total = 0;
+        int currentPage = page;
+        int totalPages = 1;
 
-        final List<dynamic> productsJson = actualData.containsKey('products')
-            ? actualData['products']
-            : actualData['data'] ?? [];
+        final rawData = response.data;
+
+        // Handle different response structures
+        if (rawData is List) {
+          // Direct list of products
+          productsJson = rawData;
+          total = productsJson.length;
+        } else if (rawData is Map<String, dynamic>) {
+          // Wrapped in map (e.g. { data: [...], count: 10 } or { products: [...] })
+          if (rawData.containsKey('products') && rawData['products'] is List) {
+            productsJson = rawData['products'];
+          } else if (rawData.containsKey('data') && rawData['data'] is List) {
+            productsJson = rawData['data'];
+          } else if (rawData.containsKey('data') &&
+              rawData['data'] is Map<String, dynamic>) {
+            // Nested data object (e.g. { data: { products: [...] } })
+            final nestedData = rawData['data'];
+            if (nestedData.containsKey('products')) {
+              productsJson = nestedData['products'];
+            }
+            total = nestedData['total'] ?? total;
+            currentPage = nestedData['page'] ?? currentPage;
+            totalPages = nestedData['totalPages'] ?? totalPages;
+          }
+
+          // Get metadata if available at top level
+          if (total == 0)
+            total = rawData['count'] ?? rawData['total'] ?? productsJson.length;
+          if (currentPage == page) currentPage = rawData['page'] ?? page;
+          if (totalPages == 1) totalPages = rawData['totalPages'] ?? 1;
+        }
 
         final products =
             productsJson.map((json) => Product.fromJson(json)).toList();
@@ -281,9 +310,9 @@ class ProductService {
         return ProductResult(
           success: true,
           products: products,
-          total: actualData['total'] ?? products.length,
-          page: actualData['page'] ?? page,
-          totalPages: actualData['totalPages'] ?? 1,
+          total: total,
+          page: currentPage,
+          totalPages: totalPages,
         );
       } else {
         return ProductResult(
@@ -291,6 +320,7 @@ class ProductService {
             message: response.message ?? 'Failed to fetch supplier products');
       }
     } catch (e) {
+      debugPrint('Error parsing supplier products: $e'); // Add debug print
       return ProductResult(success: false, message: 'Error: ${e.toString()}');
     }
   }
@@ -309,7 +339,8 @@ class ProductService {
       );
 
       if (response.isSuccess && response.data != null) {
-        final productJson = response.data['product'] ?? response.data;
+        final productJson =
+            response.data['data'] ?? response.data['product'] ?? response.data;
         final product = Product.fromJson(productJson);
         return ProductResult(success: true, products: [product]);
       } else {
@@ -353,7 +384,8 @@ class ProductService {
             );
 
       if (response.isSuccess && response.data != null) {
-        final productJson = response.data['product'] ?? response.data;
+        final productJson =
+            response.data['data'] ?? response.data['product'] ?? response.data;
         final product = Product.fromJson(productJson);
         return ProductResult(success: true, products: [product]);
       } else {
@@ -378,6 +410,24 @@ class ProductService {
       return response.isSuccess;
     } catch (e) {
       return false;
+    }
+  }
+  // ==================== Active Cart Monitoring ====================
+
+  /// Get active cart items for supplier
+  Future<Map<String, dynamic>> getActiveCartItems() async {
+    try {
+      final response = await _api.get(
+        '/supplier/products/active-carts',
+      );
+
+      if (response.isSuccess && response.data != null) {
+        return {'success': true, 'data': response.data['data']};
+      } else {
+        return {'success': false, 'message': response.message};
+      }
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
     }
   }
 }

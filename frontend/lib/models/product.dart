@@ -1,4 +1,6 @@
 /// 📦 Product Model
+import '../core/constants/app_config.dart';
+
 /// Represents a building materials product
 class Product {
   final String id;
@@ -89,13 +91,28 @@ class Product {
 
   // JSON Serialization
   factory Product.fromJson(Map<String, dynamic> json) {
+    double parseDouble(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value) ?? 0.0;
+      return 0.0;
+    }
+
+    int parseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is double) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
     return Product(
       id: json['_id'] ?? json['id'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      price: (json['price'] ?? 0).toDouble(),
+      price: parseDouble(json['price']),
       compareAtPrice: json['compareAtPrice'] != null
-          ? (json['compareAtPrice']).toDouble()
+          ? parseDouble(json['compareAtPrice'])
           : null,
       images: json['images'] != null
           ? (json['images'] as List)
@@ -114,7 +131,7 @@ class Product {
           ? '${json['supplier']?['firstName'] ?? ''} ${json['supplier']?['lastName'] ?? ''}'
               .trim()
           : null,
-      stock: json['stock'] ?? 0,
+      stock: parseInt(json['stock']),
       sku: json['sku'],
       weight: json['weight'] != null
           ? ProductWeight.fromJson(json['weight'])
@@ -123,14 +140,14 @@ class Product {
           ? ProductDimensions.fromJson(json['dimensions'])
           : null,
       tags: json['tags'] != null ? List<String>.from(json['tags']) : [],
-      averageRating: (json['averageRating'] ?? 0).toDouble(),
-      totalReviews: json['totalReviews'] ?? 0,
+      averageRating: parseDouble(json['averageRating']),
+      totalReviews: parseInt(json['totalReviews']),
       status: ProductStatus.fromString(json['status'] ?? 'active'),
       isFeatured: json['isFeatured'] ?? false,
       metaTitle: json['metaTitle'],
       metaDescription: json['metaDescription'],
-      viewCount: json['viewCount'] ?? 0,
-      purchaseCount: json['purchaseCount'] ?? 0,
+      viewCount: parseInt(json['viewCount']),
+      purchaseCount: parseInt(json['purchaseCount']),
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
@@ -238,8 +255,20 @@ class ProductImage {
   });
 
   factory ProductImage.fromJson(Map<String, dynamic> json) {
+    String url = json['url'] ?? '';
+    if (url.startsWith('/')) {
+      url = '${AppConfig.serverUrl}$url';
+    } else if (url.contains('localhost')) {
+      // Fix for Android emulator/physical device where localhost refers to the device itself
+      // Replace http://localhost:PORT with AppConfig.serverUrl
+      if (url.contains('http://localhost:5000')) {
+        url = url.replaceFirst('http://localhost:5000', AppConfig.serverUrl);
+      } else if (url.contains('http://127.0.0.1:5000')) {
+        url = url.replaceFirst('http://127.0.0.1:5000', AppConfig.serverUrl);
+      }
+    }
     return ProductImage(
-      url: json['url'] ?? '',
+      url: url,
       alt: json['alt'],
       isPrimary: json['isPrimary'] ?? false,
     );

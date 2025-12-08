@@ -134,6 +134,8 @@ dependencies:
 
   # WebSocket for real-time updates
   socket_io_client: ^2.0.3
+  esewa_flutter_sdk: ^2.0.1
+  webview_flutter: ^4.13.0
 
   # eSewa Payment SDK - Integrated directly in the project
 

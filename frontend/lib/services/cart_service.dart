@@ -21,7 +21,7 @@ class CartService {
       final response = await _api.get(AppConfig.cartEndpoint);
 
       if (response.isSuccess && response.data != null) {
-        final cart = Cart.fromJson(response.data);
+        final cart = Cart.fromJson(response.data['data']);
 
         // Sync with local storage
         await _saveCartLocally(cart);
@@ -71,7 +71,7 @@ class CartService {
       );
 
       if (response.isSuccess && response.data != null) {
-        final cart = Cart.fromJson(response.data);
+        final cart = Cart.fromJson(response.data['data']);
         await _saveCartLocally(cart);
 
         return CartResult(
@@ -107,7 +107,7 @@ class CartService {
       );
 
       if (response.isSuccess && response.data != null) {
-        final cart = Cart.fromJson(response.data);
+        final cart = Cart.fromJson(response.data['data']);
         await _saveCartLocally(cart);
 
         return CartResult(
@@ -137,8 +137,9 @@ class CartService {
       );
 
       if (response.isSuccess) {
-        final cart =
-            response.data != null ? Cart.fromJson(response.data) : null;
+        final cart = response.data['data'] != null
+            ? Cart.fromJson(response.data['data'])
+            : null;
 
         if (cart != null) {
           await _saveCartLocally(cart);

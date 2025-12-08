@@ -148,11 +148,18 @@ class AdminDashboardData {
   });
 
   factory AdminDashboardData.fromJson(Map<String, dynamic> json) {
-    // Extract from usersByRole array
-    final usersByRoleArray = json['usersByRole'] as List<dynamic>? ?? [];
+    // Extract from usersByRole map
+    final usersByRoleMap = json['usersByRole'];
     final usersByRole = <String, int>{};
-    for (final role in usersByRoleArray) {
-      usersByRole[role['_id']] = role['count'];
+
+    if (usersByRoleMap is Map) {
+      usersByRoleMap.forEach((key, value) {
+        usersByRole[key.toString()] = value as int;
+      });
+    } else if (usersByRoleMap is List) {
+      for (final role in usersByRoleMap) {
+        usersByRole[role['_id']] = role['count'];
+      }
     }
 
     return AdminDashboardData(

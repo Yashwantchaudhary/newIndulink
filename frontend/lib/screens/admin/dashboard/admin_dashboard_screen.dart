@@ -21,6 +21,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final ApiService _apiService = ApiService();
   bool _isLoading = false;
   AdminDashboardData? _data;
+  Map<String, dynamic>? _cartAnalytics;
 
   @override
   void initState() {
@@ -35,20 +36,25 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     setState(() => _isLoading = true);
     try {
       // Add timeout to prevent infinite loading
-      final response =
-          await _apiService.get(AppConfig.adminDashboardEndpoint).timeout(
+      final responses = await Future.wait([
+        _apiService.get(AppConfig.adminDashboardEndpoint),
+        _apiService.get('/admin/carts/analytics'),
+      ]).timeout(
         const Duration(seconds: 5),
         onTimeout: () {
           throw Exception('Request timeout');
         },
       );
 
-      if (response.isSuccess && response.data != null) {
+      final dashboardResponse = responses[0];
+      final cartResponse = responses[1];
+
+      if (dashboardResponse.isSuccess && dashboardResponse.data != null) {
         setState(() {
           // Backend wraps response in {success, message, data: {...}}
           // But response.data already contains the unwrapped data
-          final Map<String, dynamic> dataMap = response.data is Map
-              ? Map<String, dynamic>.from(response.data as Map)
+          final Map<String, dynamic> dataMap = dashboardResponse.data is Map
+              ? Map<String, dynamic>.from(dashboardResponse.data as Map)
               : <String, dynamic>{};
 
           // Check if data is already unwrapped or needs unwrapping
@@ -58,11 +64,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   : dataMap;
 
           _data = AdminDashboardData.fromJson(actualData);
+
+          if (cartResponse.isSuccess && cartResponse.data != null) {
+            _cartAnalytics = cartResponse.data['data'] != null
+                ? Map<String, dynamic>.from(cartResponse.data['data'])
+                : Map<String, dynamic>.from(cartResponse.data);
+          }
+
           _isLoading = false;
         });
       } else {
         // Handle non-success response
-        _handleLoadError(response.message ?? 'Failed to load dashboard data');
+        _handleLoadError(
+            dashboardResponse.message ?? 'Failed to load dashboard data');
       }
     } catch (e) {
       _handleLoadError(e.toString());
@@ -159,6 +173,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ],
             ),
             const SizedBox(height: 24),
+
+            // Live Cart Monitor
+            _buildCartAnalyticsCard(),
+            const SizedBox(height: 16),
 
             // Revenue Card
             _buildCard(
@@ -295,6 +313,41 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           child,
         ],
       ),
+    );
+  }
+
+  Widget _buildCartAnalyticsCard() {
+    if (_cartAnalytics == null) return const SizedBox.shrink();
+
+    final totalCarts = _cartAnalytics!['totalActiveCarts']?.toString() ?? '0';
+    final totalItems = _cartAnalytics!['totalItems']?.toString() ?? '0';
+    final revenue = _cartAnalytics!['totalPotentialRevenue']?.toString() ?? '0';
+
+    return _buildCard(
+      'Live Cart Monitor',
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildCartStatColumn(
+              'Active Carts', totalCarts, Icons.shopping_cart_checkout),
+          _buildCartStatColumn('Total Items', totalItems, Icons.layers),
+          _buildCartStatColumn(
+              'Potential Rev.', '₹$revenue', Icons.currency_rupee),
+        ],
+      ),
+      _isLoading,
+    );
+  }
+
+  Widget _buildCartStatColumn(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: AppColors.primary, size: 24),
+        const SizedBox(height: 4),
+        Text(value,
+            style: AppTypography.h6.copyWith(fontWeight: FontWeight.bold)),
+        Text(label, style: AppTypography.caption),
+      ],
     );
   }
 }

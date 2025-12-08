@@ -16,6 +16,9 @@ class Order {
   final double shippingFee;
   final double total;
   final String? trackingNumber;
+  final String? carrier;
+  final String? trackingUrl;
+  final DateTime? estimatedDelivery;
   final String? notes;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -35,6 +38,9 @@ class Order {
     this.shippingFee = 0,
     required this.total,
     this.trackingNumber,
+    this.carrier,
+    this.trackingUrl,
+    this.estimatedDelivery,
     this.notes,
     required this.createdAt,
     required this.updatedAt,
@@ -67,6 +73,11 @@ class Order {
       shippingFee: (json['shippingFee'] ?? 0).toDouble(),
       total: (json['total'] ?? 0).toDouble(),
       trackingNumber: json['trackingNumber'],
+      carrier: json['carrier'],
+      trackingUrl: json['trackingUrl'],
+      estimatedDelivery: json['estimatedDelivery'] != null
+          ? DateTime.parse(json['estimatedDelivery'])
+          : null,
       notes: json['notes'],
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
@@ -96,6 +107,9 @@ class Order {
       'shippingFee': shippingFee,
       'total': total,
       'trackingNumber': trackingNumber,
+      'carrier': carrier,
+      'trackingUrl': trackingUrl,
+      'estimatedDelivery': estimatedDelivery?.toIso8601String(),
       'notes': notes,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),

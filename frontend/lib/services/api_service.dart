@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../core/constants/app_config.dart';
 import 'storage_service.dart';
@@ -48,31 +49,25 @@ class ApiService {
       final uri = _buildUri(endpoint, null);
       final headers = await _getHeaders(requiresAuth);
 
-      String? encodedBody;
-      try {
-        if (body != null) {
-          encodedBody = jsonEncode(body);
-          // Ensure it's valid JSON by parsing it back
-          jsonDecode(encodedBody);
-        } else {
-          encodedBody = null;
-        }
-      } catch (e) {
-        // JSON encoding failed, body will be null
-        encodedBody = null;
+      // Debug logging
+      debugPrint('🌐 POST $uri');
+      if (body != null) {
+        debugPrint('📤 Body: ${jsonEncode(body)}');
       }
 
       final response = await _client
           .post(
             uri,
             headers: headers,
-            body: encodedBody,
+            body: body != null ? jsonEncode(body) : null,
             encoding: Encoding.getByName('utf-8'),
           )
           .timeout(AppConfig.connectTimeout);
 
+      debugPrint('📥 Response: ${response.statusCode}');
       return _handleResponse(response);
     } catch (e) {
+      debugPrint('❌ POST Error: $e');
       return _handleError(e);
     }
   }

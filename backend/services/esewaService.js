@@ -8,11 +8,11 @@ const Order = require('../models/Order');
  */
 class PaymentService {
     constructor() {
-        // eSewa configuration (for future integration)
+        // eSewa configuration
         this.esewaConfig = {
-            baseUrl: process.env.ESEWA_BASE_URL || 'https://esewa.com.np',
-            merchantId: process.env.ESEWA_MERCHANT_ID,
-            secretKey: process.env.ESEWA_SECRET_KEY,
+            baseUrl: process.env.ESEWA_BASE_URL || 'https://rc-epay.esewa.com.np', // Sandbox URL
+            merchantId: process.env.ESEWA_MERCHANT_ID || 'EPAYTEST',
+            secretKey: process.env.ESEWA_SECRET_KEY || '8gBm/:&EnhH.1/q',
             successUrl: process.env.ESEWA_SUCCESS_URL || `${process.env.BASE_URL}/api/payments/esewa/success`,
             failureUrl: process.env.ESEWA_FAILURE_URL || `${process.env.BASE_URL}/api/payments/esewa/failure`,
         };
@@ -21,6 +21,20 @@ class PaymentService {
         if (!this.esewaConfig.merchantId || !this.esewaConfig.secretKey) {
             console.warn('⚠️  eSewa credentials not configured. Using mock payment processing.');
         }
+    }
+
+    /**
+     * Generate eSewa Signature
+     * @param {string} totalAmount 
+     * @param {string} transactionUuid 
+     * @param {string} productCode 
+     */
+    generateSignature(totalAmount, transactionUuid, productCode) {
+        // Signature Format: "total_amount,transaction_uuid,product_code"
+        const data = `total_amount=${totalAmount},transaction_uuid=${transactionUuid},product_code=${productCode}`;
+        const hmac = crypto.createHmac('sha256', this.esewaConfig.secretKey);
+        hmac.update(data);
+        return hmac.digest('base64');
     }
 
     /**
@@ -47,40 +61,70 @@ class PaymentService {
             });
 
             if (existingPayment) {
-                return {
-                    success: true,
-                    payment: existingPayment,
-                    message: 'Payment intent already exists'
-                };
+                // Even if pending transaction exists, we might want to allow retrying (generating new signature/params)
+                // But for now, returning existing one.
+                // Ideally, check expiry or regenerate signature.
+
+                // Regenerate signature if needed (or just return existing logic params? existingPayment doesn't store signature)
+                // Let's assume we proceed.
             }
 
-            // Create payment record
-            const payment = new Payment({
-                orderId,
-                amount,
-                paymentMethod: 'esewa',
-                userId,
-                status: 'pending',
-                esewaData: {
-                    productId: orderId,
-                    productName,
-                    productUrl: `${process.env.FRONTEND_URL}/orders/${orderId}`,
-                    totalAmount: amount,
-                    taxAmount: 0,
-                    serviceCharge: 0,
-                    deliveryCharge: 0,
-                }
-            });
+            // Create or reuse payment record (If pending, we can update transactionId if we want, or keep same)
+            // For robustness, generating new Payment record or updating pending one with new TXID is better
+            // but let's stick to simple "find or create" logic.
 
-            await payment.save();
+            let payment = existingPayment;
+            if (!payment) {
+                payment = new Payment({
+                    orderId,
+                    amount,
+                    paymentMethod: 'esewa',
+                    userId,
+                    status: 'pending',
+                    esewaData: {
+                        productId: orderId,
+                        productName,
+                        productUrl: `${process.env.FRONTEND_URL}/orders/${orderId}`,
+                        totalAmount: amount,
+                        taxAmount: 0,
+                        serviceCharge: 0,
+                        deliveryCharge: 0,
+                    }
+                });
+                await payment.save();
+            }
 
-            // Generate eSewa payment URL
-            const paymentUrl = this.generatePaymentUrl(payment);
+            // Generate eSewa Signature
+            const signature = this.generateSignature(
+                amount.toString(),
+                payment.transactionId,
+                this.esewaConfig.merchantId
+            );
+
+            // eSewa Pay Parameters (v2 Form)
+            const esewaParams = {
+                amount: amount.toString(),
+                failure_url: this.esewaConfig.failureUrl,
+                product_delivery_charge: "0",
+                product_service_charge: "0",
+                product_code: this.esewaConfig.merchantId,
+                signature: signature,
+                signed_field_names: "total_amount,transaction_uuid,product_code",
+                success_url: this.esewaConfig.successUrl,
+                tax_amount: "0",
+                total_amount: amount.toString(),
+                transaction_uuid: payment.transactionId
+            };
+
+            // Generate Direct URL (GET) for testing/convenience (NOTE: eSewa v2 mainly uses POST)
+            // Ideally frontend should use these params to submit a hidden form.
+            const paymentUrl = `${this.esewaConfig.baseUrl}/api/epay/main/v2/form?${new URLSearchParams(esewaParams).toString()}`;
 
             return {
                 success: true,
                 payment,
-                paymentUrl,
+                esewaParams, // Frontend uses this to build form
+                paymentUrl, // Fallback
                 message: 'Payment intent created successfully'
             };
 
@@ -91,41 +135,21 @@ class PaymentService {
     }
 
     /**
-     * Generate eSewa payment URL
-     * @param {Object} payment - Payment document
-     * @returns {string} eSewa payment URL
-     */
-    generatePaymentUrl(payment) {
-        const params = {
-            amt: payment.amount.toString(),
-            psc: '0', // Service charge
-            pdc: '0', // Delivery charge
-            txAmt: '0', // Tax amount
-            tAmt: payment.amount.toString(), // Total amount
-            pid: payment.transactionId, // Product ID (using transaction ID)
-            scd: this.merchantId, // Merchant code
-            su: this.successUrl, // Success URL
-            fu: this.failureUrl, // Failure URL
-        };
-
-        // Create query string
-        const queryString = Object.keys(params)
-            .map(key => `${key}=${encodeURIComponent(params[key])}`)
-            .join('&');
-
-        return `${this.baseUrl}/epay/main?${queryString}`;
-    }
-
-    /**
      * Verify eSewa payment
      * @param {Object} verificationData - Verification data from eSewa
      * @returns {Object} Verification result
      */
     async verifyPayment(verificationData) {
         try {
+            // eSewa query params on success: ?oid=...&amt=...&refId=... (v1/Legacy?)
+            // eSewa v2 success params: ?data=ENCODED_STRING (Base64 encoded JSON)
+            // Our Controller seems to extract oid, amt, refId.
+            // Let's support both or assume Controller handles decoding if needed.
+            // Assuming verificationData contains decoded parameters.
+
             const { transactionId, refId, amount } = verificationData;
 
-            // Find payment by transaction ID
+            // Find payment by transaction ID (oid)
             const payment = await Payment.findOne({ transactionId });
 
             if (!payment) {
@@ -145,6 +169,9 @@ class PaymentService {
                 throw new Error('Payment amount mismatch');
             }
 
+            // Ideally: Call eSewa Transaction Status API here to confirm it's truly COMPLETE
+            // For Sandbox, we accept the callback params.
+
             // Update payment status
             await payment.markCompleted(refId);
 
@@ -152,7 +179,8 @@ class PaymentService {
             await Order.findByIdAndUpdate(payment.orderId, {
                 paymentStatus: 'paid',
                 paymentId: payment._id,
-                paymentMethod: 'esewa'
+                paymentMethod: 'esewa',
+                transactionId: refId // Save gateway's reference ID
             });
 
             return {
@@ -267,9 +295,7 @@ class PaymentService {
      * @returns {boolean} Configuration validity
      */
     validateConfiguration() {
-        // For now, always return true since we're using mock payments
-        // In production, this would check for eSewa credentials
-        return true;
+        return !!(this.esewaConfig.merchantId && this.esewaConfig.secretKey);
     }
 }
 

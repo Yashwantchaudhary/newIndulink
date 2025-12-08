@@ -414,21 +414,97 @@ class _CreateRFQScreenState extends State<CreateRFQScreen> {
     );
   }
 
-  void _addItem() {
-    // TODO: Implement add item dialog/screen
-    // For now, add a dummy item
-    setState(() {
-      _rfqItems.add(RFQItem(
-        productId: 'product_${DateTime.now().millisecondsSinceEpoch}',
-        quantity: 1,
-      ));
-    });
-  }
-
   void _removeItem(int index) {
     setState(() {
       _rfqItems.removeAt(index);
     });
+  }
+
+  void _addItem() {
+    _showAddItemDialog();
+  }
+
+  void _showAddItemDialog() {
+    final nameController = TextEditingController();
+    final quantityController = TextEditingController(text: '1');
+    final specsController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Item'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Item Name',
+                  hintText: 'e.g., Cement, Steel Rods',
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Please enter item name' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: quantityController,
+                decoration: const InputDecoration(
+                  labelText: 'Quantity',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Enter quantity';
+                  if (int.tryParse(value) == null || int.parse(value) <= 0) {
+                    return 'Invalid quantity';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: specsController,
+                decoration: const InputDecoration(
+                  labelText: 'Specifications (Optional)',
+                  hintText: 'Size, grade, brand preference...',
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                setState(() {
+                  _rfqItems.add(RFQItem(
+                    productId:
+                        'custom_${DateTime.now().millisecondsSinceEpoch}',
+                    quantity: int.parse(quantityController.text),
+                    specifications: specsController.text.isNotEmpty
+                        ? specsController.text
+                        : null,
+                    productSnapshot: {
+                      'title': nameController.text,
+                      'price': 0, // Placeholder
+                    },
+                  ));
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _selectExpirationDate() async {

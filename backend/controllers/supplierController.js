@@ -2,6 +2,8 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const User = require('../models/User');
 
+const Cart = require('../models/Cart');
+
 // ==================== PRODUCT MANAGEMENT ====================
 
 // Get supplier's own products
@@ -32,7 +34,11 @@ const createProduct = async (req, res) => {
         const productData = {
             ...req.body,
             supplier: req.user._id,
-            images: req.files ? req.files.map(file => `/uploads/${file.filename}`) : []
+            images: req.files ? req.files.map((file, index) => ({
+                url: `/uploads/${file.filename}`,
+                alt: req.body.title || 'Product Image',
+                isPrimary: index === 0
+            })) : []
         };
 
         const product = await Product.create(productData);
@@ -66,9 +72,16 @@ const updateProduct = async (req, res) => {
             });
         }
 
+        const newImages = req.files ? req.files.map(file => ({
+            url: `/uploads/${file.filename}`,
+            alt: req.body.title || 'Product Image',
+            isPrimary: false
+        })) : [];
+
         const updateData = {
             ...req.body,
-            images: req.files ? req.files.map(file => `/uploads/${file.filename}`) : product.images
+            // Append new images to existing ones instead of replacing
+            images: newImages.length > 0 ? [...product.images, ...newImages] : product.images
         };
 
         const updatedProduct = await Product.findByIdAndUpdate(
@@ -114,6 +127,70 @@ const deleteProduct = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error deleting product',
+            error: error.message
+        });
+    }
+};
+
+// Get items in active carts for this supplier
+const getActiveCartItems = async (req, res) => {
+    try {
+        const supplierId = req.user._id;
+
+        // Find products owned by this supplier
+        const supplierProducts = await Product.find({ supplier: supplierId }).select('_id');
+        const supplierProductIds = supplierProducts.map(p => p._id);
+
+        // Find carts that have items from this supplier
+        const carts = await Cart.find({ 'items.product': { $in: supplierProductIds } })
+            .populate('items.product', 'title price images supplier');
+
+        let totalItems = 0;
+        let potentialRevenue = 0;
+        const productStats = {};
+
+        carts.forEach(cart => {
+            cart.items.forEach(item => {
+                if (item.product && item.product.supplier.toString() === supplierId.toString()) {
+                    totalItems += item.quantity;
+                    // Use item.price (price at time of adding to cart) or current price?
+                    // item.price is stored in cart itemSchema
+                    potentialRevenue += item.quantity * item.price;
+
+                    const pid = item.product._id.toString();
+                    if (!productStats[pid]) {
+                        productStats[pid] = {
+                            title: item.product.title,
+                            image: item.product.images[0]?.url,
+                            count: 0,
+                            revenue: 0
+                        };
+                    }
+                    productStats[pid].count += item.quantity;
+                    productStats[pid].revenue += item.quantity * item.price;
+                }
+            });
+        });
+
+        const topProducts = Object.values(productStats)
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+        res.status(200).json({
+            success: true,
+            message: 'Active cart items retrieved successfully',
+            data: {
+                totalItems,
+                potentialRevenue,
+                uniqueCarts: carts.length,
+                topProducts
+            }
+        });
+    } catch (error) {
+        console.error('Active Cart Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error retrieving active cart items',
             error: error.message
         });
     }
@@ -240,7 +317,7 @@ const getSupplierAnalytics = async (req, res) => {
 
         // 1. Basic Counts
         const totalProducts = await Product.countDocuments({ supplier: supplierId });
-        const activeProducts = await Product.countDocuments({ supplier: supplierId, isActive: true });
+        const activeProducts = await Product.countDocuments({ supplier: supplierId, status: 'active' });
 
         // Product IDs for filtering orders
         const supplierProducts = await Product.find({ supplier: supplierId }).select('_id title price images');
@@ -311,6 +388,32 @@ const getSupplierAnalytics = async (req, res) => {
             date: order.createdAt
         }));
 
+        // 7. Inventory Status
+        const inventoryStatus = await Product.find({ supplier: supplierId })
+            .select('title stock')
+            .sort({ stock: 1 })
+            .limit(10)
+            .lean()
+            .then(products => products.map(p => ({
+                name: p.title,
+                stock: p.stock
+            })));
+
+        // 8. Category Performance
+        const categoryPerformance = await Product.aggregate([
+            { $match: { supplier: supplierId } },
+            { $group: { _id: '$category', count: { $sum: 1 } } },
+            { $lookup: { from: 'categories', localField: '_id', foreignField: '_id', as: 'categoryInfo' } },
+            { $unwind: '$categoryInfo' },
+            { $project: { name: '$categoryInfo.name', products: '$count', percentage: { $multiply: [{ $divide: ['$count', totalProducts] }, 100] } } }
+        ]);
+
+        const formattedCategoryPerformance = categoryPerformance.map(c => ({
+            name: c.name,
+            products: c.products,
+            percentage: Math.round(c.percentage)
+        }));
+
         res.status(200).json({
             success: true,
             message: 'Supplier analytics retrieved successfully',
@@ -319,17 +422,17 @@ const getSupplierAnalytics = async (req, res) => {
                 totalOrders,
                 activeProducts,
                 averageOrderValue,
-                revenueChange: 0, // Placeholder for historical comparison
+                revenueChange: 0,
                 ordersChange: 0,
                 productsChange: 0,
                 aovChange: 0,
-                revenueData, // List<double>
+                revenueData,
                 topProducts,
-                salesByPeriod: [], // Can implement breakdown if needed
+                salesByPeriod: [],
                 orderStatusData,
-                productPerformance: topProducts, // Reuse top products
-                inventoryStatus: [], // Can implement stock low alerts
-                categoryPerformance: [],
+                productPerformance: topProducts,
+                inventoryStatus,
+                categoryPerformance: formattedCategoryPerformance,
                 recentSales: formattedRecentSales
             }
         });
@@ -445,6 +548,7 @@ module.exports = {
     createProduct,
     updateProduct,
     deleteProduct,
+    getActiveCartItems,
     getSupplierOrders,
     updateOrderStatus,
     getOrderDetails,

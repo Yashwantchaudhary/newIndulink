@@ -6,10 +6,9 @@ import 'dart:io';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_typography.dart';
-import '../../../core/constants/app_config.dart';
 import '../../../core/widgets/loading_widgets.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../services/api_service.dart';
+import '../../../services/image_service.dart';
 
 /// 👤 Edit Supplier Profile Screen
 class EditSupplierProfileScreen extends StatefulWidget {
@@ -175,6 +174,69 @@ class _EditSupplierProfileScreenState extends State<EditSupplierProfileScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _uploadProfileImage() async {
+    if (_profileImage == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final imageService = ImageService();
+
+      // Upload image to backend
+      final imageUrl = await imageService.uploadImageToBackend(
+        _profileImage!,
+        folder: 'profiles',
+      );
+
+      if (imageUrl != null) {
+        // Update user profile with new image URL
+        final authProvider = context.read<AuthProvider>();
+        final currentUser = authProvider.user;
+
+        if (currentUser != null) {
+          final updatedUser = currentUser.copyWith(profileImage: imageUrl);
+          final success = await authProvider.updateProfile(updatedUser);
+
+          if (success && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Profile image updated successfully'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Failed to update profile image'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to upload image'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading image: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -447,65 +509,5 @@ class _EditSupplierProfileScreenState extends State<EditSupplierProfileScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _uploadProfileImage() async {
-    if (_profileImage == null) return;
-
-    try {
-      final authProvider = context.read<AuthProvider>();
-      final apiService = ApiService();
-
-      // Show loading indicator
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Uploading profile image...'),
-            backgroundColor: AppColors.info,
-          ),
-        );
-      }
-
-      // Upload the image
-      final response = await apiService.uploadFile(
-        AppConfig.uploadProfileImageEndpoint,
-        _profileImage!,
-        fields: {
-          'userId': authProvider.user!.id,
-        },
-        fileField: 'profileImage',
-      );
-      final success = response.isSuccess;
-
-      if (success) {
-        if (mounted) {
-          await authProvider.refreshUser(); // Refresh to get new image URL
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile image updated successfully'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to upload profile image'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error uploading image: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    }
   }
 }

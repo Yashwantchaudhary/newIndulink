@@ -10,6 +10,7 @@ import 'package:newindulink/providers/cart_provider.dart';
 import 'package:newindulink/providers/order_provider.dart';
 import 'package:newindulink/screens/customer/orders/orders_screen.dart';
 import 'package:newindulink/routes/app_routes.dart';
+import 'package:newindulink/services/api_service.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -24,24 +25,134 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String _selectedPaymentMethod = 'Cash on Delivery';
   final TextEditingController _notesController = TextEditingController();
 
+  // Address state - fetched from /api/addresses
+  List<Address> _addresses = [];
+  bool _isLoadingAddresses = false;
+
   @override
   void initState() {
     super.initState();
-    // Pre-select default address if available
-    final user = context.read<AuthProvider>().user;
-    if (user != null && user.addresses != null && user.addresses!.isNotEmpty) {
-      try {
-        _selectedAddress = user.addresses!.firstWhere((a) => a.isDefault);
-      } catch (e) {
-        _selectedAddress = user.addresses!.first;
-      }
-    }
+    // Fetch addresses from API
+    _fetchAddresses();
   }
+
+  Future<void> _fetchAddresses() async {
+    setState(() => _isLoadingAddresses = true);
+    try {
+      final apiService = ApiService();
+      final response = await apiService.get('/addresses');
+
+      if (response.isSuccess && response.data != null) {
+        final addressList = response.data['data'] ?? response.data;
+        if (addressList is List) {
+          _addresses = addressList.map((a) => Address.fromJson(a)).toList();
+          // Auto-select default or first address
+          if (_addresses.isNotEmpty && _selectedAddress == null) {
+            try {
+              _selectedAddress = _addresses.firstWhere((a) => a.isDefault);
+            } catch (e) {
+              _selectedAddress = _addresses.first;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching addresses: $e');
+    }
+    if (mounted) setState(() => _isLoadingAddresses = false);
+  }
+
+  // Inline Address Form State
+  bool _showAddressForm = false;
+  final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _stateController = TextEditingController();
+  final _zipController = TextEditingController();
+  final _countryController = TextEditingController(text: 'Nepal');
+  bool _isSavingAddress = false;
 
   @override
   void dispose() {
     _notesController.dispose();
+    _fullNameController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _cityController.dispose();
+    _stateController.dispose();
+    _zipController.dispose();
+    _countryController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveAddress() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSavingAddress = true);
+
+    try {
+      final apiService = ApiService(); // Or use Provider
+      final response = await apiService.post(
+        '/addresses',
+        body: {
+          'fullName': _fullNameController.text,
+          'phoneNumber': _phoneController.text,
+          'addressLine1': _addressController.text,
+          'city': _cityController.text,
+          'state': _stateController.text,
+          'zipCode': _zipController.text,
+          'country': _countryController.text,
+          'isDefault': false,
+        },
+      );
+
+      if (response.isSuccess) {
+        if (mounted) {
+          // Refetch addresses from API
+          await _fetchAddresses();
+
+          // Select the newly added address (last in list)
+          if (_addresses.isNotEmpty) {
+            _selectedAddress = _addresses.last;
+          }
+
+          setState(() {
+            _showAddressForm = false;
+            _clearAddressForm();
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Address added and selected!')),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(response.message ?? 'Failed to add address')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSavingAddress = false);
+    }
+  }
+
+  void _clearAddressForm() {
+    _fullNameController.clear();
+    _phoneController.clear();
+    _addressController.clear();
+    _cityController.clear();
+    _stateController.clear();
+    _zipController.clear();
+    _countryController.text = 'Nepal';
   }
 
   void _handlePlaceOrder() async {
@@ -55,9 +166,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final orderProvider = context.read<OrderProvider>();
     final cartProvider = context.read<CartProvider>();
 
+    // Map display string to backend enum value
+    String backendPaymentMethod;
+    if (_selectedPaymentMethod == 'Cash on Delivery') {
+      backendPaymentMethod = 'cash_on_delivery';
+    } else if (_selectedPaymentMethod == 'Credit/Debit Card') {
+      backendPaymentMethod = 'online';
+    } else {
+      backendPaymentMethod = 'cash_on_delivery'; // Default fallback
+    }
+
     final order = await orderProvider.createOrder(
       shippingAddress: _selectedAddress!,
-      paymentMethod: _selectedPaymentMethod,
+      paymentMethod: backendPaymentMethod,
       notes: _notesController.text,
     );
 
@@ -237,70 +358,205 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildAddressStep() {
-    return Consumer<AuthProvider>(
-      builder: (context, auth, _) {
-        final addresses = auth.user?.addresses ?? [];
+    if (_showAddressForm) {
+      return _buildInlineAddressForm();
+    }
 
-        if (addresses.isEmpty) {
-          return Column(
+    // Use locally fetched addresses instead of user.addresses
+    if (_isLoadingAddresses) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Column(
+      children: [
+        if (_addresses.isEmpty)
+          Column(
             children: [
               const Icon(Icons.location_off,
                   size: 48, color: AppColors.textTertiary),
               const SizedBox(height: 16),
               const Text('No addresses found'),
               const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  final result = await Navigator.pushNamed(
-                    context,
-                    AppRoutes.addAddress,
-                  );
-                  if (result == true && context.mounted) {
-                    // Refresh user profile to get new address
-                    await Provider.of<AuthProvider>(context, listen: false)
-                        .refreshProfile();
-                  }
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Add New Address'),
+            ],
+          ),
+        ..._addresses.map((address) {
+          return RadioListTile<Address>(
+            value: address,
+            groupValue: _selectedAddress,
+            onChanged: (value) {
+              setState(() {
+                _selectedAddress = value;
+              });
+            },
+            title: Text(address.fullName ?? 'Address'),
+            subtitle: Text(
+              '${address.addressLine1}, ${address.city}${address.postalCode != null ? ", ${address.postalCode}" : ""}\n${address.phone ?? ""}',
+            ),
+            secondary: IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () async {
+                final result = await Navigator.pushNamed(
+                  context,
+                  AppRoutes.editAddress,
+                  arguments: address,
+                );
+                if (result == true && context.mounted) {
+                  await _fetchAddresses();
+                }
+              },
+            ),
+            activeColor: AppColors.primary,
+          );
+        }),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: () {
+            setState(() {
+              _showAddressForm = true;
+            });
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('Add New Address'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInlineAddressForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Add New Address',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _fullNameController,
+            decoration: const InputDecoration(
+              labelText: 'Full Name',
+              border: OutlineInputBorder(),
+            ),
+            validator: (value) =>
+                value!.isEmpty ? 'Please enter full name' : null,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _phoneController,
+            decoration: const InputDecoration(
+              labelText: 'Phone Number',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.phone,
+            validator: (value) =>
+                value!.isEmpty ? 'Please enter phone number' : null,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _addressController,
+            decoration: const InputDecoration(
+              labelText: 'Address Line 1',
+              border: OutlineInputBorder(),
+            ),
+            validator: (value) =>
+                value!.isEmpty ? 'Please enter address' : null,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _cityController,
+                  decoration: const InputDecoration(
+                    labelText: 'City',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) =>
+                      value!.isEmpty ? 'Please enter city' : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _stateController,
+                  decoration: const InputDecoration(
+                    labelText: 'State',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) =>
+                      value!.isEmpty ? 'Please enter state' : null,
+                ),
               ),
             ],
-          );
-        }
-
-        return Column(
-          children: addresses.map((address) {
-            return RadioListTile<Address>(
-              value: address,
-              groupValue: _selectedAddress,
-              onChanged: (value) {
-                setState(() {
-                  _selectedAddress = value;
-                });
-              },
-              title: Text(address.label.displayName),
-              subtitle: Text(
-                '${address.addressLine1}, ${address.city}, ${address.postalCode}\n${address.phone}',
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _zipController,
+                  decoration: const InputDecoration(
+                    labelText: 'Zip Code',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) =>
+                      value!.isEmpty ? 'Please enter zip code' : null,
+                ),
               ),
-              secondary: IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () async {
-                  final result = await Navigator.pushNamed(
-                    context,
-                    AppRoutes.editAddress,
-                    arguments: address,
-                  );
-                  if (result == true && context.mounted) {
-                    await Provider.of<AuthProvider>(context, listen: false)
-                        .refreshProfile();
-                  }
-                },
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _countryController,
+                  decoration: const InputDecoration(
+                    labelText: 'Country',
+                    border: OutlineInputBorder(),
+                  ),
+                  readOnly: true,
+                ),
               ),
-              activeColor: AppColors.primary,
-            );
-          }).toList(),
-        );
-      },
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    setState(() {
+                      _showAddressForm = false;
+                      _clearAddressForm();
+                    });
+                  },
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isSavingAddress ? null : _saveAddress,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: AppColors.primary,
+                  ),
+                  child: _isSavingAddress
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Save Address'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

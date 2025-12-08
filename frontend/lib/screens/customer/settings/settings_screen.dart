@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
 
-
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_typography.dart';
@@ -235,158 +234,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildThemeSelector(ThemeProvider themeProvider) {
-    return Column(
-      children: [
-        _buildListTile(
-          title: 'Theme',
-          subtitle: _getThemeDisplayName(themeProvider.themeMode),
-          icon: _getThemeIcon(themeProvider.themeMode),
-          iconColor: _getThemeIconColor(themeProvider.themeMode),
-          onTap: () => _showThemeDialog(context, themeProvider),
-        ),
-      ],
-    );
-  }
+    final isDarkMode = themeProvider.isDarkMode;
 
-  void _showThemeDialog(BuildContext context, ThemeProvider themeProvider) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Choose Theme'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildThemeOption(
-              context,
-              'Light',
-              Icons.light_mode,
-              Colors.orange,
-              ThemeMode.light,
-              themeProvider,
-            ),
-            const SizedBox(height: 12),
-            _buildThemeOption(
-              context,
-              'Dark',
-              Icons.dark_mode,
-              Colors.indigo,
-              ThemeMode.dark,
-              themeProvider,
-            ),
-            const SizedBox(height: 12),
-            _buildThemeOption(
-              context,
-              'System',
-              Icons.settings_suggest,
-              Colors.teal,
-              ThemeMode.system,
-              themeProvider,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildThemeOption(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Color iconColor,
-    ThemeMode mode,
-    ThemeProvider themeProvider,
-  ) {
-    final isSelected = themeProvider.themeMode == mode;
-
-    return InkWell(
-      onTap: () async {
-        themeProvider.setThemeMode(mode);
-        Navigator.pop(context);
+    return _buildSwitchTile(
+      title: 'Dark Mode',
+      subtitle: isDarkMode ? 'Dark theme enabled' : 'Light theme enabled',
+      value: isDarkMode,
+      icon: isDarkMode ? Icons.dark_mode : Icons.light_mode,
+      iconColor: isDarkMode ? Colors.indigo : Colors.orange,
+      onChanged: (value) {
+        if (value) {
+          themeProvider.setDarkMode();
+        } else {
+          themeProvider.setLightMode();
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$title theme applied'),
+            content: Text(value ? 'Dark theme enabled' : 'Light theme enabled'),
             duration: const Duration(seconds: 2),
           ),
         );
       },
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? iconColor.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? iconColor : Colors.grey.withOpacity(0.3),
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? iconColor : Colors.grey,
-              size: 24,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? iconColor : Colors.black,
-                ),
-              ),
-            ),
-            if (isSelected)
-              Icon(
-                Icons.check_circle,
-                color: iconColor,
-                size: 20,
-              ),
-          ],
-        ),
-      ),
     );
-  }
-
-  String _getThemeDisplayName(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.light:
-        return 'Light';
-      case ThemeMode.dark:
-        return 'Dark';
-      case ThemeMode.system:
-        return 'System';
-    }
-  }
-
-  IconData _getThemeIcon(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.light:
-        return Icons.light_mode;
-      case ThemeMode.dark:
-        return Icons.dark_mode;
-      case ThemeMode.system:
-        return Icons.settings_suggest;
-    }
-  }
-
-  Color _getThemeIconColor(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.light:
-        return Colors.orange;
-      case ThemeMode.dark:
-        return Colors.indigo;
-      case ThemeMode.system:
-        return Colors.teal;
-    }
   }
 
   Widget _buildListTile({
@@ -496,7 +365,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              authProvider.errorMessage ?? 'Failed to delete account',
+                              authProvider.errorMessage ??
+                                  'Failed to delete account',
                             ),
                             backgroundColor: AppColors.error,
                           ),

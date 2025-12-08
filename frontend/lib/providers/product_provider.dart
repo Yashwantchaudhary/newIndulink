@@ -188,7 +188,7 @@ class ProductProvider with ChangeNotifier {
       final result = await _productService.getCategories();
 
       if (result.success) {
-        _categories = result.categories;
+        _categories = result.categories.cast<models.Category>().toList();
       }
     } catch (e) {
       // Silently fail

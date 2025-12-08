@@ -81,7 +81,7 @@ class _SupplierProductAddEditScreenState
       if (result.success && mounted) {
         setState(() {
           _categories.clear();
-          _categories.addAll(result.categories);
+          _categories.addAll(result.categories.cast<Category>());
         });
       }
     } catch (e) {
@@ -436,8 +436,13 @@ class _SupplierProductAddEditScreenState
       return const Center(child: CircularProgressIndicator());
     }
 
+    // Ensure selected value exists in the list
+    final isValidSelection =
+        _categories.any((c) => c.id == _selectedCategoryId);
+    final dropdownValue = isValidSelection ? _selectedCategoryId : null;
+
     return DropdownButtonFormField<String>(
-      initialValue: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+      value: dropdownValue,
       decoration: const InputDecoration(
         labelText: 'Select Category *',
         hintText: 'Choose a category',

@@ -2,12 +2,14 @@ import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
+import '../services/socket_service.dart';
 
 /// 🔐 Authentication Provider
 /// Manages global authentication state using Provider
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   final StorageService _storage = StorageService();
+  final SocketService _socketService = SocketService();
 
   // State
   User? _user;
@@ -46,6 +48,9 @@ class AuthProvider with ChangeNotifier {
         if (user != null) {
           _user = user;
           _isAuthenticated = true;
+          // Connect socket
+          final token = await getToken();
+          if (token != null) _socketService.connect(token);
         } else {
           // Token might be invalid, try refresh
           final refreshed = await _authService.refreshToken();
@@ -55,6 +60,9 @@ class AuthProvider with ChangeNotifier {
             if (refreshedUser != null) {
               _user = refreshedUser;
               _isAuthenticated = true;
+              // Connect socket
+              final token = await getToken();
+              if (token != null) _socketService.connect(token);
             } else {
               await _clearAuthState();
             }
@@ -102,6 +110,10 @@ class AuthProvider with ChangeNotifier {
       if (result.success && result.user != null) {
         _user = result.user;
         _isAuthenticated = true;
+        // Connect socket
+        final token = await getToken();
+        if (token != null) _socketService.connect(token);
+
         _setLoading(false);
         notifyListeners();
         return true;
@@ -146,6 +158,10 @@ class AuthProvider with ChangeNotifier {
       if (result.success && result.user != null) {
         _user = result.user;
         _isAuthenticated = true;
+        // Connect socket
+        final token = await getToken();
+        if (token != null) _socketService.connect(token);
+
         _setLoading(false);
         notifyListeners();
         return true;
@@ -313,6 +329,7 @@ class AuthProvider with ChangeNotifier {
     _isAuthenticated = false;
     _errorMessage = null;
     await _storage.clearUserData();
+    _socketService.disconnect(); // Disconnect socket
     notifyListeners();
   }
 }

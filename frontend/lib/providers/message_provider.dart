@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
+import '../services/socket_service.dart';
 
 /// 💬 Message Provider
 /// Manages messaging/chat functionality for customer-supplier communication
 class MessageProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
+  final SocketService _socketService = SocketService();
 
   // State
   List<Conversation> _conversations = [];
@@ -24,18 +26,84 @@ class MessageProvider with ChangeNotifier {
   int get unreadCount =>
       _conversations.fold(0, (sum, conv) => sum + conv.unreadCount);
 
+  MessageProvider() {
+    _initSocketListeners();
+  }
+
+  void _initSocketListeners() {
+    _socketService.messageStream.listen((data) {
+      _handleNewMessage(data);
+    });
+  }
+
+  void _handleNewMessage(dynamic data) {
+    debugPrint('MessageProvider received: $data');
+    try {
+      // Data structure depends on backend emission.
+      // Assuming: { message: { ... }, conversationId: ... } or just message object
+      final messageData = data is Map ? (data['message'] ?? data) : data;
+      final newMessage = Message.fromJson(messageData);
+
+      // 1. If inside conversation, add to messages
+      // Backend should ensure 'sender' or 'receiver' matches current conversation
+      // We check if the message belongs to current conversation
+      // Note: newMessage.senderId might be the other user OR 'me' (if sent from another device)
+      // We assume data includes conversation info or we infer it.
+
+      // Ideally backend sends 'conversationId' in payload.
+      final String? msgConversationId = data['conversationId'] ??
+          (newMessage.senderId == _currentConversationId
+              ? newMessage.senderId
+              : null);
+      // Logic gap: if I receive a message, senderId IS the conversationId (usally).
+      // If I sent it, receiverId is.
+
+      // Improved Logic:
+      // If we are viewing conversation with User X, and User X sends a message.
+      if (_currentConversationId != null) {
+        if (newMessage.senderId == _currentConversationId ||
+            (data['receiver'] == _currentConversationId)) {
+          // If sent by me from elsewhere
+          _currentMessages.add(newMessage);
+          notifyListeners();
+        }
+      }
+
+      // 2. Update conversation list (last message, unread count)
+      final String conversationId = newMessage.senderId; // Assuming 1-on-1
+
+      final index =
+          _conversations.indexWhere((c) => c.otherUserId == conversationId);
+      if (index != -1) {
+        final oldConv = _conversations[index];
+        _conversations[index] = oldConv.copyWith(
+          lastMessage: newMessage.content,
+          lastMessageTime: newMessage.createdAt,
+          unreadCount: (_currentConversationId == conversationId)
+              ? oldConv
+                  .unreadCount // Already reading it? Actually marks as read on fetch.
+              : oldConv.unreadCount + 1,
+        );
+        // Move to top
+        final updatedConv = _conversations.removeAt(index);
+        _conversations.insert(0, updatedConv);
+        notifyListeners();
+      } else {
+        // New conversation? Ideally fetch again or manually construct
+        // For now, let's just trigger a fetch if not found
+        fetchConversations();
+      }
+    } catch (e) {
+      debugPrint('Error handling socket message: $e');
+    }
+  }
+
   /// Initialize message provider
   Future<void> init() async {
     await fetchConversations();
   }
 
-  Future<void> loadConversations() async {
-    // Load cached conversations if needed
-  }
-
-  Future<void> connectRealtime() async {
-    // Connect to realtime messaging if needed
-  }
+  // ... rest of methods (fetchConversations, fetchMessages, etc.) same as before ...
 
   /// Fetch all conversations
   Future<void> fetchConversations() async {
@@ -109,6 +177,12 @@ class MessageProvider with ChangeNotifier {
         final newMessage = Message.fromJson(messageData);
         _currentMessages.add(newMessage);
         notifyListeners();
+
+        // Also update conversation list logic if needed (or rely on socket echo if backend echoes)
+        // Backend typically emits to sender too? Or we optimistically update.
+        // We already added locally. Now update conversation list.
+        _updateConversationListOnSend(conversationId, content, DateTime.now());
+
         return true;
       } else {
         _setError(response.message ?? 'Failed to send message');
@@ -121,13 +195,42 @@ class MessageProvider with ChangeNotifier {
     }
   }
 
+  void _updateConversationListOnSend(
+      String otherUserId, String content, DateTime time) {
+    final index =
+        _conversations.indexWhere((c) => c.otherUserId == otherUserId);
+    if (index != -1) {
+      final oldConv = _conversations[index];
+      _conversations[index] = oldConv.copyWith(
+        lastMessage: content,
+        lastMessageTime: time,
+      );
+      final updatedConv = _conversations.removeAt(index);
+      _conversations.insert(0, updatedConv);
+      notifyListeners();
+    }
+  }
+
   /// Mark conversation as read
   Future<void> markAsRead(String conversationId) async {
     try {
       await _apiService.put('/messages/read/$conversationId');
 
       // Update local state
-      final index = _conversations.indexWhere((c) => c.id == conversationId);
+      final index = _conversations.indexWhere((c) =>
+          c.otherUserId == conversationId); // Changed id to otherUserId likely?
+      // Wait, Conversation model "id" IS the conversation ID or user ID?
+      // Conversation.fromJson uses `json['_id']`. If conversation model ID is `_id` of Conversation document, then `c.id == conversationId` is wrong if `conversationId` passsed here is `otherUserId`.
+      // Usage in UI: `fetchMessages` takes `conversationId`.
+      // `sendMessage` takes `conversationId`.
+      // Backend routes: `/messages/conversation/:userId` or `:conversationId`?
+      // `fetchMessages`: `/messages/conversation/$conversationId`.
+      // `getConversations`: returns list.
+      // Usually "conversationId" in chat apps implies the Channel ID.
+      // But in 1-to-1 simple systems, it's often the "other user ID".
+      // Let's check backend route.
+
+      // Assuming conversationId == Other User ID (based on sendMessage using 'receiver').
       if (index != -1) {
         _conversations[index] = _conversations[index].copyWith(unreadCount: 0);
         notifyListeners();

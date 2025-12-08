@@ -36,9 +36,26 @@ class WishlistProvider with ChangeNotifier {
       final response = await _apiService.get(AppConfig.wishlistEndpoint);
 
       if (response.success) {
-        final List<dynamic> items = response.data['items'] ?? [];
-        _wishlistItems =
-            items.map((item) => Product.fromJson(item['product'])).toList();
+        // Backend returns: { success: true, data: { products: [{ productId: {...} }] } }
+        // ApiService may unwrap 'data' already, so try both paths
+        final responseData = response.data;
+        List<dynamic> items = [];
+
+        if (responseData is Map) {
+          // Check if 'data' wrapper exists (if ApiService doesn't unwrap)
+          if (responseData.containsKey('data') && responseData['data'] is Map) {
+            items = responseData['data']['products'] ?? [];
+          } else {
+            // ApiService already unwrapped 'data'
+            items = responseData['products'] ?? [];
+          }
+        }
+
+        _wishlistItems = items
+            .where((item) => item['productId'] != null)
+            .map((item) =>
+                Product.fromJson(item['productId'] as Map<String, dynamic>))
+            .toList();
       } else {
         _setError(response.message ?? 'Failed to load wishlist');
       }
@@ -100,7 +117,8 @@ class WishlistProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiService.delete('${AppConfig.wishlistEndpoint}/$productId');
+      final response =
+          await _apiService.delete('${AppConfig.wishlistEndpoint}/$productId');
 
       if (response.success) {
         return true;

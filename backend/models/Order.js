@@ -90,7 +90,7 @@ const orderSchema = new mongoose.Schema(
         // Payment information
         paymentMethod: {
             type: String,
-            enum: ['cash_on_delivery', 'online', 'wallet'],
+            enum: ['cash_on_delivery', 'esewa', 'khalti', 'online', 'wallet'],
             default: 'cash_on_delivery',
         },
         paymentStatus: {
@@ -99,6 +99,7 @@ const orderSchema = new mongoose.Schema(
             default: 'pending',
         },
         paymentId: String,
+        transactionId: String, // External gateway transaction ID
         // Tracking
         trackingNumber: String,
         estimatedDelivery: Date,

@@ -264,24 +264,47 @@ class ImageService {
     ],
   }) async {
     try {
-      // Check file extension
-      final String extension =
-          path.extension(imageFile.path).toLowerCase().replaceAll('.', '');
-      if (!allowedExtensions.contains(extension)) {
+      // Get file path - may be a blob URL on web
+      final String filePath = imageFile.path;
+
+      // Check file extension (extract from path or blob URL)
+      String extension = '';
+
+      // Handle both file:// paths and blob URLs
+      if (filePath.contains('.')) {
+        extension = path.extension(filePath).toLowerCase().replaceAll('.', '');
+      }
+
+      // If extension is empty or unrecognizable (common on web), allow it
+      // The backend will validate the actual file content
+      if (extension.isNotEmpty && !allowedExtensions.contains(extension)) {
+        debugPrint('Image validation failed: Invalid extension "$extension"');
         return false;
       }
 
-      // Check file size
-      final int fileSize = await imageFile.length();
-      final int maxSizeInBytes = maxSizeInMB * 1024 * 1024;
-      if (fileSize > maxSizeInBytes) {
-        return false;
+      // Try to check file size - may fail on web
+      try {
+        final int fileSize = await imageFile.length();
+        final int maxSizeInBytes = maxSizeInMB * 1024 * 1024;
+        if (fileSize > maxSizeInBytes) {
+          debugPrint(
+              'Image validation failed: File too large ($fileSize bytes > $maxSizeInBytes bytes)');
+          return false;
+        }
+        debugPrint(
+            'Image validated: ${fileSize ~/ 1024}KB, extension: ${extension.isEmpty ? "unknown" : extension}');
+      } catch (e) {
+        // On Web, file.length() may not work - skip size check
+        debugPrint('Could not check file size (likely web platform): $e');
+        // Allow the upload anyway - backend will validate
       }
 
       return true;
     } catch (e) {
       debugPrint('Error validating image: $e');
-      return false;
+      // On error (likely web platform issue), allow the upload
+      // Backend will validate the file properly
+      return true;
     }
   }
 

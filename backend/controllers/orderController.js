@@ -978,3 +978,71 @@ exports.getOrderAnalytics = async (req, res, next) => {
         next(error);
     }
 };
+
+// ==================== ADMIN ORDER MANAGEMENT ====================
+
+// @desc    Get order by ID (Admin)
+// @route   GET /api/admin/orders/:id
+// @access  Private (Admin)
+exports.getOrderById = async (req, res, next) => {
+    try {
+        const order = await Order.findById(req.params.id)
+            .populate('customer', 'firstName lastName email phone')
+            .populate('items.product', 'title images price')
+            .populate('items.supplier', 'firstName lastName businessName email');
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found',
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: order,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Delete/Cancel order (Admin)
+// @route   DELETE /api/admin/orders/:id
+// @access  Private (Admin)
+exports.deleteOrder = async (req, res, next) => {
+    try {
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found',
+            });
+        }
+
+        // Only allow deletion of pending or cancelled orders
+        if (!['pending', 'cancelled'].includes(order.status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot delete order with status: ' + order.status,
+            });
+        }
+
+        // Restore product stock if order is being deleted
+        for (const item of order.items) {
+            await Product.findByIdAndUpdate(item.product, {
+                $inc: { stock: item.quantity }
+            });
+        }
+
+        await order.remove();
+
+        res.status(200).json({
+            success: true,
+            message: 'Order deleted successfully',
+        });
+    } catch (error) {
+        next(error);
+    }
+};

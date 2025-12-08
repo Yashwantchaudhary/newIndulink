@@ -1,5 +1,6 @@
 import '../models/review.dart';
 import 'api_service.dart';
+import '../core/constants/app_config.dart';
 
 /// 📝 Review Service
 /// Handles product review operations
@@ -61,7 +62,8 @@ class ReviewService {
   Future<ReviewResult> getSupplierReviews(
       {int page = 1, int limit = 20}) async {
     try {
-      final endpoint = '/reviews/supplier/me?page=$page&limit=$limit';
+      final endpoint =
+          '${AppConfig.supplierReviewsEndpoint}?page=$page&limit=$limit';
       final response = await _api.get(endpoint);
 
       if (response.isSuccess && response.data != null) {
@@ -141,6 +143,41 @@ class ReviewService {
       return response.isSuccess;
     } catch (e) {
       return false;
+    }
+  }
+
+  /// Reply to a review (Supplier only)
+  Future<ReviewResult> replyToReview(
+      String reviewId, String responseComment) async {
+    try {
+      final endpoint = AppConfig.replaceParams(
+        AppConfig.replyToReviewEndpoint,
+        {'id': reviewId},
+      );
+
+      final response = await _api.put(
+        endpoint,
+        body: {'comment': responseComment},
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final review = Review.fromJson(response.data);
+        return ReviewResult(
+          success: true,
+          reviews: [review],
+          message: 'Response added successfully',
+        );
+      } else {
+        return ReviewResult(
+          success: false,
+          message: response.message ?? 'Failed to add response',
+        );
+      }
+    } catch (e) {
+      return ReviewResult(
+        success: false,
+        message: 'Error: ${e.toString()}',
+      );
     }
   }
 }

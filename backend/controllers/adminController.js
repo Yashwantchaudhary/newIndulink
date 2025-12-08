@@ -510,6 +510,43 @@ exports.getOrderAnalytics = async (req, res, next) => {
 };
 
 /**
+ * GET /api/admin/carts/analytics
+ * Global cart analytics
+ */
+exports.getCartAnalytics = async (req, res, next) => {
+  try {
+    if (!ensureAdmin(req, res)) return;
+
+    // Need to require Cart model if not already required
+    // Checking imports again... Cart is likely not imported.
+    const Cart = require('../models/Cart');
+
+    const carts = await Cart.find().populate('items.product', 'title price');
+
+    let totalActiveCarts = carts.length;
+    let totalItems = 0;
+    let totalPotentialRevenue = 0;
+
+    carts.forEach((cart) => {
+      cart.items.forEach((item) => {
+        totalItems += item.quantity;
+        totalPotentialRevenue += item.quantity * item.price;
+      });
+    });
+
+    respond(res, {
+      data: {
+        totalActiveCarts,
+        totalItems,
+        totalPotentialRevenue,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * PUT /api/admin/orders/:id/status
  * Admin override for order status; always logs statusHistory
  */
@@ -795,6 +832,121 @@ exports.getSystemStats = async (req, res, next) => {
         platformCommission,
         usersByRole,
         recentUsers,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// -------------------- ANALYTICS --------------------
+
+/**
+ * GET /api/admin/analytics
+ */
+exports.getAdminAnalytics = async (req, res, next) => {
+  try {
+    if (!ensureAdmin(req, res)) return;
+
+    // Import additional models
+    const Review = require('../models/Review');
+    const RFQ = require('../models/RFQ');
+    const Message = require('../models/Message');
+
+    const [
+      totalUsers,
+      totalProducts,
+      totalOrders,
+      totalRevenueAgg,
+      usersByRoleAgg,
+      recentUsers,
+      totalSuppliers,
+      totalCustomers,
+      topSuppliersAgg,
+    ] = await Promise.all([
+      User.countDocuments({ isActive: true }),
+      Product.countDocuments(),
+      Order.countDocuments(),
+      Order.aggregate([
+        { $match: { status: 'delivered' } },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]),
+      User.aggregate([{ $group: { _id: '$role', count: { $sum: 1 } } }]),
+      User.find({ isActive: true }).select('firstName lastName email role createdAt profileImage').sort({ createdAt: -1 }).limit(5).lean(),
+      User.countDocuments({ role: 'supplier', isActive: true }),
+      User.countDocuments({ role: 'customer', isActive: true }),
+      Order.aggregate([
+        { $unwind: '$items' },
+        { $match: { status: 'delivered' } },
+        { $group: { _id: '$items.supplier', revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } } } },
+        { $sort: { revenue: -1 } },
+        { $limit: 5 },
+        { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'supplier' } },
+        { $unwind: '$supplier' },
+        { $project: { name: { $concat: ['$supplier.firstName', ' ', '$supplier.lastName'] }, email: '$supplier.email', revenue: 1 } }
+      ]),
+    ]);
+
+    // Calculate platform commission (10% of total revenue)
+    const totalRevenue = totalRevenueAgg[0]?.total || 0;
+    const platformCommission = totalRevenue * 0.1;
+
+    // Format usersByRole from Array to Map
+    const usersByRole = {};
+    usersByRoleAgg.forEach(item => {
+      usersByRole[item._id] = item.count;
+    });
+
+    // Get Revenue Trend (Last 6 Months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const revenueTrend = await Order.aggregate([
+      {
+        $match: {
+          status: 'delivered',
+          createdAt: { $gte: sixMonthsAgo }
+        }
+      },
+      {
+        $group: {
+          _id: { $month: '$createdAt' },
+          total: { $sum: '$total' }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    const revenueData = revenueTrend.map(r => r.total);
+
+    // Mock System Health (since we don't have real monitoring yet)
+    const systemHealth = [
+      { name: 'Database', status: 'Operational', latency: '24ms' },
+      { name: 'API Server', status: 'Operational', uptime: '99.9%' },
+      { name: 'Storage', status: 'Usage: 45%', available: '500GB' }
+    ];
+
+    const formattedRecentUsers = recentUsers.map(user => ({
+      name: `${user.firstName} ${user.lastName}`,
+      email: user.email,
+      role: user.role,
+      image: user.profileImage
+    }));
+
+    respond(res, {
+      data: {
+        totalUsers,
+        totalSuppliers,
+        totalCustomers,
+        totalProducts,
+        totalOrders,
+        totalRevenue,
+        platformCommission,
+        revenueData,
+        recentUsers: formattedRecentUsers,
+        topSuppliers: topSuppliersAgg,
+        usersByRole,
+        systemHealth
       },
     });
   } catch (error) {

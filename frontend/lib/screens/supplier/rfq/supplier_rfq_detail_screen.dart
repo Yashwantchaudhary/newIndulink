@@ -88,12 +88,29 @@ class _SupplierRFQDetailScreenState extends State<SupplierRFQDetailScreen> {
 
     try {
       final endpoint = '${AppConfig.rfqEndpoint}/${widget.rfqId}/quote';
-      // Based on typical backend expectation:
+
+      // Get RFQ items to build quote items
+      final rfqItems = _rfq?['items'] as List? ?? [];
+      final totalAmount = double.tryParse(_quoteController.text) ?? 0;
+
+      // Build items array with pricing (simplistic - quotes each item equally)
+      final quotedItems = rfqItems.map((item) {
+        final itemCount = rfqItems.length;
+        final unitPrice = itemCount > 0 ? totalAmount / itemCount : totalAmount;
+        return {
+          'productId': item['productId']?['_id'] ?? item['productId'],
+          'quantity': item['quantity'] ?? 1,
+          'unitPrice': unitPrice,
+          'subtotal': unitPrice * (item['quantity'] ?? 1),
+        };
+      }).toList();
+
       final data = {
-        'price': double.tryParse(_quoteController.text) ?? 0,
+        'items': quotedItems,
+        'totalAmount': totalAmount,
+        'validUntil':
+            DateTime.now().add(const Duration(days: 7)).toIso8601String(),
         'notes': _notesController.text,
-        'validUntil': _validityController
-            .text, // Optional handled by backend? or standard
       };
 
       final response = await _apiService.post(endpoint, body: data);
@@ -232,20 +249,98 @@ class _SupplierRFQDetailScreenState extends State<SupplierRFQDetailScreen> {
             final item = items[index];
             final productSnapshot =
                 item['productSnapshot'] as Map<String, dynamic>?;
+            final isCustom = productSnapshot == null || productSnapshot.isEmpty;
+            final itemName =
+                productSnapshot?['name'] ?? item['name'] ?? 'Custom Request';
+            final specifications = item['specifications'] as String?;
 
             return Card(
-              child: ListTile(
-                leading: Container(
-                  width: 50,
-                  height: 50,
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.inventory_2),
+              margin: const EdgeInsets.only(bottom: 12),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                            image: productSnapshot?['image'] != null
+                                ? DecorationImage(
+                                    image:
+                                        NetworkImage(productSnapshot!['image']),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: productSnapshot?['image'] == null
+                              ? Icon(
+                                  isCustom
+                                      ? Icons.design_services
+                                      : Icons.inventory_2,
+                                  color: Colors.grey[400],
+                                )
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                itemName,
+                                style: AppTypography.bodyLarge
+                                    .copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              if (isCustom)
+                                Container(
+                                  margin: const EdgeInsets.only(top: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.secondary.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Custom Request',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppColors.secondary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Quantity: ${item['quantity']}',
+                                style: AppTypography.bodyMedium,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (specifications != null &&
+                        specifications.isNotEmpty) ...[
+                      const Divider(height: 24),
+                      Text(
+                        'Specifications:',
+                        style: AppTypography.bodySmall
+                            .copyWith(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        specifications,
+                        style: AppTypography.bodyMedium,
+                      ),
+                    ],
+                  ],
                 ),
-                title: Text(productSnapshot?['name'] ?? 'Product'),
-                subtitle: Text('Qty: ${item['quantity']}'),
-                trailing: item['specifications'] != null
-                    ? const Icon(Icons.info_outline)
-                    : null,
               ),
             );
           },

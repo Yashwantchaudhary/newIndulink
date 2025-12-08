@@ -1,6 +1,11 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
+const Category = require('../models/Category');
+const Review = require('../models/Review');
+const RFQ = require('../models/RFQ');
+const Message = require('../models/Message');
+const Notification = require('../models/Notification');
 
 // @desc    Get supplier dashboard analytics
 // @route   GET /api/dashboard/supplier
@@ -335,22 +340,89 @@ exports.getAdminDashboard = async (req, res, next) => {
         };
 
         // Format data to match frontend AdminDashboardData expectations
+        // Platform revenue over time (daily for last 30 days)
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 30);
+
+        const revenueOverTime = await Order.aggregate([
+            {
+                $match: {
+                    status: { $in: ['delivered', 'shipped', 'processing'] },
+                    createdAt: { $gte: startDate, $lte: endDate },
+                },
+            },
+            {
+                $group: {
+                    _id: {
+                        $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+                    },
+                    revenue: { $sum: '$total' },
+                    orders: { $sum: 1 },
+                },
+            },
+            { $sort: { _id: 1 } },
+        ]);
+
+        // Extract revenue data and calculate commission (10%)
+        const revenueDataPoints = revenueOverTime.map(item => item.revenue * 0.1);
+
+        // Top Suppliers (by revenue)
+        const topSuppliersData = await Order.aggregate([
+            {
+                $match: {
+                    status: { $in: ['delivered', 'shipped', 'processing'] }
+                }
+            },
+            {
+                $group: {
+                    _id: '$supplier',
+                    totalRevenue: { $sum: '$total' },
+                    totalOrders: { $sum: 1 }
+                }
+            },
+            { $sort: { totalRevenue: -1 } },
+            { $limit: 5 },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'supplierInfo'
+                }
+            },
+            { $unwind: '$supplierInfo' }
+        ]);
+
+        const formattedTopSuppliers = topSuppliersData.map(s => ({
+            name: s.supplierInfo.businessName || `${s.supplierInfo.firstName} ${s.supplierInfo.lastName}`,
+            email: s.supplierInfo.email,
+            revenue: s.totalRevenue,
+            orders: s.totalOrders
+        }));
+
         res.status(200).json({
             success: true,
             totalUsers: totalActiveUsers,
             totalSuppliers,
             totalCustomers,
+
             totalProducts: await Product.countDocuments(),
+            totalCategories: await Category.countDocuments(),
+            totalReviews: await Review.countDocuments(),
+            totalRFQs: await RFQ.countDocuments(),
+            totalMessages: await Message.countDocuments(),
+            totalNotifications: await Notification.countDocuments(),
             totalOrders: platformAnalytics[0]?.totalOrders || 0,
             totalRevenue: platformAnalytics[0]?.totalPlatformRevenue || 0,
             platformCommission: platformRevenue,
-            revenueData: [], // TODO: Add revenue chart data
+            revenueData: revenueDataPoints,
             recentUsers: recentUsers.map(user => ({
                 name: `${user.firstName} ${user.lastName}`,
                 email: user.email,
                 role: user.role,
             })),
-            topSuppliers: [], // TODO: Add top suppliers
+            topSuppliers: formattedTopSuppliers,
             usersByRole: {
                 'customer': totalCustomers,
                 'supplier': totalSuppliers,

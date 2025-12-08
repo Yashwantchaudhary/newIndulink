@@ -159,12 +159,7 @@ const productSchema = new mongoose.Schema(
             },
         },
         // Barcode and identification
-        barcodes: [{
-            type: String,
-            trim: true,
-            unique: true,
-            sparse: true,
-        }],
+        barcodes: [String],
         // Product dimensions and weight for inventory planning
         packaging: {
             weight: {

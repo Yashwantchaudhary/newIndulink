@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/product_card_widget.dart';
 import '../../../providers/cart_provider.dart';
+import '../../../providers/wishlist_provider.dart';
 import '../../../providers/product_provider.dart';
 import '../../../models/product.dart';
 import '../cart/cart_screen.dart';
@@ -93,8 +94,13 @@ class _CustomerHomeScreenRedesignedState
 
     // Fetch data
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProductProvider>().fetchProducts();
+      final productProvider = context.read<ProductProvider>();
+      productProvider.fetchProducts();
+      productProvider.fetchFeaturedProducts();
       context.read<CartProvider>().fetchCart();
+      context
+          .read<WishlistProvider>()
+          .fetchWishlist(); // Fetch wishlist for logged-in user
     });
   }
 
@@ -140,57 +146,70 @@ class _CustomerHomeScreenRedesignedState
     }
   }
 
+  Future<void> _onRefresh() async {
+    final productProvider = context.read<ProductProvider>();
+    final cartProvider = context.read<CartProvider>();
+
+    await Future.wait([
+      productProvider.fetchProducts(),
+      productProvider.fetchFeaturedProducts(),
+      cartProvider.fetchCart(),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            // Premium App Bar
-            _buildPremiumAppBar(),
+        child: RefreshIndicator(
+          onRefresh: _onRefresh,
+          color: AppColors.primary,
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // Premium App Bar
+              _buildPremiumAppBar(),
 
-            // Search Bar with Animation
-            SliverToBoxAdapter(
-              child: _buildAnimatedSearchBar(),
-            ),
+              // Search Bar removed (moved to AppBar)
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
-            // Animated Banner Carousel
-            SliverToBoxAdapter(
-              child: _buildPremiumBannerSection(),
-            ),
+              // Animated Banner Carousel
+              SliverToBoxAdapter(
+                child: _buildPremiumBannerSection(),
+              ),
 
-            // Quick Action Chips
-            SliverToBoxAdapter(
-              child: _buildQuickActionChips(),
-            ),
+              // Quick Action Chips
+              SliverToBoxAdapter(
+                child: _buildQuickActionChips(),
+              ),
 
-            // Categories with Animation
-            SliverToBoxAdapter(
-              child: _buildPremiumCategoriesSection(),
-            ),
+              // Categories with Animation
+              SliverToBoxAdapter(
+                child: _buildPremiumCategoriesSection(),
+              ),
 
-            // Flash Deals with Timer
-            SliverToBoxAdapter(
-              child: _buildFlashDealsSection(),
-            ),
+              // Flash Deals with Timer
+              SliverToBoxAdapter(
+                child: _buildFlashDealsSection(),
+              ),
 
-            // Featured Products
-            SliverToBoxAdapter(
-              child: _buildFeaturedProductsSection(),
-            ),
+              // Featured Products
+              SliverToBoxAdapter(
+                child: _buildFeaturedProductsSection(),
+              ),
 
-            // Best Sellers Grid
-            SliverToBoxAdapter(
-              child: _buildBestSellersSection(),
-            ),
+              // Best Sellers Grid
+              SliverToBoxAdapter(
+                child: _buildBestSellersSection(),
+              ),
 
-            // Bottom Spacing
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 100),
-            ),
-          ],
+              // Bottom Spacing
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 100),
+              ),
+            ],
+          ),
         ),
       ),
 
@@ -204,97 +223,93 @@ class _CustomerHomeScreenRedesignedState
   }
 
   // ==================== Premium App Bar ====================
+  // ==================== Premium App Bar (Amazon Style) ====================
   Widget _buildPremiumAppBar() {
     return SliverAppBar(
-      expandedHeight: 120,
+      automaticallyImplyLeading: false,
       floating: true,
       pinned: true,
+      snap: true,
       elevation: 0,
       backgroundColor: Colors.transparent,
+      titleSpacing: 0,
+      toolbarHeight: 70, // Taller toolbar for search bar
       flexibleSpace: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.primaryContainer,
+              const Color(0xFF232F3E), // Amazon/Dark Blue-ish theme
+              AppColors.primary,
             ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
           ),
         ),
-        child: SafeArea(
-          child: FlexibleSpaceBar(
-            titlePadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
+      ),
+      title: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+        child: Row(
+          children: [
+            // Logo (Construction Icon)
+            Container(
+              margin: const EdgeInsets.only(right: 12),
+              child: Icon(
+                Icons.construction,
+                color: Colors.white,
+                size: 28,
+              ),
             ),
-            title: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    // Animated Logo
-                    AnimatedBuilder(
-                      animation: _heroAnimationController,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: 1.0 + (_heroAnimationController.value * 0.05),
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimary
-                                  .withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.construction,
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              size: 24,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'INDULINK',
-                            style: AppTypography.h5.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          Text(
-                            'Building Materials Marketplace',
-                            style: AppTypography.caption.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimary
-                                  .withOpacity(0.9),
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
+
+            // Search Bar (Expanded)
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const SearchScreen()),
+                  );
+                },
+                child: Container(
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
-                    // Notifications
-                    _buildNotificationButton(),
-                    const SizedBox(width: 8),
-                    // Cart
-                    _buildCartButton(),
-                  ],
+                    ],
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search, color: Colors.black54),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Search Products...',
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.camera_alt_outlined,
+                          color: Colors.black54),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
-          ),
+
+            const SizedBox(width: 8),
+            _buildNotificationButton(),
+            const SizedBox(width: 8),
+            _buildCartButton(),
+          ],
         ),
       ),
     );
@@ -409,89 +424,6 @@ class _CustomerHomeScreenRedesignedState
           ),
         );
       },
-    );
-  }
-
-  // ==================== Animated Search Bar ====================
-  Widget _buildAnimatedSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Hero(
-        tag: 'search_bar',
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SearchScreen()),
-              );
-            },
-            borderRadius: BorderRadius.circular(30),
-            child: Container(
-              height: 56,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 20),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.search,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      'Search building materials...',
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.filter_list,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -1291,10 +1223,14 @@ class _CustomerHomeScreenRedesignedState
   Widget _buildFeaturedProductsSection() {
     return Consumer<ProductProvider>(
       builder: (context, provider, child) {
-        if (provider.products.isEmpty) return const SizedBox.shrink();
+        // Use dedicated featured list, or fallback to filtering main list
+        final featured = provider.featuredProducts.isNotEmpty
+            ? provider.featuredProducts
+            : provider.products.where((p) => p.isFeatured).take(10).toList();
 
-        final featured =
-            provider.products.where((p) => p.isFeatured).take(10).toList();
+        // Only hide if we truly have no products to show and not loading
+        if (featured.isEmpty && !provider.isLoading)
+          return const SizedBox.shrink();
 
         if (featured.isEmpty) return const SizedBox.shrink();
 
@@ -1351,7 +1287,8 @@ class _CustomerHomeScreenRedesignedState
                 ),
               ),
               SizedBox(
-                height: 330,
+                height:
+                    360, // Increased to 360 to accommodate 200px width cards (approx 321px needed)
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
@@ -1443,7 +1380,8 @@ class _CustomerHomeScreenRedesignedState
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.65,
+                    childAspectRatio:
+                        0.55, // Reduced to 0.55 (Height ~290px) to safely fit content (Req ~280px)
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
@@ -1451,7 +1389,7 @@ class _CustomerHomeScreenRedesignedState
                   itemBuilder: (context, index) {
                     return ProductCard(
                       product: bestSellers[index],
-                      width: double.infinity,
+                      // Removed width parameter to show grid view with Add to Cart
                     );
                   },
                 ),

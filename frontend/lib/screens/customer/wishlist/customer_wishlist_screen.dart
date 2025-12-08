@@ -46,16 +46,14 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
       final response = await _apiService.get(AppConfig.wishlistEndpoint);
 
       if (response.isSuccess && response.data != null) {
-        final List<dynamic> productsJson = response.data is List
-            ? response.data
-            : response.data['products'] ?? response.data['wishlist'] ?? [];
+        // API returns {success: true, data: {products: [{productId: {...}}]}}
+        final List<dynamic> items = response.data['products'] ?? [];
 
         setState(() {
-          _wishlistProducts = productsJson
-              .map((json) => Product.fromJson(Map<String, dynamic>.from(
-                  json is Map
-                      ? json
-                      : {'_id': json}))) // Handle different response formats
+          _wishlistProducts = items
+              .where((item) => item['productId'] != null) // Safety check
+              .map((item) =>
+                  Product.fromJson(item['productId'] as Map<String, dynamic>))
               .toList();
           _isLoading = false;
         });
@@ -316,7 +314,7 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
       padding: const EdgeInsets.all(AppDimensions.pageHorizontalPadding),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.60,
+        childAspectRatio: 0.55, // Reduced for ProductCard + overlay buttons
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),

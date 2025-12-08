@@ -42,7 +42,9 @@ exports.getProductReviews = async (req, res, next) => {
 // @access  Private (Customer)
 exports.createReview = async (req, res, next) => {
     try {
-        const { product, order, rating, title, comment } = req.body;
+        // Accept both 'product' and 'productId' from frontend
+        const { product: productField, productId, order, rating, title, comment } = req.body;
+        const product = productField || productId;
 
         // Check if product exists
         const productDoc = await Product.findById(product);
@@ -376,6 +378,151 @@ exports.getSupplierReviews = async (req, res, next) => {
             page,
             pages: Math.ceil(total / limit),
             data: reviews,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ==================== ADMIN REVIEW MANAGEMENT ====================
+
+// @desc    Get all reviews (Admin)
+// @route   GET /api/admin/reviews
+// @access  Private (Admin)
+exports.getAllReviews = async (req, res, next) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+        const { status, rating, productId } = req.query;
+
+        const filter = {};
+        if (status) filter.status = status;
+        if (rating) filter.rating = parseInt(rating);
+        if (productId) filter.product = productId;
+
+        const reviews = await Review.find(filter)
+            .populate('customer', 'firstName lastName email profileImage')
+            .populate('product', 'title images')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const total = await Review.countDocuments(filter);
+
+        res.status(200).json({
+            success: true,
+            count: reviews.length,
+            total,
+            page,
+            pages: Math.ceil(total / limit),
+            data: reviews,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get review by ID (Admin)
+// @route   GET /api/admin/reviews/:id
+// @access  Private (Admin)
+exports.getReviewById = async (req, res, next) => {
+    try {
+        const review = await Review.findById(req.params.id)
+            .populate('customer', 'firstName lastName email profileImage')
+            .populate('product', 'title images price');
+
+        if (!review) {
+            return res.status(404).json({
+                success: false,
+                message: 'Review not found',
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: review,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Approve review (Admin)
+// @route   PUT /api/admin/reviews/:id/approve
+// @access  Private (Admin)
+exports.approveReview = async (req, res, next) => {
+    try {
+        const review = await Review.findByIdAndUpdate(
+            req.params.id,
+            { status: 'approved' },
+            { new: true, runValidators: true }
+        );
+
+        if (!review) {
+            return res.status(404).json({
+                success: false,
+                message: 'Review not found',
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Review approved successfully',
+            data: review,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Reject review (Admin)
+// @route   PUT /api/admin/reviews/:id/reject
+// @access  Private (Admin)
+exports.rejectReview = async (req, res, next) => {
+    try {
+        const review = await Review.findByIdAndUpdate(
+            req.params.id,
+            { status: 'rejected' },
+            { new: true, runValidators: true }
+        );
+
+        if (!review) {
+            return res.status(404).json({
+                success: false,
+                message: 'Review not found',
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Review rejected successfully',
+            data: review,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Delete review (Admin)
+// @route   DELETE /api/admin/reviews/:id
+// @access  Private (Admin)
+exports.deleteReview = async (req, res, next) => {
+    try {
+        const review = await Review.findById(req.params.id);
+
+        if (!review) {
+            return res.status(404).json({
+                success: false,
+                message: 'Review not found',
+            });
+        }
+
+        await review.remove();
+
+        res.status(200).json({
+            success: true,
+            message: 'Review deleted successfully',
         });
     } catch (error) {
         next(error);

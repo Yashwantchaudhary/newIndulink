@@ -319,7 +319,7 @@ class _SupplierProductsListScreenState
         padding: const EdgeInsets.all(AppDimensions.pageHorizontalPadding),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.65,
+          childAspectRatio: 0.55, // Calc: Width 160 / Height 290 = 0.55
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
