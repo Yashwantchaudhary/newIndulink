@@ -4,15 +4,13 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_dimensions.dart';
-import '../../../core/constants/app_config.dart';
 import '../../../core/widgets/product_card_widget.dart';
 import '../../../models/product.dart';
-import '../../../services/api_service.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/wishlist_provider.dart';
 
 /// ❤️ Customer Wishlist Screen
-/// Manage saved products with grid view and quick add to cart
+/// Manage saved products with data from WishlistProvider
 class CustomerWishlistScreen extends StatefulWidget {
   const CustomerWishlistScreen({super.key});
 
@@ -25,63 +23,21 @@ class CustomerWishlistScreen extends StatefulWidget {
 }
 
 class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
-  final ApiService _apiService = ApiService();
-  bool _isLoading = true;
-  String? _error;
-  List<Product> _wishlistProducts = [];
-
   @override
   void initState() {
     super.initState();
-    _loadWishlist();
-  }
-
-  Future<void> _loadWishlist() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
+    // Fetch wishlist on init to ensure data is fresh
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WishlistProvider>().fetchWishlist();
     });
-
-    try {
-      final response = await _apiService.get(AppConfig.wishlistEndpoint);
-
-      if (response.isSuccess && response.data != null) {
-        // API returns {success: true, data: {products: [{productId: {...}}]}}
-        final List<dynamic> items = response.data['products'] ?? [];
-
-        setState(() {
-          _wishlistProducts = items
-              .where((item) => item['productId'] != null) // Safety check
-              .map((item) =>
-                  Product.fromJson(item['productId'] as Map<String, dynamic>))
-              .toList();
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _error = response.message ?? 'Failed to load wishlist';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _error = 'Error loading wishlist: ${e.toString()}';
-        _isLoading = false;
-      });
-    }
   }
 
   Future<void> _removeFromWishlist(String productId) async {
-    try {
-      final response =
-          await _apiService.delete('${AppConfig.wishlistEndpoint}/$productId');
+    final success =
+        await context.read<WishlistProvider>().removeFromWishlist(productId);
 
-      if (response.isSuccess) {
-        setState(() {
-          _wishlistProducts.removeWhere((p) => p.id == productId);
-        });
-
-        if (!mounted) return;
+    if (mounted) {
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Removed from wishlist'),
@@ -89,28 +45,20 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
           ),
         );
       } else {
-        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response.message ?? 'Failed to remove item'),
+            content: Text(context.read<WishlistProvider>().errorMessage ??
+                'Failed to remove item'),
             backgroundColor: AppColors.error,
           ),
         );
       }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
     }
   }
 
   Future<void> _addToCart(Product product) async {
     try {
-      final success = await context.read<CartProvider>().addToCart(
+      await context.read<CartProvider>().addToCart(
             product,
             quantity: 1,
           );
@@ -140,79 +88,99 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
     }
   }
 
-  Future<void> _clearAllWishlist() async {
-    try {
-      final success = await context.read<WishlistProvider>().clearWishlist();
+  Future<void> _showClearConfirmation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear Wishlist'),
+        content: const Text(
+            'Are you sure you want to remove all items from your wishlist?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Clear All'),
+          ),
+        ],
+      ),
+    );
 
-      if (success && mounted) {
-        setState(() {
-          _wishlistProducts.clear();
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Wishlist cleared successfully'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.read<WishlistProvider>().errorMessage ??
-                'Failed to clear wishlist'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    } catch (e) {
+    if (confirmed == true && mounted) {
+      final success = await context.read<WishlistProvider>().clearWishlist();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error clearing wishlist: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Wishlist cleared successfully'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.read<WishlistProvider>().errorMessage ??
+                  'Failed to clear wishlist'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Wishlist'),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: AppColors.primaryGradient,
-          ),
-        ),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          if (_wishlistProducts.isNotEmpty)
-            TextButton(
-              onPressed: _showClearConfirmation,
-              child: const Text(
-                'Clear All',
-                style: TextStyle(color: Colors.white),
+    return Consumer<WishlistProvider>(
+      builder: (context, wishlistProvider, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('My Wishlist'),
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: AppColors.primaryGradient,
               ),
             ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadWishlist,
-        child: _buildBody(),
-      ),
+            foregroundColor: Colors.white,
+            elevation: 0,
+            actions: [
+              if (wishlistProvider.isNotEmpty)
+                TextButton(
+                  onPressed: _showClearConfirmation,
+                  child: const Text(
+                    'Clear All',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+            ],
+          ),
+          body: RefreshIndicator(
+            onRefresh: () => wishlistProvider.fetchWishlist(),
+            child: _buildBody(wishlistProvider),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
+  Widget _buildBody(WishlistProvider provider) {
+    if (provider.isLoading && provider.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(),
       );
     }
 
-    if (_error != null) {
+    if (provider.errorMessage != null && provider.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -228,7 +196,7 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              _error!,
+              provider.errorMessage!,
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -236,7 +204,7 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: _loadWishlist,
+              onPressed: () => provider.fetchWishlist(),
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
@@ -252,7 +220,7 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
       );
     }
 
-    if (_wishlistProducts.isEmpty) {
+    if (provider.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -318,9 +286,9 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
-      itemCount: _wishlistProducts.length,
+      itemCount: provider.wishlistItems.length,
       itemBuilder: (context, index) {
-        return _buildWishlistItem(_wishlistProducts[index]);
+        return _buildWishlistItem(provider.wishlistItems[index]);
       },
     );
   }
@@ -389,38 +357,5 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
         ),
       ],
     );
-  }
-
-  Future<void> _showClearConfirmation() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear Wishlist'),
-        content: const Text(
-            'Are you sure you want to remove all items from your wishlist?'),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Clear All'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await _clearAllWishlist();
-    }
   }
 }
