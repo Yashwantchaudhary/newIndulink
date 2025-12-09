@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../services/socket_service.dart';
+import '../services/image_service.dart';
+import '../core/constants/app_config.dart';
 
 /// 🔐 Authentication Provider
 /// Manages global authentication state using Provider
@@ -50,7 +53,8 @@ class AuthProvider with ChangeNotifier {
           _isAuthenticated = true;
           // Connect socket
           final token = await getToken();
-          if (token != null) _socketService.connect(token);
+          if (token != null)
+            _socketService.connect(token, _user!.id, _user!.role.value);
         } else {
           // Token might be invalid, try refresh
           final refreshed = await _authService.refreshToken();
@@ -62,7 +66,8 @@ class AuthProvider with ChangeNotifier {
               _isAuthenticated = true;
               // Connect socket
               final token = await getToken();
-              if (token != null) _socketService.connect(token);
+              if (token != null)
+                _socketService.connect(token, _user!.id, _user!.role.value);
             } else {
               await _clearAuthState();
             }
@@ -112,7 +117,8 @@ class AuthProvider with ChangeNotifier {
         _isAuthenticated = true;
         // Connect socket
         final token = await getToken();
-        if (token != null) _socketService.connect(token);
+        if (token != null)
+          _socketService.connect(token, _user!.id, _user!.role.value);
 
         _setLoading(false);
         notifyListeners();
@@ -160,7 +166,8 @@ class AuthProvider with ChangeNotifier {
         _isAuthenticated = true;
         // Connect socket
         final token = await getToken();
-        if (token != null) _socketService.connect(token);
+        if (token != null)
+          _socketService.connect(token, _user!.id, _user!.role.value);
 
         _setLoading(false);
         notifyListeners();
@@ -231,6 +238,35 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  /// Upload and update profile image
+  Future<bool> uploadProfileImage(XFile imageFile) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final imageService = ImageService();
+      final imageUrl = await imageService.uploadProfileImage(imageFile);
+
+      if (imageUrl != null && _user != null) {
+        // Update local user with new profile image
+        // Use serverUrl (not baseUrl) because static files are served at root, not under /api
+        _user =
+            _user!.copyWith(profileImage: '${AppConfig.serverUrl}$imageUrl');
+        _setLoading(false);
+        notifyListeners();
+        return true;
+      } else {
+        _setError('Failed to upload profile image');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError('Error uploading profile image: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
   /// Change password
   Future<bool> changePassword({
     required String currentPassword,
@@ -261,12 +297,20 @@ class AuthProvider with ChangeNotifier {
   }
 
   /// Forgot password
-  Future<bool> forgotPassword(String email) async {
+  Future<bool> forgotPassword(
+    String email, {
+    String? oldPassword,
+    String? newPassword,
+  }) async {
     _setLoading(true);
     _clearError();
 
     try {
-      final result = await _authService.forgotPassword(email);
+      final result = await _authService.forgotPassword(
+        email,
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+      );
 
       if (result.success) {
         _setLoading(false);
@@ -277,7 +321,7 @@ class AuthProvider with ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _setError('Failed to send reset email');
+      _setError('Failed to reset password');
       _setLoading(false);
       return false;
     }

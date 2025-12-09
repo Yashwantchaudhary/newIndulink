@@ -1,8 +1,6 @@
 const mongoose = require('mongoose');
 const User = require('./models/User');
 const Product = require('./models/Product');
-const Order = require('./models/Order');
-const axios = require('axios');
 require('dotenv').config();
 
 async function placeOrderForBibek() {
@@ -23,16 +21,41 @@ async function placeOrderForBibek() {
         if (!product) throw new Error('Bibek has no products');
         console.log('Found Product:', product.title, product._id);
 
-        // 3. Login as Customer (Sanjay) to get Token
-        // Assuming local server is running at localhost:5000
-        const loginRes = await axios.post('http://localhost:5000/api/auth/login', {
-            email: 'sanjay@gmail.com',
-            password: 'sanjay@123'
+        // 3. Login as Customer (Sanjay)
+        const loginRes = await fetch('http://127.0.0.1:5000/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: 'sanjay@gmail.com',
+                password: 'sanjay@123'
+            })
         });
-        const token = loginRes.data.token;
+        const loginData = await loginRes.json();
+        // console.log('Login Response:', JSON.stringify(loginData, null, 2));
+        if (!loginRes.ok) throw new Error(loginData.message || 'Login failed');
+        const token = loginData.data.accessToken; // Corrected path
+        // console.log('Token extracted:', token);
         console.log('Customer Logged In. Token acquired.');
 
-        // 4. Create Order via API
+        // 4. Add to Cart
+        const cartRes = await fetch('http://127.0.0.1:5000/api/cart', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                productId: product._id,
+                quantity: 1
+            })
+        });
+        if (!cartRes.ok) {
+            const err = await cartRes.json();
+            throw new Error(err.message || 'Add to cart failed');
+        }
+        console.log('Added to Cart');
+
+        // 5. Place Order
         const orderData = {
             shippingAddress: {
                 fullName: 'Sanjay Customer',
@@ -43,42 +66,26 @@ async function placeOrderForBibek() {
                 zipCode: '44600',
                 country: 'Nepal'
             },
-            paymentMethod: 'Cash on Delivery',
-            items: [
-                {
-                    product: product._id,
-                    quantity: 1
-                }
-            ],
-            // Note: The API usually takes items from Cart. 
-            // If the endpoint /api/orders creates from cart, we need to add to cart first.
-            // Let's check api/orders endpoint.
+            paymentMethod: 'cash_on_delivery', // Ensure lowercase enum match
+            notes: 'Test Order for Bibek Verification'
         };
 
-        // Checking if create order API requires items in body or takes from cart.
-        // Usually it takes from cart.
-        // Let's Add to Cart first.
-        await axios.post('http://localhost:5000/api/cart', {
-            productId: product._id,
-            quantity: 1
-        }, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        console.log('Added to Cart');
-
-        // Now Place Order
-        const orderRes = await axios.post('http://localhost:5000/api/orders', {
-            shippingAddress: orderData.shippingAddress,
-            paymentMethod: 'Cash on Delivery',
-            notes: 'Test Order for Bibek Verification'
-        }, {
-            headers: { Authorization: `Bearer ${token}` }
+        const orderRes = await fetch('http://127.0.0.1:5000/api/orders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(orderData)
         });
 
-        console.log('Order Placed!', orderRes.data);
+        const orderResult = await orderRes.json();
+        if (!orderRes.ok) throw new Error(orderResult.message || 'Order placement failed');
+
+        console.log('Order Placed!', JSON.stringify(orderResult, null, 2));
 
     } catch (e) {
-        console.error('Error:', e.response ? e.response.data : e.message);
+        console.error('Error:', e.message);
     } finally {
         await mongoose.disconnect();
     }

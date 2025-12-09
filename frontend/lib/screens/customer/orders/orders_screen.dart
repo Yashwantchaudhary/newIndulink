@@ -158,14 +158,17 @@ class OrderCard extends StatelessWidget {
           children: [
             // Header: Order ID and Status
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Order #${order.orderNumber}',
-                  style: AppTypography.bodyLarge.copyWith(
-                    fontWeight: AppTypography.bold,
+                Expanded(
+                  child: Text(
+                    'Order #${order.orderNumber}',
+                    style: AppTypography.bodyLarge.copyWith(
+                      fontWeight: AppTypography.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 _buildStatusBadge(order.status),
               ],
             ),
@@ -189,26 +192,29 @@ class OrderCard extends StatelessWidget {
 
             // Total and Action
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Total Amount',
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textTertiary,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Total Amount',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'Rs. ${order.total.toStringAsFixed(2)}',
-                      style: AppTypography.h6.copyWith(
-                        fontWeight: AppTypography.bold,
-                        color: AppColors.primary,
+                      Text(
+                        'Rs. ${order.total.toStringAsFixed(2)}',
+                        style: AppTypography.h6.copyWith(
+                          fontWeight: AppTypography.bold,
+                          color: AppColors.primary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 OutlinedButton(
                   onPressed: () {
                     Navigator.push(
@@ -235,6 +241,7 @@ class OrderCard extends StatelessWidget {
   Widget _buildStatusBadge(OrderStatus status) {
     Color color;
     switch (status) {
+      case OrderStatus.pendingApproval:
       case OrderStatus.pending:
         color = AppColors.warning;
         break;

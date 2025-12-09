@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -23,11 +24,22 @@ class _SupplierDataManagementScreenState
   final ApiService _apiService = ApiService();
   bool _isLoading = true;
   Map<String, dynamic> _stats = {};
+  Timer? _refreshTimer; // Auto-refresh timer for live data
 
   @override
   void initState() {
     super.initState();
     _loadDataStats();
+    // Auto-refresh every 30 seconds for live data updates
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _loadDataStats();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel(); // Cancel timer to prevent memory leaks
+    super.dispose();
   }
 
   Future<void> _loadDataStats() async {

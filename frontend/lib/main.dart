@@ -29,6 +29,7 @@ import 'providers/analytics_provider.dart';
 
 // Core Widgets
 import 'core/widgets/realtime_sync_widget.dart';
+import 'core/widgets/global_notification_listener.dart';
 
 // Routes
 import 'routes/app_router.dart';
@@ -91,6 +92,11 @@ class _IndulinkAppState extends State<IndulinkApp> {
         final themeProvider =
             Provider.of<ThemeProvider>(buildContext, listen: false);
         themeProvider.init();
+
+        // Initialize notification provider to fetch notifications
+        final notificationProvider =
+            Provider.of<NotificationProvider>(buildContext, listen: false);
+        notificationProvider.init();
       }
     });
   }
@@ -154,6 +160,13 @@ class _IndulinkAppState extends State<IndulinkApp> {
               navigatorKey: NavigationService().navigatorKey,
               onGenerateRoute: AppRouter.generateRoute,
               initialRoute: AppRoutes.splash,
+
+              // Global Notification Listener
+              builder: (context, child) {
+                return GlobalNotificationListener(
+                  child: child!,
+                );
+              },
 
               // Localization (for future implementation)
               // localizationsDelegates: AppLocalizations.localizationsDelegates,

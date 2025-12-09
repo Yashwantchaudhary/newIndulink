@@ -17,14 +17,16 @@ class SocketService {
   // Streams for events
   final _messageController = StreamController<dynamic>.broadcast();
   final _orderController = StreamController<dynamic>.broadcast();
+  final _productController = StreamController<dynamic>.broadcast();
 
   Stream<dynamic> get messageStream => _messageController.stream;
   Stream<dynamic> get orderStream => _orderController.stream;
+  Stream<dynamic> get productStream => _productController.stream;
 
   bool get isConnected => _isConnected;
 
   /// Initialize and connect socket
-  void connect(String token) {
+  void connect(String token, String userId, String role) {
     if (_socket != null && _socket!.connected) return;
 
     final uri = AppConfig.serverUrl;
@@ -42,6 +44,8 @@ class SocketService {
 
       _socket!.onConnect((_) {
         debugPrint('✅ Socket Connected: ${_socket!.id}');
+        _socket!.emit('join', {'userId': userId, 'role': role});
+        debugPrint('👤 Joined rooms for user: $userId, role: $role');
         _isConnected = true;
       });
 
@@ -79,6 +83,12 @@ class SocketService {
     _socket!.on('order:updated', (data) {
       debugPrint('📦 Order Updated: $data');
       _orderController.add({'type': 'updated', 'data': data});
+    });
+
+    // Products
+    _socket!.on('product_updated', (data) {
+      debugPrint('🆕 Product Update Received: $data');
+      _productController.add(data);
     });
   }
 

@@ -1,6 +1,7 @@
 const Product = require('../models/Product');
 const Order = require('../models/Order');
-const User = require('../models/User');
+const User = require('../models/User'); // Added User import
+const Notification = require('../models/Notification'); // Added Notification import
 
 const Cart = require('../models/Cart');
 
@@ -35,7 +36,7 @@ const createProduct = async (req, res) => {
             ...req.body,
             supplier: req.user._id,
             images: req.files ? req.files.map((file, index) => ({
-                url: `/uploads/${file.filename}`,
+                url: `/uploads/products/${file.filename}`,
                 alt: req.body.title || 'Product Image',
                 isPrimary: index === 0
             })) : []
@@ -43,12 +44,53 @@ const createProduct = async (req, res) => {
 
         const product = await Product.create(productData);
 
+        // Notify customers about new product
+        const supplierName = req.user.businessName || `${req.user.firstName} ${req.user.lastName}`;
+        const productTitle = product.title || product.name || 'New Product';
+
+        // 1. Real-time socket notification
+        try {
+            if (req.app.get('webSocketService')) {
+                const webSocketService = req.app.get('webSocketService');
+
+                webSocketService.notifyRole('customer', 'product_updated', {
+                    operation: 'created',
+                    productName: productTitle,
+                    productId: product._id,
+                    message: `New product added by ${supplierName}`,
+                    timestamp: new Date()
+                });
+            }
+        } catch (socketError) {
+            console.error('Socket notification error:', socketError);
+        }
+
+        // 2. Database notification (for notification screen)
+        try {
+            await Notification.create({
+                title: 'New Product Available',
+                body: `${supplierName} has added "${productTitle}" to the store.`,
+                type: 'product_available',
+                targetRole: 'customer',
+                sentBy: req.user._id,
+                data: {
+                    productId: product._id,
+                    productTitle: productTitle,
+                    supplierId: req.user._id,
+                    supplierName: supplierName
+                }
+            });
+        } catch (notificationError) {
+            console.error('Database notification error:', notificationError);
+        }
+
         res.status(201).json({
             success: true,
             message: 'Product created successfully',
             data: product
         });
     } catch (error) {
+        console.error('❌ Product creation error:', error);
         res.status(500).json({
             success: false,
             message: 'Error creating product',
@@ -73,7 +115,7 @@ const updateProduct = async (req, res) => {
         }
 
         const newImages = req.files ? req.files.map(file => ({
-            url: `/uploads/${file.filename}`,
+            url: `/uploads/products/${file.filename}`,
             alt: req.body.title || 'Product Image',
             isPrimary: false
         })) : [];
@@ -294,6 +336,15 @@ const updateOrderStatus = async (req, res) => {
         order.status = status;
         await order.save();
 
+        // Notify Customer about status update
+        await Notification.create({
+            targetUsers: [order.user], // Notify the customer
+            type: 'order_status',
+            title: `Order #${order.orderNumber} Updated`,
+            body: `Your order status has been updated to ${status}`,
+            data: { orderId: order._id }
+        });
+
         res.status(200).json({
             success: true,
             message: 'Order status updated successfully',
@@ -428,7 +479,7 @@ const getSupplierAnalytics = async (req, res) => {
                 aovChange: 0,
                 revenueData,
                 topProducts,
-                salesByPeriod: [],
+                salesByPeriod: revenueData.map((val, index) => ({ period: index + 1, sales: val })), // Format for frontend
                 orderStatusData,
                 productPerformance: topProducts,
                 inventoryStatus,

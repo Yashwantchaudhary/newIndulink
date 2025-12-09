@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -78,7 +79,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to submit review: ${e.toString()}'),
+              content: Text(e.toString().replaceAll('Exception: ', '')),
               backgroundColor: AppColors.error,
             ),
           );
@@ -119,15 +120,38 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               child: Row(
                 children: [
                   if (widget.productImage != null)
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        image: DecorationImage(
-                          image: NetworkImage(widget.productImage!),
-                          fit: BoxFit.cover,
+                    CachedNetworkImage(
+                      imageUrl: widget.productImage!,
+                      imageBuilder: (context, imageProvider) => Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          image: DecorationImage(
+                            image: imageProvider,
+                            fit: BoxFit.cover,
+                          ),
                         ),
+                      ),
+                      placeholder: (context, url) => Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2)),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.broken_image,
+                            color: AppColors.textTertiary),
                       ),
                     )
                   else

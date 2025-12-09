@@ -466,7 +466,7 @@ class _CustomerHomeScreenRedesignedState
     ];
 
     return Container(
-      height: 200,
+      height: 220,
       margin: const EdgeInsets.symmetric(vertical: 16),
       child: Stack(
         children: [

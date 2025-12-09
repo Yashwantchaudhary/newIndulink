@@ -37,10 +37,21 @@ io.on('connection', (socket) => {
     console.log(`🔌 New client connected: ${socket.id}`);
 
     // Join user-specific room if authenticated (client should emit 'join' event)
-    socket.on('join', (userId) => {
-        if (userId) {
-            socket.join(`user_${userId}`);
-            console.log(`👤 Socket ${socket.id} joined room: user_${userId}`);
+    // Join user-specific room if authenticated (client should emit 'join' event)
+    socket.on('join', (data) => {
+        // Handle both string (userId only) and object ({userId, role}) formats
+        if (typeof data === 'string') {
+            socket.join(`user_${data}`);
+            console.log(`👤 Socket ${socket.id} joined room: user_${data}`);
+        } else if (data && typeof data === 'object') {
+            if (data.userId) {
+                socket.join(`user_${data.userId}`);
+                console.log(`👤 Socket ${socket.id} joined room: user_${data.userId}`);
+            }
+            if (data.role) {
+                socket.join(`role_${data.role}`);
+                console.log(`👥 Socket ${socket.id} joined role room: role_${data.role}`);
+            }
         }
     });
 
@@ -54,6 +65,11 @@ app.use((req, res, next) => {
     req.io = io;
     next();
 });
+
+// Initialize WebSocket Service
+const webSocketService = require('./services/webSocketService')(io);
+app.set('webSocketService', webSocketService);
+console.log('✅ WebSocket service registered on app');
 
 // Connect to Database
 connectDatabase();
@@ -87,8 +103,9 @@ app.use(helmet({
 }));
 
 // Enhanced Security Middleware
-app.use(securityHeaders);
-app.use(securityCors);
+// Enhanced Security Middleware
+// app.use(securityHeaders);
+// app.use(securityCors);
 
 // Enhanced Rate Limiting
 const limiter = rateLimit({
@@ -98,7 +115,7 @@ const limiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
 });
-app.use('/api/', limiter);
+// app.use('/api/', limiter); // Rate limiting disabled for dev testing
 
 // ==================== BODY PARSING MIDDLEWARE ====================
 // Parse JSON request bodies

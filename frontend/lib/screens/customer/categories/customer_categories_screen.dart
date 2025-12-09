@@ -44,9 +44,10 @@ class _CustomerCategoriesScreenState extends State<CustomerCategoriesScreen> {
       final response = await _apiService.get(AppConfig.categoriesEndpoint);
 
       if (response.isSuccess && response.data != null) {
+        // Backend returns: { success: true, count: X, data: [categories] }
         final List<dynamic> categoriesJson = response.data is List
             ? response.data
-            : response.data['categories'] ?? [];
+            : (response.data['data'] ?? response.data['categories'] ?? []);
 
         setState(() {
           _categories =

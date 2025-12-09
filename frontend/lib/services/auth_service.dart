@@ -263,11 +263,21 @@ class AuthService {
   // ==================== Password Management ====================
 
   /// Request password reset
-  Future<AuthResult> forgotPassword(String email) async {
+  Future<AuthResult> forgotPassword(
+    String email, {
+    String? oldPassword,
+    String? newPassword,
+  }) async {
     try {
+      final body = {
+        'email': email,
+        if (oldPassword != null) 'oldPassword': oldPassword,
+        if (newPassword != null) 'newPassword': newPassword,
+      };
+
       final response = await _api.post(
         AppConfig.forgotPasswordEndpoint,
-        body: {'email': email},
+        body: body,
         requiresAuth: false,
       );
 
@@ -275,8 +285,8 @@ class AuthService {
         success: response.isSuccess,
         message: response.message ??
             (response.isSuccess
-                ? 'Password reset email sent'
-                : 'Failed to send reset email'),
+                ? 'Password reset successfully'
+                : 'Failed to reset password'),
       );
     } catch (e) {
       return AuthResult(
@@ -322,7 +332,8 @@ class AuthService {
     required String newPassword,
   }) async {
     try {
-      final response = await _api.post(
+      final response = await _api.put(
+        // Changed from post to put
         AppConfig.changePasswordEndpoint,
         body: {
           'currentPassword': currentPassword,

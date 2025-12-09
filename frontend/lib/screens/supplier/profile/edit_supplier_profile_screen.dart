@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'dart:io' as io; // Safe import for mobile only
+import 'package:cross_file/cross_file.dart'; // Added XFile
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
@@ -30,7 +32,7 @@ class _EditSupplierProfileScreenState extends State<EditSupplierProfileScreen> {
   late TextEditingController _servicesController;
   late TextEditingController _certificationsController;
   bool _isLoading = false;
-  File? _profileImage;
+  XFile? _profileImage; // Changed to XFile
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -150,7 +152,7 @@ class _EditSupplierProfileScreenState extends State<EditSupplierProfileScreen> {
 
       if (pickedFile != null) {
         setState(() {
-          _profileImage = File(pickedFile.path);
+          _profileImage = pickedFile; // Store XFile directly
         });
 
         // Upload the image to server
@@ -274,7 +276,10 @@ class _EditSupplierProfileScreenState extends State<EditSupplierProfileScreen> {
                         radius: 60,
                         backgroundColor: AppColors.primaryLightest,
                         backgroundImage: _profileImage != null
-                            ? FileImage(_profileImage!)
+                            ? (kIsWeb
+                                ? NetworkImage(_profileImage!.path)
+                                : FileImage(io.File(_profileImage!.path))
+                                    as ImageProvider)
                             : null,
                         child: _profileImage == null
                             ? const Icon(

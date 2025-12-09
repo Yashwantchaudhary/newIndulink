@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
@@ -22,6 +23,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   bool _isLoading = false;
   AdminDashboardData? _data;
   Map<String, dynamic>? _cartAnalytics;
+  Timer? _refreshTimer; // Auto-refresh timer for live data
 
   @override
   void initState() {
@@ -30,6 +32,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
+    // Auto-refresh every 30 seconds for live data updates
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _loadData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel(); // Cancel timer to prevent memory leaks
+    super.dispose();
   }
 
   Future<void> _loadData() async {

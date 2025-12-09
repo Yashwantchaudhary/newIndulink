@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
@@ -18,11 +19,22 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
   final ApiService _apiService = ApiService();
   bool _isLoading = true;
   List<Map<String, dynamic>> _categories = [];
+  Timer? _refreshTimer; // Auto-refresh timer for live data
 
   @override
   void initState() {
     super.initState();
     _loadCategories();
+    // Auto-refresh every 30 seconds for live data updates
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _loadCategories();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel(); // Cancel timer to prevent memory leaks
+    super.dispose();
   }
 
   Future<void> _loadCategories() async {

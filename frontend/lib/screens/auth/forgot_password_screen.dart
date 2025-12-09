@@ -19,8 +19,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _oldPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   bool _isSubmitted = false;
+  bool _obscureOldPassword = true;
+  bool _obscureNewPassword = true;
+  bool _obscureConfirmPassword = true;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -55,6 +61,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   @override
   void dispose() {
     _emailController.dispose();
+    _oldPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -66,6 +75,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
     final success = await authProvider.forgotPassword(
       _emailController.text.trim(),
+      oldPassword: _oldPasswordController.text,
+      newPassword: _newPasswordController.text,
     );
 
     if (mounted) {
@@ -76,7 +87,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage ?? 'Failed to send reset email'),
+            content:
+                Text(authProvider.errorMessage ?? 'Failed to reset password'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -182,7 +194,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
           // Subtitle
           Text(
-            'Enter your email address and we\'ll send you a link to reset your password.',
+            'Enter your email, current password, and new password to reset.',
             style: AppTypography.bodyLarge.copyWith(
               color: Colors.white.withOpacity(0.9),
             ),
@@ -237,6 +249,105 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 },
               ),
 
+              const SizedBox(height: AppDimensions.space20),
+
+              // Old Password Field
+              TextFormField(
+                controller: _oldPasswordController,
+                obscureText: _obscureOldPassword,
+                decoration: InputDecoration(
+                  labelText: 'Current Password',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  hintText: 'Enter your current password',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureOldPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureOldPassword = !_obscureOldPassword;
+                      });
+                    },
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your current password';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: AppDimensions.space20),
+
+              // New Password Field
+              TextFormField(
+                controller: _newPasswordController,
+                obscureText: _obscureNewPassword,
+                decoration: InputDecoration(
+                  labelText: 'New Password',
+                  prefixIcon: const Icon(Icons.lock),
+                  hintText: 'Enter new password',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureNewPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureNewPassword = !_obscureNewPassword;
+                      });
+                    },
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a new password';
+                  }
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: AppDimensions.space20),
+
+              // Confirm Password Field
+              TextFormField(
+                controller: _confirmPasswordController,
+                obscureText: _obscureConfirmPassword,
+                decoration: InputDecoration(
+                  labelText: 'Confirm New Password',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  hintText: 'Confirm new password',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureConfirmPassword = !_obscureConfirmPassword;
+                      });
+                    },
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please confirm your new password';
+                  }
+                  if (value != _newPasswordController.text) {
+                    return 'Passwords do not match';
+                  }
+                  return null;
+                },
+              ),
+
               const SizedBox(height: AppDimensions.space24),
 
               // Submit Button
@@ -244,7 +355,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 builder: (context, authProvider, child) => SizedBox(
                   height: AppDimensions.buttonHeight,
                   child: ElevatedButton(
-                    onPressed: authProvider.isLoading ? null : _handleForgotPassword,
+                    onPressed:
+                        authProvider.isLoading ? null : _handleForgotPassword,
                     child: authProvider.isLoading
                         ? const SizedBox(
                             width: 24,

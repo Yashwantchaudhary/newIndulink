@@ -2,11 +2,13 @@ import 'package:flutter/foundation.dart';
 import '../models/cart.dart';
 import '../models/product.dart';
 import '../services/cart_service.dart';
+import '../services/storage_service.dart';
 
 /// 🛒 Cart Provider
 /// Manages shopping cart state
 class CartProvider with ChangeNotifier {
   final CartService _cartService = CartService();
+  final StorageService _storageService = StorageService();
 
   // State
   Cart? _cart;
@@ -26,13 +28,25 @@ class CartProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  /// Check if current user is a customer
+  Future<bool> _isCustomer() async {
+    final role = await _storageService.getUserRole();
+    return role == 'customer';
+  }
+
   /// Initialize cart (fetch from backend or local storage)
   Future<void> init() async {
     await fetchCart();
   }
 
-  /// Fetch cart
+  /// Fetch cart (only for customers)
   Future<void> fetchCart() async {
+    // Only fetch cart for customer users
+    if (!await _isCustomer()) {
+      debugPrint('📦 Cart: Skipping fetch - user is not a customer');
+      return;
+    }
+
     _setLoading(true);
     _clearError();
 
@@ -54,13 +68,13 @@ class CartProvider with ChangeNotifier {
   /// Add item to cart
   Future<bool> addToCart(Product product, {int quantity = 1}) async {
     _clearError();
-  
+
     try {
       final result = await _cartService.addToCart(
         productId: product.id,
         quantity: quantity,
       );
-  
+
       if (result.success) {
         _cart = result.cart;
         notifyListeners();

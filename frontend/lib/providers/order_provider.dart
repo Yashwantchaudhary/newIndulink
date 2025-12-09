@@ -109,11 +109,13 @@ class OrderProvider with ChangeNotifier {
     String? notes,
     String? couponCode,
   }) async {
+    debugPrint('🛍️ OrderProvider: Starting order creation');
     _isCreatingOrder = true;
     _clearError();
     notifyListeners();
 
     try {
+      debugPrint('📡 OrderProvider: Calling order service');
       final result = await _orderService.createOrder(
         shippingAddress: shippingAddress,
         paymentMethod: paymentMethod,
@@ -121,17 +123,22 @@ class OrderProvider with ChangeNotifier {
         couponCode: couponCode,
       );
 
+      debugPrint('📡 OrderProvider: Order service result - success: ${result.success}');
+
       if (result.success && result.order != null) {
+        debugPrint('✅ OrderProvider: Order created successfully');
         _orders.insert(0, result.order!);
         _isCreatingOrder = false;
         notifyListeners();
         return result.order;
       } else {
+        debugPrint('❌ OrderProvider: Order creation failed - ${result.message}');
         _setError(result.message ?? 'Failed to create order');
         _isCreatingOrder = false;
         return null;
       }
     } catch (e) {
+      debugPrint('💥 OrderProvider: Exception during order creation - $e');
       _setError('An error occurred');
       _isCreatingOrder = false;
       return null;

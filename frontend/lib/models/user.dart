@@ -1,5 +1,7 @@
 /// 👤 User Model
 /// Represents a user in the INDULINK system (Customer, Supplier, or Admin)
+import '../core/constants/app_config.dart';
+
 class User {
   final String id;
   final String firstName;
@@ -54,6 +56,31 @@ class User {
 
   // JSON Serialization
   factory User.fromJson(Map<String, dynamic> json) {
+    // Process profile image URL - prefix relative URLs with serverUrl
+    String? profileImageUrl = json['profileImage'];
+    if (profileImageUrl != null && profileImageUrl.isNotEmpty) {
+      // First: Fix incorrectly stored URLs with /api/uploads/ (should be just /uploads/)
+      // This handles both absolute URLs (http://localhost:5000/api/uploads/...)
+      // and relative URLs (/api/uploads/...)
+      if (profileImageUrl.contains('/api/uploads/')) {
+        profileImageUrl =
+            profileImageUrl.replaceFirst('/api/uploads/', '/uploads/');
+      }
+
+      // Then: Handle localhost URLs for physical device testing
+      if (profileImageUrl.contains('http://localhost:5000')) {
+        profileImageUrl = profileImageUrl.replaceFirst(
+            'http://localhost:5000', AppConfig.serverUrl);
+      } else if (profileImageUrl.contains('http://127.0.0.1:5000')) {
+        profileImageUrl = profileImageUrl.replaceFirst(
+            'http://127.0.0.1:5000', AppConfig.serverUrl);
+      }
+      // Finally: Prefix relative URLs with serverUrl
+      else if (profileImageUrl.startsWith('/')) {
+        profileImageUrl = '${AppConfig.serverUrl}$profileImageUrl';
+      }
+    }
+
     return User(
       id: json['_id'] ?? json['id'] ?? '',
       firstName: json['firstName'] ?? '',
@@ -61,7 +88,7 @@ class User {
       email: json['email'] ?? '',
       phone: json['phone'],
       role: UserRole.fromString(json['role'] ?? 'customer'),
-      profileImage: json['profileImage'],
+      profileImage: profileImageUrl,
       wishlist:
           json['wishlist'] != null ? List<String>.from(json['wishlist']) : null,
       businessName: json['businessName'],
@@ -250,12 +277,12 @@ class Address {
       id: json['_id'],
       label: AddressLabel.fromString(json['label'] ?? 'home'),
       fullName: json['fullName'] ?? '',
-      phone: json['phone'] ?? '',
+      phone: json['phone'] ?? json['phoneNumber'] ?? '',
       addressLine1: json['addressLine1'] ?? '',
       addressLine2: json['addressLine2'],
       city: json['city'] ?? '',
       state: json['state'] ?? '',
-      postalCode: json['postalCode'] ?? '',
+      postalCode: json['postalCode'] ?? json['zipCode'] ?? '',
       country: json['country'] ?? 'Nepal',
       isDefault: json['isDefault'] ?? false,
     );

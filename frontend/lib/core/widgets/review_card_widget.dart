@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -83,7 +84,7 @@ class ReviewCard extends StatelessWidget {
           radius: 20,
           backgroundColor: AppColors.primaryLightest,
           backgroundImage: review.customer.profileImage != null
-              ? NetworkImage(review.customer.profileImage!)
+              ? CachedNetworkImageProvider(review.customer.profileImage!)
               : null,
           child: review.customer.profileImage == null
               ? Text(
@@ -115,7 +116,8 @@ class ReviewCard extends StatelessWidget {
                   if (review.isVerifiedPurchase) ...[
                     const SizedBox(width: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppColors.success.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
@@ -195,11 +197,22 @@ class ReviewCard extends StatelessWidget {
             width: 80,
             height: 80,
             margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              image: DecorationImage(
-                image: NetworkImage(image.url),
+              child: CachedNetworkImage(
+                imageUrl: image.url,
                 fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: AppColors.background,
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: AppColors.background,
+                  child: const Icon(Icons.broken_image,
+                      color: AppColors.textTertiary),
+                ),
               ),
             ),
           );
@@ -221,7 +234,9 @@ class ReviewCard extends StatelessWidget {
               ? () => reviewProvider.markReviewHelpful(review.id)
               : null,
           icon: Icon(
-            review.isMarkedHelpfulBy(currentUserId ?? '') ? Icons.thumb_up : Icons.thumb_up_outlined,
+            review.isMarkedHelpfulBy(currentUserId ?? '')
+                ? Icons.thumb_up
+                : Icons.thumb_up_outlined,
             size: 16,
             color: review.isMarkedHelpfulBy(currentUserId ?? '')
                 ? AppColors.primary
@@ -250,7 +265,8 @@ class ReviewCard extends StatelessWidget {
               context,
               contentType: 'review',
               contentId: review.id,
-              contentTitle: review.title ?? 'Review by ${review.customer.fullName}',
+              contentTitle:
+                  review.title ?? 'Review by ${review.customer.fullName}',
             );
 
             if (result == true && context.mounted) {

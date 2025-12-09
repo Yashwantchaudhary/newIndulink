@@ -169,6 +169,7 @@ class OrderItem {
 
 /// 📊 Order Status Enum
 enum OrderStatus {
+  pendingApproval,
   pending,
   processing,
   shipped,
@@ -177,6 +178,8 @@ enum OrderStatus {
 
   String get value {
     switch (this) {
+      case OrderStatus.pendingApproval:
+        return 'pending_approval';
       case OrderStatus.pending:
         return 'pending';
       case OrderStatus.processing:
@@ -192,6 +195,8 @@ enum OrderStatus {
 
   String get displayName {
     switch (this) {
+      case OrderStatus.pendingApproval:
+        return 'Pending Approval';
       case OrderStatus.pending:
         return 'Pending';
       case OrderStatus.processing:
@@ -207,6 +212,9 @@ enum OrderStatus {
 
   static OrderStatus fromString(String value) {
     switch (value.toLowerCase()) {
+      case 'pending_approval':
+      case 'pendingapproval':
+        return OrderStatus.pendingApproval;
       case 'pending':
         return OrderStatus.pending;
       case 'processing':

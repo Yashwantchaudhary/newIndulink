@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../providers/notification_provider.dart';
+import '../orders/order_detail_screen.dart';
+import '../rfq/customer_rfq_detail_screen.dart';
 
 /// 🔔 Customer Notifications Screen
 class CustomerNotificationsScreen extends StatefulWidget {
@@ -19,7 +21,11 @@ class _CustomerNotificationsScreenState
   @override
   void initState() {
     super.initState();
-    // Notifications are loaded by NotificationProvider.init() in main.dart
+    // Fetch notifications when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<NotificationProvider>(context, listen: false)
+          .fetchNotifications();
+    });
   }
 
   @override
@@ -76,14 +82,52 @@ class _CustomerNotificationsScreenState
                             title: Text(
                               notif.title,
                               style: AppTypography.labelLarge.copyWith(
-                                fontWeight:
-                                    isUnread ? FontWeight.bold : FontWeight.normal,
+                                fontWeight: isUnread
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                               ),
                             ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(notif.message),
+                                const SizedBox(height: 8),
+                                // Show supplier name if available
+                                if (notif.data != null &&
+                                    notif.data!['supplierName'] != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          AppColors.info.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: AppColors.info
+                                            .withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.store,
+                                          size: 12,
+                                          color: AppColors.info,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'From: ${notif.data!['supplierName']}',
+                                          style: AppTypography.caption.copyWith(
+                                            color: AppColors.info,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 const SizedBox(height: 4),
                                 Text(
                                   _formatTime(notif.createdAt),
@@ -102,7 +146,10 @@ class _CustomerNotificationsScreenState
                                     ),
                                   )
                                 : null,
-                            onTap: () => notificationProvider.markAsRead(notif.id),
+                            onTap: () {
+                              notificationProvider.markAsRead(notif.id);
+                              _handleNotificationTap(context, notif);
+                            },
                             tileColor: isUnread
                                 ? AppColors.primary.withValues(alpha: 0.05)
                                 : null,
@@ -158,6 +205,32 @@ class _CustomerNotificationsScreenState
       return '${time.day}/${time.month}/${time.year}';
     } catch (e) {
       return '';
+    }
+  }
+
+  void _handleNotificationTap(BuildContext context, AppNotification notif) {
+    if (notif.data == null) return;
+
+    if (notif.type == 'order_status') {
+      final orderId = notif.data!['orderId'];
+      if (orderId != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderDetailScreen(orderId: orderId),
+          ),
+        );
+      }
+    } else if (notif.type == 'quote' || notif.type == 'rfq') {
+      final rfqId = notif.data!['rfqId'];
+      if (rfqId != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CustomerRFQDetailScreen(rfqId: rfqId),
+          ),
+        );
+      }
     }
   }
 }

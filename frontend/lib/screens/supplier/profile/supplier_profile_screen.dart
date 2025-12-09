@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -21,6 +22,7 @@ class SupplierProfileScreen extends StatefulWidget {
 
 class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
   bool _isLoading = true;
+  bool _isUploadingImage = false;
   bool _notificationsEnabled = true;
   bool _emailAlertsEnabled = false;
   bool _darkModeEnabled = false;
@@ -34,6 +36,96 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
         _isLoading = false;
       });
     });
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final ImagePicker picker = ImagePicker();
+
+    // Show bottom sheet to choose source
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Choose Profile Photo',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.camera_alt, color: AppColors.primary),
+                ),
+                title: const Text('Take Photo'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.photo_library,
+                      color: AppColors.secondary),
+                ),
+                title: const Text('Choose from Gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      final XFile? pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 500,
+        maxHeight: 500,
+        imageQuality: 85,
+      );
+
+      if (pickedFile == null) return;
+
+      setState(() => _isUploadingImage = true);
+
+      final authProvider = context.read<AuthProvider>();
+      final success = await authProvider.uploadProfileImage(pickedFile);
+
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success
+                ? '✅ Profile photo updated successfully!'
+                : '❌ Failed to update profile photo'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -61,30 +153,41 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                           CircleAvatar(
                             radius: 50,
                             backgroundColor: AppColors.primary,
-                            child: user.profileImage != null
-                                ? CircleAvatar(
-                                    radius: 50,
-                                    backgroundImage:
-                                        NetworkImage(user.profileImage!),
-                                  )
-                                : Text(
-                                    user.businessName != null
-                                        ? user.businessName![0].toUpperCase()
-                                        : user.initials,
-                                    style: AppTypography.h3
-                                        .copyWith(color: Colors.white),
-                                  ),
+                            child: _isUploadingImage
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white)
+                                : user.profileImage != null
+                                    ? CircleAvatar(
+                                        radius: 50,
+                                        backgroundImage:
+                                            NetworkImage(user.profileImage!),
+                                      )
+                                    : Text(
+                                        user.businessName != null
+                                            ? user.businessName![0]
+                                                .toUpperCase()
+                                            : user.initials,
+                                        style: AppTypography.h3
+                                            .copyWith(color: Colors.white),
+                                      ),
                           ),
                           Positioned(
                             bottom: 0,
                             right: 0,
-                            child: CircleAvatar(
-                              radius: 18,
-                              backgroundColor: Colors.white,
-                              child: IconButton(
-                                icon: const Icon(Icons.camera_alt, size: 18),
-                                onPressed: () {},
-                                padding: EdgeInsets.zero,
+                            child: GestureDetector(
+                              onTap: _isUploadingImage
+                                  ? null
+                                  : _pickAndUploadImage,
+                              child: CircleAvatar(
+                                radius: 18,
+                                backgroundColor: Colors.white,
+                                child: Icon(
+                                  Icons.camera_alt,
+                                  size: 18,
+                                  color: _isUploadingImage
+                                      ? Colors.grey
+                                      : AppColors.primary,
+                                ),
                               ),
                             ),
                           ),

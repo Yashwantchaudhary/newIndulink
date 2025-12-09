@@ -69,13 +69,16 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                     child: Column(
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Order #${order['orderNumber'] ?? order['id']}',
-                              style: AppTypography.labelLarge
-                                  .copyWith(fontWeight: FontWeight.bold),
+                            Expanded(
+                              child: Text(
+                                'Order #${order['orderNumber'] ?? order['id']}',
+                                style: AppTypography.labelLarge
+                                    .copyWith(fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 6),
@@ -99,23 +102,26 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                         ),
                         const SizedBox(height: 12),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              () {
-                                final customer =
-                                    order['customer'] ?? order['user'];
-                                if (customer == null) return 'Customer';
-                                if (customer['fullName'] != null) {
-                                  return customer['fullName'];
-                                }
-                                final name =
-                                    '${customer['firstName'] ?? ''} ${customer['lastName'] ?? ''}'
-                                        .trim();
-                                return name.isNotEmpty ? name : 'Customer';
-                              }(),
-                              style: AppTypography.bodyMedium,
+                            Expanded(
+                              child: Text(
+                                () {
+                                  final customer =
+                                      order['customer'] ?? order['user'];
+                                  if (customer == null) return 'Customer';
+                                  if (customer['fullName'] != null) {
+                                    return customer['fullName'];
+                                  }
+                                  final name =
+                                      '${customer['firstName'] ?? ''} ${customer['lastName'] ?? ''}'
+                                          .trim();
+                                  return name.isNotEmpty ? name : 'Customer';
+                                }(),
+                                style: AppTypography.bodyMedium,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             Text(
                               '₹${order['total']?.toStringAsFixed(2) ?? '0.00'}',
                               style: AppTypography.labelLarge.copyWith(

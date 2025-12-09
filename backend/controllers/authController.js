@@ -419,42 +419,48 @@ exports.updatePassword = async (req, res, next) => {
 // @access  Public
 exports.forgotPassword = async (req, res, next) => {
     try {
-        const { email } = req.body;
+        const { email, oldPassword, newPassword } = req.body;
 
-        if (!email) {
+        if (!email || !oldPassword || !newPassword) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide an email address',
+                message: 'Please provide email, current password, and new password',
             });
         }
 
         // Check if user exists
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).select('+password');
 
         if (!user) {
-            // Don't reveal if email exists or not for security
-            return res.status(200).json({
-                success: true,
-                message: 'If an account with this email exists, a password reset link has been sent.',
+            return res.status(404).json({
+                success: false,
+                message: 'No account found with this email address',
             });
         }
 
-        // Generate reset token with enhanced security
-        const resetToken = user.generatePasswordResetToken();
-        await user.save();
+        // Verify old password matches
+        const isPasswordCorrect = await user.comparePassword(oldPassword);
 
-        // In a real application, send email here
-        // For now, just return success
-        console.log(`Password reset token for ${email}: ${resetToken}`);
+        if (!isPasswordCorrect) {
+            return res.status(401).json({
+                success: false,
+                message: 'Current password is incorrect',
+            });
+        }
+
+        // Update to new password
+        user.password = newPassword;
+        await user.save();
 
         res.status(200).json({
             success: true,
-            message: 'If an account with this email exists, a password reset link has been sent.',
+            message: 'Password reset successfully',
         });
     } catch (error) {
         next(error);
     }
 };
+
 
 // @desc    Reset password with token
 // @route   POST /api/auth/reset-password

@@ -360,6 +360,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget _buildStatusBadge(OrderStatus status) {
     Color color;
     switch (status) {
+      case OrderStatus.pendingApproval:
       case OrderStatus.pending:
         color = AppColors.warning;
         break;

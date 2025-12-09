@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
@@ -14,8 +15,15 @@ import 'edit_profile_screen.dart';
 import '../settings/settings_screen.dart';
 import '../data/customer_data_management_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isUploadingImage = false;
 
   void _handleLogout(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -47,6 +55,96 @@ class ProfileScreen extends StatelessWidget {
                 const LoginScreen(selectedRole: UserRole.customer),
           ),
           (route) => false,
+        );
+      }
+    }
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final ImagePicker picker = ImagePicker();
+
+    // Show bottom sheet to choose source
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Choose Profile Photo',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.camera_alt, color: AppColors.primary),
+                ),
+                title: const Text('Take Photo'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.photo_library,
+                      color: AppColors.secondary),
+                ),
+                title: const Text('Choose from Gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      final XFile? pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 500,
+        maxHeight: 500,
+        imageQuality: 85,
+      );
+
+      if (pickedFile == null) return;
+
+      setState(() => _isUploadingImage = true);
+
+      final authProvider = context.read<AuthProvider>();
+      final success = await authProvider.uploadProfileImage(pickedFile);
+
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success
+                ? '✅ Profile photo updated successfully!'
+                : '❌ Failed to update profile photo'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -155,36 +253,84 @@ class ProfileScreen extends StatelessWidget {
                               ),
                               child: Row(
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color:
-                                            AppColors.primary.withOpacity(0.2),
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: CircleAvatar(
-                                      radius: 35,
-                                      backgroundColor:
-                                          AppColors.primaryLightest,
-                                      backgroundImage: user.profileImage != null
-                                          ? NetworkImage(user.profileImage!)
-                                          : null,
-                                      child: user.profileImage == null
-                                          ? Text(
-                                              user.firstName.isNotEmpty
-                                                  ? user.firstName[0]
-                                                      .toUpperCase()
-                                                  : '?',
-                                              style: const TextStyle(
-                                                fontSize: 28,
-                                                color: AppColors.primary,
-                                                fontWeight: FontWeight.bold,
+                                  // Tappable Avatar with camera overlay
+                                  GestureDetector(
+                                    onTap: _isUploadingImage
+                                        ? null
+                                        : _pickAndUploadImage,
+                                    child: Stack(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: AppColors.primary
+                                                  .withOpacity(0.2),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: CircleAvatar(
+                                            radius: 35,
+                                            backgroundColor:
+                                                AppColors.primaryLightest,
+                                            backgroundImage:
+                                                user.profileImage != null
+                                                    ? NetworkImage(
+                                                        user.profileImage!)
+                                                    : null,
+                                            child: _isUploadingImage
+                                                ? const SizedBox(
+                                                    width: 24,
+                                                    height: 24,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: AppColors.primary,
+                                                    ),
+                                                  )
+                                                : user.profileImage == null
+                                                    ? Text(
+                                                        user.firstName
+                                                                .isNotEmpty
+                                                            ? user.firstName[0]
+                                                                .toUpperCase()
+                                                            : '?',
+                                                        style: const TextStyle(
+                                                          fontSize: 28,
+                                                          color:
+                                                              AppColors.primary,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      )
+                                                    : null,
+                                          ),
+                                        ),
+                                        // Camera icon overlay
+                                        Positioned(
+                                          bottom: 0,
+                                          right: 0,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primary,
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: Colors.white,
+                                                width: 2,
                                               ),
-                                            )
-                                          : null,
+                                            ),
+                                            child: Icon(
+                                              Icons.camera_alt,
+                                              size: 14,
+                                              color: _isUploadingImage
+                                                  ? Colors.grey
+                                                  : Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                   const SizedBox(width: 16),

@@ -22,7 +22,8 @@ const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         let folder = uploadDir;
 
-        if (req.baseUrl.includes('/products')) {
+        // Check for product uploads (includes supplier product routes)
+        if (req.baseUrl.includes('/products') || req.baseUrl.includes('/supplier')) {
             folder = productImagesDir;
         } else if (req.baseUrl.includes('/users') || req.baseUrl.includes('/auth')) {
             folder = profileImagesDir;
@@ -44,8 +45,8 @@ const storage = multer.diskStorage({
 
 // File filter
 const fileFilter = (req, file, cb) => {
-    // Allowed file types
-    const allowedImages = /jpeg|jpg|png|gif|webp/;
+    // Allowed file types - expanded to support all common image formats
+    const allowedImages = /jpeg|jpg|png|gif|webp|bmp|svg|tiff|tif|ico|heic|heif|avif|jfif/;
     const allowedDocs = /pdf|doc|docx|xls|xlsx|txt/;
 
     const extname = path.extname(file.originalname).toLowerCase();
@@ -64,7 +65,7 @@ const fileFilter = (req, file, cb) => {
         }
     }
 
-    cb(new Error('Invalid file type. Images: jpg, png, gif, webp. Documents: pdf, doc, docx, xls, xlsx, txt'));
+    cb(new Error('Invalid file type. Images: jpg, png, gif, webp, bmp, svg, tiff, ico, heic, heif, avif. Documents: pdf, doc, docx, xls, xlsx, txt'));
 };
 
 // Multer configuration

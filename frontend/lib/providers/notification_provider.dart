@@ -2,12 +2,15 @@ import 'package:flutter/foundation.dart';
 import '../core/constants/app_config.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../services/socket_service.dart';
 
 /// 🔔 Notification Provider
 /// Manages notifications list and read/unread states
 class NotificationProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
   final NotificationService _notificationService = NotificationService();
+
+  final SocketService _socketService = SocketService();
 
   // State
   List<AppNotification> _notifications = [];
@@ -26,7 +29,73 @@ class NotificationProvider with ChangeNotifier {
 
   /// Initialize notifications
   Future<void> init() async {
+    _initSocketListeners();
     await fetchNotifications();
+  }
+
+  void _initSocketListeners() {
+    _socketService.orderStream.listen((event) {
+      if (event['type'] == 'new') {
+        _handleNewOrder(event['data']);
+      } else if (event['type'] == 'updated') {
+        _handleOrderUpdate(event['data']);
+      }
+    });
+
+    _socketService.productStream.listen((data) {
+      _handleProductUpdate(data);
+    });
+  }
+
+  void _handleProductUpdate(dynamic data) {
+    if (data == null) return;
+
+    final productName = data['productName'] ?? 'Product';
+    final operation = data['operation'] ?? 'updated';
+    final message = operation == 'created'
+        ? 'New product available: $productName'
+        : 'Product updated: $productName';
+
+    _notificationService.showInAppNotification(
+      title: 'Product Update',
+      body: message,
+      type: 'product',
+    );
+  }
+
+  void _handleNewOrder(dynamic data) {
+    if (data == null) return;
+
+    // Refresh notifications list to get the new notification from backend if it was saved
+    fetchNotifications();
+
+    // Show in-app notification
+    final message = data['message'] ?? 'New order received';
+    final orderNumber = data['orderNumber'] ?? '';
+
+    _notificationService.showInAppNotification(
+      title: 'New Order $orderNumber',
+      body: message,
+      type: 'order',
+    );
+  }
+
+  void _handleOrderUpdate(dynamic data) {
+    if (data == null) return;
+
+    // Refresh notifications list
+    fetchNotifications();
+
+    // Show in-app notification
+    final message = data['message'] ?? 'Order status updated';
+    final orderNumber = data['orderNumber'] ?? '';
+    final status = data['status'] ?? '';
+
+    _notificationService.showInAppNotification(
+      title: 'Order Update $orderNumber',
+      body: '$message $status',
+      type: 'order',
+    );
   }
 
   Future<void> loadSavedNotifications() async {
@@ -60,23 +129,39 @@ class NotificationProvider with ChangeNotifier {
 
   /// Fetch all notifications
   Future<void> fetchNotifications() async {
+    debugPrint('🔔 fetchNotifications() called');
     _setLoading(true);
     _clearError();
 
     try {
+      debugPrint('🔔 Calling API: ${AppConfig.notificationsEndpoint}');
       final response = await _apiService.get(AppConfig.notificationsEndpoint);
 
+      debugPrint('🔔 API Response: success=${response.success}');
+      debugPrint('🔔 Full response.data: ${response.data}');
+
       if (response.success) {
-        final List<dynamic> items = response.data['notifications'] ?? [];
+        // Handle nested data: check if data.data exists (API wrapper) or use data directly
+        final responseData = response.data;
+        final data = (responseData is Map && responseData.containsKey('data'))
+            ? responseData['data']
+            : responseData;
+
+        debugPrint(
+            '🔔 Using data from: ${data is Map ? data.keys.toList() : "not a map"}');
+
+        final List<dynamic> items = data['notifications'] ?? [];
+        debugPrint('🔔 Received ${items.length} notifications');
         _notifications =
             items.map((item) => AppNotification.fromJson(item)).toList();
-        _unreadCount = response.data['unreadCount'] ?? 0;
+        _unreadCount = data['unreadCount'] ?? 0;
       } else {
         _setError(response.message ?? 'Failed to load notifications');
+        debugPrint('🔔 API Error: ${response.message}');
       }
     } catch (e) {
       _setError('An error occurred');
-      debugPrint('Fetch notifications error: $e');
+      debugPrint('🔔 Fetch notifications error: $e');
     }
 
     _setLoading(false);
@@ -118,7 +203,8 @@ class NotificationProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _apiService.put(AppConfig.markAllNotificationsReadEndpoint);
+      final response =
+          await _apiService.put(AppConfig.markAllNotificationsReadEndpoint);
 
       if (response.success) {
         // Update all notifications to read

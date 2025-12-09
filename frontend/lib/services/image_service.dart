@@ -1,12 +1,15 @@
-import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb; // Add kIsWeb check
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart'; // Added MediaType support
+import 'package:cross_file/cross_file.dart'; // Ensure correct XFile import
 import '../core/constants/app_config.dart';
+import 'storage_service.dart';
 
 /// 📸 Image Service
 /// Handles image picking, cropping, compression, and backend upload
@@ -26,7 +29,7 @@ class ImageService {
   }
 
   /// Pick image from camera
-  Future<File?> pickImageFromCamera({
+  Future<XFile?> pickImageFromCamera({
     ImageSource source = ImageSource.camera,
     double? maxWidth,
     double? maxHeight,
@@ -40,9 +43,7 @@ class ImageService {
         imageQuality: imageQuality,
       );
 
-      if (pickedFile != null) {
-        return File(pickedFile.path);
-      }
+      return pickedFile;
     } catch (e) {
       debugPrint('Error picking image from camera: $e');
     }
@@ -50,7 +51,7 @@ class ImageService {
   }
 
   /// Pick image from gallery
-  Future<File?> pickImageFromGallery({
+  Future<XFile?> pickImageFromGallery({
     double? maxWidth,
     double? maxHeight,
     int? imageQuality,
@@ -63,9 +64,7 @@ class ImageService {
         imageQuality: imageQuality,
       );
 
-      if (pickedFile != null) {
-        return File(pickedFile.path);
-      }
+      return pickedFile;
     } catch (e) {
       debugPrint('Error picking image from gallery: $e');
     }
@@ -73,7 +72,7 @@ class ImageService {
   }
 
   /// Pick multiple images from gallery
-  Future<List<File>> pickMultipleImages({
+  Future<List<XFile>> pickMultipleImages({
     int maxImages = 5,
     double? maxWidth,
     double? maxHeight,
@@ -87,13 +86,10 @@ class ImageService {
       );
 
       if (pickedFiles.length > maxImages) {
-        return pickedFiles
-            .take(maxImages)
-            .map((file) => File(file.path))
-            .toList();
+        return pickedFiles.take(maxImages).toList();
       }
 
-      return pickedFiles.map((file) => File(file.path)).toList();
+      return pickedFiles;
     } catch (e) {
       debugPrint('Error picking multiple images: $e');
       return [];
@@ -101,8 +97,8 @@ class ImageService {
   }
 
   /// Crop image
-  Future<File?> cropImage(
-    File imageFile, {
+  Future<XFile?> cropImage(
+    XFile imageFile, {
     CropAspectRatioPreset? aspectRatioPreset,
   }) async {
     try {
@@ -123,7 +119,7 @@ class ImageService {
       );
 
       if (croppedFile != null) {
-        return File(croppedFile.path);
+        return XFile(croppedFile.path); // Return XFile directly
       }
     } catch (e) {
       debugPrint('Error cropping image: $e');
@@ -132,23 +128,18 @@ class ImageService {
   }
 
   /// Compress image
-  Future<File?> compressImage(
-    File imageFile, {
+  Future<XFile?> compressImage(
+    XFile imageFile, {
     int quality = 80,
     int? maxWidth,
     int? maxHeight,
   }) async {
+    if (kIsWeb) return imageFile; // Skip compression on web for simplicity
+
     try {
-      // For now, we'll use the image picker quality parameter
-      // In a production app, you might want to use a dedicated image compression library
-      final String fileName = path.basename(imageFile.path);
-      final String dir = path.dirname(imageFile.path);
-      final String compressedPath = path.join(dir, 'compressed_$fileName');
-
-      // Simple file copy for now - replace with actual compression logic
-      final File compressedFile = await imageFile.copy(compressedPath);
-
-      return compressedFile;
+      // For now, we'll return original as full compression requires complex web/native branching
+      // In a production app, use flutter_image_compress with Uint8List for web support
+      return imageFile;
     } catch (e) {
       debugPrint('Error compressing image: $e');
       return imageFile; // Return original if compression fails
@@ -157,27 +148,50 @@ class ImageService {
 
   /// Upload image to backend
   Future<String?> uploadImageToBackend(
-    File imageFile, {
+    XFile imageFile, {
     required String folder,
     String? fileName,
     Function(double)? onProgress,
   }) async {
     try {
-      final String actualFileName = fileName ??
-          '${DateTime.now().millisecondsSinceEpoch}_${path.basename(imageFile.path)}';
+      String mimeType = 'image/jpeg';
+      String extension = 'jpg';
+
+      if (imageFile.mimeType != null) {
+        mimeType = imageFile.mimeType!;
+        if (mimeType == 'image/png')
+          extension = 'png';
+        else if (mimeType == 'image/gif')
+          extension = 'gif';
+        else if (mimeType == 'image/webp') extension = 'webp';
+      } else {
+        final name = imageFile.name.toLowerCase();
+        if (name.endsWith('.png')) {
+          extension = 'png';
+          mimeType = 'image/png';
+        } else if (name.endsWith('.gif')) {
+          extension = 'gif';
+          mimeType = 'image/gif';
+        } else if (name.endsWith('.webp')) {
+          extension = 'webp';
+          mimeType = 'image/webp';
+        }
+      }
+
+      final String actualFileName =
+          '${DateTime.now().millisecondsSinceEpoch}.$extension';
 
       // Create multipart request
       final uri = Uri.parse('${AppConfig.baseUrl}/upload/image');
       final request = http.MultipartRequest('POST', uri);
 
-      // Add file
-      final fileStream = http.ByteStream(imageFile.openRead());
-      final fileLength = await imageFile.length();
-      final multipartFile = http.MultipartFile(
+      // Add file using bytes
+      final bytes = await imageFile.readAsBytes();
+      final multipartFile = http.MultipartFile.fromBytes(
         'image',
-        fileStream,
-        fileLength,
+        bytes,
         filename: actualFileName,
+        contentType: MediaType.parse(mimeType),
       );
 
       request.files.add(multipartFile);
@@ -203,14 +217,14 @@ class ImageService {
 
   /// Upload multiple images to backend
   Future<List<String>> uploadMultipleImagesToBackend(
-    List<File> imageFiles, {
+    List<XFile> imageFiles, {
     required String folder,
     Function(double, int)? onProgress, // progress, currentIndex
   }) async {
     final List<String> downloadUrls = [];
 
     for (int i = 0; i < imageFiles.length; i++) {
-      final File imageFile = imageFiles[i];
+      final XFile imageFile = imageFiles[i];
       final String? downloadUrl = await uploadImageToBackend(
         imageFile,
         folder: folder,
@@ -238,8 +252,88 @@ class ImageService {
     }
   }
 
+  /// Upload profile image to backend (with authentication)
+  Future<String?> uploadProfileImage(XFile imageFile) async {
+    try {
+      // Get authentication token
+      final StorageService storage = StorageService();
+      final token = await storage.getAccessToken();
+
+      if (token == null) {
+        debugPrint('Error: No auth token available for profile upload');
+        return null;
+      }
+
+      // Determine MIME type
+      String mimeType = 'image/jpeg';
+      String extension = 'jpg';
+
+      if (imageFile.mimeType != null) {
+        mimeType = imageFile.mimeType!;
+        if (mimeType == 'image/png')
+          extension = 'png';
+        else if (mimeType == 'image/gif')
+          extension = 'gif';
+        else if (mimeType == 'image/webp') extension = 'webp';
+      } else {
+        final name = imageFile.name.toLowerCase();
+        if (name.endsWith('.png')) {
+          extension = 'png';
+          mimeType = 'image/png';
+        } else if (name.endsWith('.gif')) {
+          extension = 'gif';
+          mimeType = 'image/gif';
+        } else if (name.endsWith('.webp')) {
+          extension = 'webp';
+          mimeType = 'image/webp';
+        }
+      }
+
+      final String actualFileName =
+          'profile_${DateTime.now().millisecondsSinceEpoch}.$extension';
+
+      // Create multipart request to profile image endpoint
+      final uri = Uri.parse('${AppConfig.baseUrl}/users/profile/image');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add authorization header
+      request.headers['Authorization'] = 'Bearer $token';
+
+      // Add file using bytes
+      final bytes = await imageFile.readAsBytes();
+      final multipartFile = http.MultipartFile.fromBytes(
+        'profileImage',
+        bytes,
+        filename: actualFileName,
+        contentType: MediaType.parse(mimeType),
+      );
+
+      request.files.add(multipartFile);
+
+      // Send request
+      debugPrint('📸 Uploading profile image...');
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final profileImageUrl =
+            data['data']?['profileImage'] ?? data['profileImage'];
+        debugPrint('✅ Profile image uploaded: $profileImageUrl');
+        return profileImageUrl;
+      } else {
+        debugPrint(
+            '❌ Error uploading profile image: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('❌ Error uploading profile image: $e');
+      return null;
+    }
+  }
+
   /// Get image dimensions
-  Future<Size?> getImageDimensions(File imageFile) async {
+  Future<Size?> getImageDimensions(XFile imageFile) async {
     try {
       final bytes = await imageFile.readAsBytes();
       final decodedImage = await decodeImageFromList(bytes);
@@ -251,16 +345,22 @@ class ImageService {
     }
   }
 
-  /// Validate image file
   Future<bool> validateImage(
-    File imageFile, {
-    int maxSizeInMB = 10,
+    XFile imageFile, {
+    int maxSizeInMB = 50, // Increased from 10MB to 50MB to match backend
     List<String> allowedExtensions = const [
       'jpg',
       'jpeg',
       'png',
       'gif',
-      'webp'
+      'webp',
+      'bmp',
+      'svg',
+      'tiff',
+      'tif',
+      'ico',
+      'heic',
+      'heif'
     ],
   }) async {
     try {
@@ -309,8 +409,8 @@ class ImageService {
   }
 
   /// Generate thumbnail from image
-  Future<File?> generateThumbnail(
-    File imageFile, {
+  Future<XFile?> generateThumbnail(
+    XFile imageFile, {
     int maxWidth = 200,
     int maxHeight = 200,
     int quality = 80,

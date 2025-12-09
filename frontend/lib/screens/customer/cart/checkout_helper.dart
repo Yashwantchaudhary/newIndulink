@@ -14,13 +14,13 @@ Future<bool> handleCODOrder({
   String? notes,
 }) async {
   try {
-    final success = await orderProvider.createOrder(
-      deliveryAddress: deliveryAddress,
+    final order = await orderProvider.createOrder(
+      shippingAddress: deliveryAddress,
       paymentMethod: 'cash_on_delivery',
       notes: notes,
     );
 
-    if (success) {
+    if (order != null) {
       // Clear cart after successful order
       await cartProvider.clearCart();
       return true;
@@ -45,28 +45,42 @@ Future<bool> handleESewaOrder({
     final paymentService = PaymentService();
 
     // Initiate eSewa payment
-    final paymentResult = await paymentService.initiateESewaPayment(
+    // Use callback-based eSewa payment
+    bool paymentSuccess = false;
+    String? refId;
+    String? transactionId;
+
+    await paymentService.initiateEsewaPayment(
+      orderId: 'ORDER_${DateTime.now().millisecondsSinceEpoch}',
       amount: totalAmount,
-      productId: 'ORDER_${DateTime.now().millisecondsSinceEpoch}',
       productName: 'INDULINK Order',
+      productId: 'ORDER_${DateTime.now().millisecondsSinceEpoch}',
+      onSuccess: (result) {
+        paymentSuccess = true;
+        refId = result.refId;
+        // Note: EsewaPaymentSuccessResult may not have transactionDetails
+        // transactionId would be available in result if provided by eSewa
+      },
+      onFailure: (error) {
+        paymentSuccess = false;
+        debugPrint('eSewa payment failed: $error');
+      },
     );
 
-    if (paymentResult != null && paymentResult.hasData) {
-      // Payment successful, create order
-      final success = await orderProvider.createOrder(
-        deliveryAddress: deliveryAddress,
-        paymentMethod: 'esewa',
-        notes: notes,
-        paymentDetails: {
-          'refId': paymentResult.refId,
-          'transactionId': paymentResult.transactionDetails?.transactionId,
-        },
-      );
+    if (!paymentSuccess) {
+      return false;
+    }
 
-      if (success) {
-        await cartProvider.clearCart();
-        return true;
-      }
+    // Payment successful, create order
+    final order = await orderProvider.createOrder(
+      shippingAddress: deliveryAddress,
+      paymentMethod: 'esewa',
+      notes: notes,
+    );
+
+    if (order != null) {
+      await cartProvider.clearCart();
+      return true;
     }
     return false;
   } catch (e) {

@@ -280,9 +280,9 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
 
     return GridView.builder(
       padding: const EdgeInsets.all(AppDimensions.pageHorizontalPadding),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.55, // Reduced for ProductCard + overlay buttons
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 200, // Responsive width
+        childAspectRatio: 0.65, // Adjusted for cleaner look
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
@@ -294,68 +294,78 @@ class _CustomerWishlistScreenState extends State<CustomerWishlistScreen> {
   }
 
   Widget _buildWishlistItem(Product product) {
-    return Stack(
-      children: [
-        ProductCard(
-          product: product,
-          width: double.infinity,
-        ),
-
-        // Remove button
-        Positioned(
-          top: 8,
-          right: 8,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: IconButton(
-              onPressed: () => _removeFromWishlist(product.id),
-              icon: const Icon(Icons.favorite, color: AppColors.error),
-              iconSize: 20,
-              padding: const EdgeInsets.all(8),
-              constraints: const BoxConstraints(),
-            ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(
+        children: [
+          ProductCard(
+            product: product,
+            width: double.infinity,
+            showAddButton: false, // Remove redundant button
           ),
-        ),
 
-        // Add to cart button
-        Positioned(
-          bottom: 12,
-          left: 12,
-          right: 12,
-          child: SizedBox(
-            height: 36,
-            child: ElevatedButton.icon(
-              onPressed: product.inStock ? () => _addToCart(product) : null,
-              icon: const Icon(Icons.shopping_cart, size: 16),
-              label: Text(
-                product.inStock ? 'Add to Cart' : 'Out of Stock',
-                style:
-                    const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          // Remove button (moved to top right)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    product.inStock ? AppColors.primary : Colors.grey,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                elevation: 2,
+              child: IconButton(
+                onPressed: () => _removeFromWishlist(product.id),
+                icon: const Icon(Icons.close,
+                    color: AppColors.textSecondary), // Changed to Close icon
+                iconSize: 18,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
               ),
             ),
           ),
-        ),
-      ],
+
+          // Add to Cart Button (Full width at bottom)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(16)), // Match card radius
+              ),
+              child: ElevatedButton(
+                onPressed: product.inStock ? () => _addToCart(product) : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      product.inStock ? AppColors.primary : Colors.grey,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  minimumSize: const Size(double.infinity, 36),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  product.inStock ? 'Add to Cart' : 'Out of Stock',
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

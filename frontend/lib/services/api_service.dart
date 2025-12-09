@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart'; // For MediaType
+import 'package:image_picker/image_picker.dart'; // Added XFile support
 import '../core/constants/app_config.dart';
 import 'storage_service.dart';
 
@@ -215,7 +217,7 @@ class ApiService {
 
   /// Handle errors (network, timeout, etc.)
   ApiResponse _handleError(dynamic error) {
-    String message = 'An unexpected error occurred';
+    String message = 'An unexpected error occurred: $error';
 
     if (error is SocketException) {
       message = 'No internet connection';
@@ -237,7 +239,7 @@ class ApiService {
   /// Upload multiple files (for product images, documents)
   Future<ApiResponse> uploadFiles(
     String endpoint,
-    List<File> files, {
+    List<XFile> files, {
     Map<String, String>? fields,
     String fileField = 'files',
     String method = 'POST',
@@ -253,15 +255,18 @@ class ApiService {
         request.headers['Authorization'] = 'Bearer $token';
       }
 
-      // Add files
+      // Add files with proper MIME type
       for (var file in files) {
-        final fileStream = http.ByteStream(file.openRead());
-        final fileLength = await file.length();
-        final multipartFile = http.MultipartFile(
+        final bytes = await file.readAsBytes();
+
+        // Detect MIME type from file extension
+        final mimeType = _getMimeType(file.name);
+
+        final multipartFile = http.MultipartFile.fromBytes(
           fileField,
-          fileStream,
-          fileLength,
-          filename: file.path.split('/').last,
+          bytes,
+          filename: file.name,
+          contentType: mimeType,
         );
         request.files.add(multipartFile);
       }
@@ -280,10 +285,57 @@ class ApiService {
     }
   }
 
+  /// Get MIME type from file name
+  MediaType _getMimeType(String fileName) {
+    final ext = fileName.toLowerCase().split('.').last;
+    switch (ext) {
+      case 'jpg':
+      case 'jpeg':
+      case 'jfif':
+        return MediaType('image', 'jpeg');
+      case 'png':
+        return MediaType('image', 'png');
+      case 'gif':
+        return MediaType('image', 'gif');
+      case 'webp':
+        return MediaType('image', 'webp');
+      case 'bmp':
+        return MediaType('image', 'bmp');
+      case 'svg':
+        return MediaType('image', 'svg+xml');
+      case 'tiff':
+      case 'tif':
+        return MediaType('image', 'tiff');
+      case 'ico':
+        return MediaType('image', 'x-icon');
+      case 'heic':
+      case 'heif':
+        return MediaType('image', 'heic');
+      case 'avif':
+        return MediaType('image', 'avif');
+      case 'pdf':
+        return MediaType('application', 'pdf');
+      case 'doc':
+        return MediaType('application', 'msword');
+      case 'docx':
+        return MediaType('application',
+            'vnd.openxmlformats-officedocument.wordprocessingml.document');
+      case 'xls':
+        return MediaType('application', 'vnd.ms-excel');
+      case 'xlsx':
+        return MediaType('application',
+            'vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      case 'txt':
+        return MediaType('text', 'plain');
+      default:
+        return MediaType('application', 'octet-stream');
+    }
+  }
+
   /// Upload file (for images, documents)
   Future<ApiResponse> uploadFile(
     String endpoint,
-    File file, {
+    XFile file, {
     Map<String, String>? fields,
     String fileField = 'file',
   }) async {
@@ -293,19 +345,17 @@ class ApiService {
 
       final request = http.MultipartRequest('POST', uri);
 
-      // Add authorization header
       if (token != null) {
         request.headers['Authorization'] = 'Bearer $token';
       }
 
-      // Add file
-      final fileStream = http.ByteStream(file.openRead());
-      final fileLength = await file.length();
-      final multipartFile = http.MultipartFile(
+      final bytes = await file.readAsBytes();
+      final mimeType = _getMimeType(file.name);
+      final multipartFile = http.MultipartFile.fromBytes(
         fileField,
-        fileStream,
-        fileLength,
-        filename: file.path.split('/').last,
+        bytes,
+        filename: file.name,
+        contentType: mimeType,
       );
       request.files.add(multipartFile);
 

@@ -1,17 +1,19 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/image_service.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../constants/app_typography.dart';
+import 'dart:io' as io; // Safe import for mobile
+import 'package:cross_file/cross_file.dart'; // Ensure cross_file is available
 
 /// 📸 Multi Image Upload Widget
 /// Allows users to select, preview, and manage multiple images
 class MultiImageUploadWidget extends StatefulWidget {
   final List<String> initialImages; // URLs for existing images
   final int maxImages;
-  final Function(List<File>) onImagesSelected;
+  final Function(List<XFile>) onImagesSelected; // Changed to XFile
   final Function(List<String>)? onImagesUploaded; // For uploaded URLs
   final String uploadFolder;
   final bool showUploadProgress;
@@ -32,7 +34,8 @@ class MultiImageUploadWidget extends StatefulWidget {
 
 class _MultiImageUploadWidgetState extends State<MultiImageUploadWidget> {
   final ImageService _imageService = ImageService();
-  final List<File> _selectedImages = [];
+  final List<XFile> _selectedImages =
+      []; // Changed to XFile // Changed to XFile
   final List<String> _uploadedUrls = [];
   bool _isUploading = false;
   double _uploadProgress = 0.0;
@@ -168,17 +171,29 @@ class _MultiImageUploadWidgetState extends State<MultiImageUploadWidget> {
                           color: AppColors.textTertiary),
                     ),
                   )
-                : Image.file(
-                    File(imagePath),
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: AppColors.background,
-                      child: const Icon(Icons.broken_image,
-                          color: AppColors.textTertiary),
-                    ),
-                  ),
+                : kIsWeb
+                    ? Image.network(
+                        imagePath, // On web, file path is actually a blob URL
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: AppColors.background,
+                          child: const Icon(Icons.broken_image,
+                              color: AppColors.textTertiary),
+                        ),
+                      )
+                    : Image.file(
+                        io.File(imagePath),
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: AppColors.background,
+                          child: const Icon(Icons.broken_image,
+                              color: AppColors.textTertiary),
+                        ),
+                      ),
           ),
         ),
 
@@ -293,7 +308,7 @@ class _MultiImageUploadWidgetState extends State<MultiImageUploadWidget> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final File? imageFile = source == ImageSource.camera
+      final XFile? imageFile = source == ImageSource.camera
           ? await _imageService.pickImageFromCamera()
           : await _imageService.pickImageFromGallery();
 
@@ -305,7 +320,7 @@ class _MultiImageUploadWidgetState extends State<MultiImageUploadWidget> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text(
-                    'Invalid image. Please select a valid image file under 10MB.'),
+                    'Invalid image. Please select a valid image file under 50MB.'),
               ),
             );
           }

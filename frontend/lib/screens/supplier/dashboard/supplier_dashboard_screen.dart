@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
@@ -34,11 +35,22 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
   String? _error;
   SupplierDashboardData? _dashboardData;
   Map<String, dynamic>? _activeCartData;
+  Timer? _refreshTimer; // Auto-refresh timer for live data
 
   @override
   void initState() {
     super.initState();
     _loadDashboardData();
+    // Auto-refresh every 30 seconds for live data updates
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _loadDashboardData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel(); // Cancel timer to prevent memory leaks
+    super.dispose();
   }
 
   Future<void> _loadDashboardData() async {

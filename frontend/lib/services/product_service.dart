@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart' hide Category;
+import 'package:image_picker/image_picker.dart'; // Added XFile support
 
 import '../core/constants/app_config.dart';
 import '../models/product.dart';
@@ -328,7 +328,7 @@ class ProductService {
   /// Create a new product (Supplier)
   Future<ProductResult> createProduct(
     Map<String, String> fields,
-    List<File> images,
+    List<XFile> images,
   ) async {
     try {
       final response = await _api.uploadFiles(
@@ -358,7 +358,7 @@ class ProductService {
   Future<ProductResult> updateProduct(
     String productId,
     Map<String, String> fields,
-    List<File> images,
+    List<XFile> images,
   ) async {
     try {
       final endpoint = AppConfig.replaceParams(

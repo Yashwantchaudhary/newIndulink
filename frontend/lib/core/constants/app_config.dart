@@ -60,7 +60,8 @@ class AppConfig {
   static const String verifyEmailEndpoint = '/auth/verify-email';
   static const String forgotPasswordEndpoint = '/auth/forgot-password';
   static const String resetPasswordEndpoint = '/auth/reset-password';
-  static const String changePasswordEndpoint = '/auth/change-password';
+  static const String changePasswordEndpoint =
+      '/auth/update-password'; // Changed from /auth/change-password to match backend
   static const String deleteAccountEndpoint = '/auth/delete-account';
 
   // ==================== User Endpoints ====================
@@ -113,7 +114,7 @@ class AppConfig {
   // ==================== Supplier Endpoints ====================
   static const String supplierProductsEndpoint = '/supplier/products';
   static const String supplierOrdersEndpoint = '/supplier/orders';
-  static const String supplierDashboardEndpoint = '/dashboard/supplier';
+  static const String supplierDashboardEndpoint = '/supplier/dashboard';
   static const String supplierAnalyticsEndpoint = '/supplier/analytics';
   static const String createProductEndpoint = '/supplier/products';
   static const String updateProductEndpoint = '/supplier/products/:id';

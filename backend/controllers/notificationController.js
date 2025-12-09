@@ -9,20 +9,41 @@ const { sendPushNotification } = require('../services/notificationService');
 const getNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
+    const userRole = req.user.role;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    const notifications = await Notification.find({ userId })
+    // Query notifications where:
+    // 1. targetRole matches user's role (role-based notifications)
+    // 2. targetUsers array contains user's ID (user-specific targeted)
+    // 3. userId matches (legacy/backward compatibility)
+    const query = {
+      $or: [
+        { targetRole: userRole },
+        { targetUsers: userId },
+        { userId: userId }
+      ]
+    };
+
+    console.log('📥 GET /notifications - User:', userId, 'Role:', userRole);
+    console.log('🔍 Query:', JSON.stringify(query));
+
+    const notifications = await Notification.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit)
-      .populate('relatedUser', 'firstName lastName')
-      .populate('relatedOrder', 'orderNumber')
-      .populate('relatedProduct', 'title');
+      .limit(limit);
 
-    const total = await Notification.countDocuments({ userId });
-    const unreadCount = await Notification.countDocuments({ userId, isRead: false });
+    console.log('✅ Found', notifications.length, 'notifications');
+    if (notifications.length > 0) {
+      console.log('Sample notification:', JSON.stringify(notifications[0]));
+    }
+
+    const total = await Notification.countDocuments(query);
+    const unreadCount = await Notification.countDocuments({
+      ...query,
+      isRead: false
+    });
 
     res.status(200).json({
       success: true,

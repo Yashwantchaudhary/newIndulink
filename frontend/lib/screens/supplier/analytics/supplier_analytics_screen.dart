@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -16,12 +17,14 @@ class SupplierAnalyticsScreen extends StatefulWidget {
   const SupplierAnalyticsScreen({super.key});
 
   @override
-  State<SupplierAnalyticsScreen> createState() => _SupplierAnalyticsScreenState();
+  State<SupplierAnalyticsScreen> createState() =>
+      _SupplierAnalyticsScreenState();
 }
 
 class _SupplierAnalyticsScreenState extends State<SupplierAnalyticsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  Timer? _refreshTimer; // Auto-refresh timer for live data
 
   @override
   void initState() {
@@ -32,10 +35,16 @@ class _SupplierAnalyticsScreenState extends State<SupplierAnalyticsScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AnalyticsProvider>().loadSupplierAnalytics();
     });
+
+    // Auto-refresh every 30 seconds for live data updates
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      context.read<AnalyticsProvider>().loadSupplierAnalytics();
+    });
   }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel(); // Cancel timer to prevent memory leaks
     _tabController.dispose();
     super.dispose();
   }
@@ -213,7 +222,8 @@ class _SupplierAnalyticsScreenState extends State<SupplierAnalyticsScreen>
     );
   }
 
-  Widget _buildMetricCard(String title, String value, IconData icon, Color color, double change) {
+  Widget _buildMetricCard(
+      String title, String value, IconData icon, Color color, double change) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -237,7 +247,8 @@ class _SupplierAnalyticsScreenState extends State<SupplierAnalyticsScreen>
               const Spacer(),
               if (change != 0)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: change > 0 ? AppColors.success : AppColors.error,
                     borderRadius: BorderRadius.circular(4),
@@ -523,21 +534,28 @@ class _SupplierAnalyticsScreenState extends State<SupplierAnalyticsScreen>
               itemBuilder: (context, index) {
                 final item = inventory[index];
                 final stock = item['stock'] as int? ?? 0;
-                final statusColor = stock == 0 ? AppColors.error :
-                                   stock < 10 ? AppColors.warning : AppColors.success;
+                final statusColor = stock == 0
+                    ? AppColors.error
+                    : stock < 10
+                        ? AppColors.warning
+                        : AppColors.success;
 
                 return ListTile(
                   title: Text(item['name'] ?? 'Unknown Product'),
                   subtitle: Text('Stock: $stock'),
                   trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      stock == 0 ? 'Out of Stock' :
-                      stock < 10 ? 'Low Stock' : 'In Stock',
+                      stock == 0
+                          ? 'Out of Stock'
+                          : stock < 10
+                              ? 'Low Stock'
+                              : 'In Stock',
                       style: TextStyle(
                         color: statusColor,
                         fontSize: 12,

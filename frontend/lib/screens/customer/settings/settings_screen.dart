@@ -6,7 +6,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../providers/theme_provider.dart';
+import '../profile/change_password_screen.dart'; // Import change password screen
+// ThemeProvider import removed - dark mode feature disabled
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -41,7 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               _buildSwitchTile(
                 title: 'Push Notifications',
-                subtitle: 'Receive updates about your orders',
+                subtitle: ' Receive updates about your orders',
                 value: _notificationsEnabled,
                 icon: Icons.notifications_outlined,
                 iconColor: Colors.purple,
@@ -64,12 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   });
                 },
               ),
-              _buildDivider(),
-              Consumer<ThemeProvider>(
-                builder: (context, themeProvider, child) {
-                  return _buildThemeSelector(themeProvider);
-                },
-              ),
+              // Dark Mode toggle removed - app uses light theme only
             ],
           ),
           const SizedBox(height: 24),
@@ -81,7 +77,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.lock_outline,
                 iconColor: Colors.blue,
                 onTap: () {
-                  // TODO: Navigate to change password
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ChangePasswordScreen(),
+                    ),
+                  );
                 },
               ),
               _buildDivider(),
@@ -230,31 +231,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onChanged: onChanged,
       activeThumbColor: AppColors.primary,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-    );
-  }
-
-  Widget _buildThemeSelector(ThemeProvider themeProvider) {
-    final isDarkMode = themeProvider.isDarkMode;
-
-    return _buildSwitchTile(
-      title: 'Dark Mode',
-      subtitle: isDarkMode ? 'Dark theme enabled' : 'Light theme enabled',
-      value: isDarkMode,
-      icon: isDarkMode ? Icons.dark_mode : Icons.light_mode,
-      iconColor: isDarkMode ? Colors.indigo : Colors.orange,
-      onChanged: (value) {
-        if (value) {
-          themeProvider.setDarkMode();
-        } else {
-          themeProvider.setLightMode();
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(value ? 'Dark theme enabled' : 'Light theme enabled'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      },
     );
   }
 

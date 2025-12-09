@@ -24,6 +24,14 @@ exports.createOrder = async (req, res, next) => {
         const ordersBySupplier = {};
 
         for (const item of cart.items) {
+            // Check if product still exists
+            if (!item.product) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'One or more products in your cart are no longer available',
+                });
+            }
+
             const supplierId = item.product.supplier.toString();
 
             if (!ordersBySupplier[supplierId]) {
@@ -49,7 +57,7 @@ exports.createOrder = async (req, res, next) => {
                 product: item.product._id,
                 productSnapshot: {
                     title: item.product.title,
-                    image: item.product.images[0]?.url,
+                    image: item.product.images && item.product.images.length > 0 ? item.product.images[0].url : null,
                     sku: item.product.sku,
                 },
                 quantity: item.quantity,
@@ -553,7 +561,7 @@ exports.getSupplierOrderStats = async (req, res, next) => {
 
         // Get total revenue for supplier
         const revenueData = await Order.aggregate([
-            { $match: { supplier: supplierId, status: 'delivered' } },
+            { $match: { supplier: new mongoose.Types.ObjectId(supplierId), status: 'delivered' } },
             { $group: { _id: null, totalRevenue: { $sum: '$total' } } }
         ]);
 
