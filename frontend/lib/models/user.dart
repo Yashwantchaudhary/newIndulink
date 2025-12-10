@@ -1,5 +1,6 @@
 /// 👤 User Model
 /// Represents a user in the INDULINK system (Customer, Supplier, or Admin)
+import 'package:flutter/foundation.dart';
 import '../core/constants/app_config.dart';
 
 class User {
@@ -110,11 +111,18 @@ class User {
           : null,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
+          : _parseDateWithWarning(json['createdAt'], 'createdAt'),
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'])
-          : DateTime.now(),
+          : _parseDateWithWarning(json['updatedAt'], 'updatedAt'),
     );
+  }
+
+  static DateTime _parseDateWithWarning(dynamic value, String fieldName) {
+    if (value == null) {
+      debugPrint('⚠️ Missing $fieldName in user JSON, using current time');
+    }
+    return DateTime.now();
   }
 
   Map<String, dynamic> toJson() {

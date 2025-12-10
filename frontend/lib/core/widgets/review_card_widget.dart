@@ -138,10 +138,9 @@ class ReviewCard extends StatelessWidget {
               // Rating and date
               Row(
                 children: [
-                  StarRatingWidget(
-                    rating: review.rating,
+                  StarRating(
+                    rating: review.rating.toDouble(),
                     size: 14,
-                    interactive: false,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -386,6 +385,138 @@ class ReviewSummaryWidget extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// 📊 Rating Summary Widget
+/// Shows average rating and stars
+class RatingSummaryWidget extends StatelessWidget {
+  final double averageRating;
+  final int totalReviews;
+  final Map<int, int> ratingDistribution;
+
+  const RatingSummaryWidget({
+    super.key,
+    required this.averageRating,
+    required this.totalReviews,
+    required this.ratingDistribution,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  averageRating.toStringAsFixed(1),
+                  style: const TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                    height: 1.0,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      StarRating(
+                        rating: averageRating,
+                        size: 20,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$totalReviews Reviews',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// 📊 Rating Distribution Widget
+/// Shows progress bars for each star rating
+class RatingDistributionWidget extends StatelessWidget {
+  final Map<int, int> ratingDistribution;
+  final int totalReviews;
+
+  const RatingDistributionWidget({
+    super.key,
+    required this.ratingDistribution,
+    required this.totalReviews,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [5, 4, 3, 2, 1].map((rating) {
+        final count = ratingDistribution[rating] ?? 0;
+        final percentage = totalReviews > 0 ? count / totalReviews : 0.0;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 30,
+                child: Text(
+                  '$rating ★',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: percentage,
+                    backgroundColor: AppColors.background,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      rating >= 4
+                          ? AppColors.success
+                          : (rating >= 3 ? AppColors.warning : AppColors.error),
+                    ),
+                    minHeight: 8,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 40,
+                child: Text(
+                  '$count',
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }

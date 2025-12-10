@@ -5,7 +5,7 @@ import '../services/storage_service.dart';
 /// Manages application theme mode (light/dark/system)
 class ThemeProvider with ChangeNotifier {
   final StorageService _storage = StorageService();
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode = ThemeMode.light; // Default to Light Mode
 
   ThemeMode get themeMode => _themeMode;
 
@@ -62,12 +62,13 @@ class ThemeProvider with ChangeNotifier {
         } else if (savedTheme == 'light') {
           _themeMode = ThemeMode.light;
         } else if (savedTheme == 'system') {
-          _themeMode = ThemeMode.system;
+          // Even if system was saved, default to light for now per user request
+          _themeMode = ThemeMode.light;
         }
       }
     } catch (e) {
-      // If loading fails, keep default theme
-      _themeMode = ThemeMode.system;
+      // If loading fails, keep default theme (light)
+      _themeMode = ThemeMode.light;
     }
   }
 

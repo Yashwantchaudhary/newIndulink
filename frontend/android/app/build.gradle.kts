@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.indulink.app"
+    namespace = "com.indulink.Industrieslink"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.indulink.app"
+        applicationId = "com.indulink.Industrieslink"
         minSdk = flutter.minSdkVersion
         targetSdk = 34
         versionCode = 1

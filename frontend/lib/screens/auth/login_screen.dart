@@ -364,31 +364,161 @@ class _LoginScreenState extends State<LoginScreen>
 
               // Login Button
               Consumer<AuthProvider>(
-                builder: (context, authProvider, child) => SizedBox(
-                  height: AppDimensions.buttonHeight,
-                  child: ElevatedButton(
-                    onPressed: authProvider.isLoading ? null : _handleLogin,
-                    child: authProvider.isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Text(
-                            'Sign In',
-                            style: AppTypography.buttonMedium.copyWith(
-                              color: Colors.white,
+                builder: (context, authProvider, child) => Column(
+                  children: [
+                    SizedBox(
+                      height: AppDimensions.buttonHeight,
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: authProvider.isLoading ? null : _handleLogin,
+                        child: authProvider.isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                ),
+                              )
+                            : Text(
+                                'Sign In',
+                                style: AppTypography.buttonMedium.copyWith(
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    ),
+
+                    const SizedBox(height: AppDimensions.space24),
+
+                    Row(
+                      children: [
+                        Expanded(
+                            child:
+                                Divider(color: Colors.grey.withOpacity(0.3))),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'OR',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.textSecondary,
                             ),
                           ),
-                  ),
+                        ),
+                        Expanded(
+                            child:
+                                Divider(color: Colors.grey.withOpacity(0.3))),
+                      ],
+                    ),
+
+                    const SizedBox(height: AppDimensions.space24),
+
+                    // Google Sign-In Button
+                    SizedBox(
+                      height: AppDimensions.buttonHeight,
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () async {
+                          final authProvider =
+                              Provider.of<AuthProvider>(context, listen: false);
+                          final success = await authProvider.loginWithGoogle(
+                            role: widget.selectedRole,
+                          );
+
+                          if (mounted) {
+                            if (success) {
+                              _navigateToDashboard();
+                            } else {
+                              final error = authProvider.errorMessage ??
+                                  'Google sign in failed';
+
+                              debugPrint(
+                                  '🔍 Login Error: "$error"'); // DEBUG LOG
+
+                              // Check for specific role mismatch error from backend
+                              // Backend message: "This email is registered as a [role]..."
+                              if (error
+                                      .toLowerCase()
+                                      .contains('registered as') ||
+                                  error.toLowerCase().contains('login page') ||
+                                  error.toLowerCase().contains('role')) {
+                                _showRoleMismatchDialog(context, error);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      error,
+                                    ),
+                                    backgroundColor: AppColors.error,
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppDimensions.radiusM),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.network(
+                              'https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png',
+                              height: 24,
+                              width: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Continue with Google',
+                              style: AppTypography.buttonMedium.copyWith(
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showRoleMismatchDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded,
+                color:
+                    Color(0xFFFFA000)), // AppColors.warning hardcoded fallback
+            const SizedBox(width: AppDimensions.space8),
+            const Text('Account Exists'),
+          ],
+        ),
+        content: Text(
+          message,
+          style: AppTypography.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusM),
         ),
       ),
     );
@@ -400,14 +530,14 @@ class _LoginScreenState extends State<LoginScreen>
         text: TextSpan(
           text: "Don't have an account? ",
           style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
+            color: Colors.white,
           ),
           children: [
             TextSpan(
               text: 'Sign Up',
               style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.primary,
-                fontWeight: AppTypography.semiBold,
+                color: Colors.white,
+                fontWeight: AppTypography.bold, // Made bold for emphasis
               ),
               recognizer: TapGestureRecognizer()
                 ..onTap = () {

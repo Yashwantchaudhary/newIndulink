@@ -57,7 +57,7 @@ Future<bool> handleESewaOrder({
       productId: 'ORDER_${DateTime.now().millisecondsSinceEpoch}',
       onSuccess: (result) {
         paymentSuccess = true;
-        refId = result.refId;
+        refId = result?.refId;
         // Note: EsewaPaymentSuccessResult may not have transactionDetails
         // transactionId would be available in result if provided by eSewa
       },

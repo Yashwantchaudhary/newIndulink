@@ -135,6 +135,35 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  /// Login with Google
+  Future<bool> loginWithGoogle({required UserRole role}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _authService.loginWithGoogle(role: role);
+
+      if (result.success && result.user != null) {
+        _user = result.user;
+        _errorMessage = null;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = result.message;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Google sign in error: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Register new user
   Future<bool> register({
     required String firstName,

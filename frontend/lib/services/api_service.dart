@@ -17,6 +17,9 @@ class ApiService {
   final http.Client _client = http.Client();
   final StorageService _storage = StorageService();
 
+  /// Get current access token
+  Future<String?> getToken() => _storage.getAccessToken();
+
   // ==================== HTTP Methods ====================
 
   /// GET request
@@ -53,6 +56,7 @@ class ApiService {
 
       // Debug logging
       debugPrint('🌐 POST $uri');
+      debugPrint('🌐 Full URL Hit Point: $uri'); // Added for verification
       if (body != null) {
         debugPrint('📤 Body: ${jsonEncode(body)}');
       }

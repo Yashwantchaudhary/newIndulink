@@ -1,45 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
-const {
-    register,
-    login,
-    refreshToken,
-    logout,
-    getMe,
-    updatePassword,
-    forgotPassword,
-    resetPassword,
-} = require('../controllers/authController');
+const authController = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
-// Validation rules
-const registerValidation = [
-    body('firstName').trim().notEmpty().withMessage('First name is required'),
-    body('lastName').trim().notEmpty().withMessage('Last name is required'),
-    body('email').isEmail().withMessage('Valid email is required'),
-    body('password')
-        .isLength({ min: 6 })
-        .withMessage('Password must be at least 6 characters'),
-    body('role')
-        .optional()
-        .isIn(['customer', 'supplier', 'admin'])
-        .withMessage('Role must be customer, supplier, or admin'),
-];
+// Existing routes...
+router.post('/register', authController.register);
+router.post('/login', authController.login);
+router.post('/logout', authController.logout);
+router.post('/refresh', authController.refreshToken);
+router.post('/verify-email', authController.verifyEmail);
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/reset-password', authController.resetPassword);
+router.put('/update-password', protect, authController.updatePassword);
+router.post('/delete-account', protect, authController.deleteAccount);
 
-const loginValidation = [
-    body('email').isEmail().withMessage('Valid email is required'),
-    body('password').notEmpty().withMessage('Password is required'),
-];
-
-// Routes
-router.post('/register', registerValidation, register);
-router.post('/login', loginValidation, login);
-router.post('/refresh', refreshToken);
-router.post('/logout', protect, logout);
-router.get('/me', protect, getMe);
-router.put('/update-password', protect, updatePassword);
-router.post('/forgot-password', forgotPassword);
-router.post('/reset-password', resetPassword);
+// Google Sign-In endpoint
+router.post('/google', authController.googleLogin);
 
 module.exports = router;

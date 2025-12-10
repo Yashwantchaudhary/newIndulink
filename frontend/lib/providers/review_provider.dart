@@ -1,269 +1,201 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import '../core/constants/app_config.dart';
 import '../models/review.dart';
 import '../services/api_service.dart';
-import '../core/constants/app_config.dart';
 
-/// 📝 Review Provider
+/// 🌟 Review Provider
 /// Manages product reviews state and API interactions
 class ReviewProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
 
   // State
-  List<Review> _reviews = [];
-  ReviewStats? _reviewStats;
   bool _isLoading = false;
-  bool _isSubmitting = false;
   String? _errorMessage;
+  List<Review> _currentProductReviews = [];
+  ReviewStats? _currentProductStats;
+
+  // Pagination
+  int _currentPage = 1;
+  // ignore: unused_field
+  int _totalPages = 1;
 
   // Getters
-  List<Review> get reviews => _reviews;
-  ReviewStats? get reviewStats => _reviewStats;
   bool get isLoading => _isLoading;
-  bool get isSubmitting => _isSubmitting;
   String? get errorMessage => _errorMessage;
+  List<Review> get reviews => _currentProductReviews;
+  ReviewStats? get stats => _currentProductStats;
 
-  /// Clear error message
-  void _clearError() {
-    _errorMessage = null;
-    notifyListeners();
-  }
-
-  /// Set error message
-  void _setError(String message) {
-    _errorMessage = message;
-    notifyListeners();
-  }
-
-  /// Set loading state
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-
-  /// Set submitting state
-  void _setSubmitting(bool submitting) {
-    _isSubmitting = submitting;
-    notifyListeners();
-  }
-
-  /// Fetch reviews for a product
+  /// Fetch reviews for a specific product
   Future<void> fetchProductReviews(String productId,
-      {int page = 1, int limit = 10}) async {
+      {bool refresh = false}) async {
+    if (refresh) {
+      _currentPage = 1;
+      _currentProductReviews = [];
+    }
+
     _setLoading(true);
-    _clearError();
 
     try {
-      final endpoint = AppConfig.replaceParams(
-        AppConfig.productReviewsEndpoint,
-        {'id': productId},
-      );
-      final response = await _apiService.get(
-        endpoint,
-        params: {
-          'page': page.toString(),
-          'limit': limit.toString(),
-        },
-      );
+      final endpoint =
+          AppConfig.productReviewsEndpoint.replaceAll(':id', productId) +
+              '?page=$_currentPage&limit=10';
+
+      final response = await _apiService.get(endpoint);
 
       if (response.isSuccess && response.data != null) {
-        final reviewsData = response.data['data'] as List<dynamic>? ?? [];
-        _reviews = reviewsData.map((json) => Review.fromJson(json)).toList();
+        final data = response.data['data'] as List;
+        final newReviews = data.map((json) => Review.fromJson(json)).toList();
+
+        if (refresh) {
+          _currentProductReviews = newReviews;
+        } else {
+          _currentProductReviews.addAll(newReviews);
+        }
+
+        _totalPages = response.data['pages'] ?? 1;
+        _currentPage++;
+
+        // Also fetch stats if refreshing
+        if (refresh) {
+          await _fetchProductStats(productId);
+        }
       } else {
         _setError(response.message ?? 'Failed to load reviews');
       }
     } catch (e) {
-      _setError('Error loading reviews: $e');
+      _setError('Error fetching reviews: $e');
+    } finally {
+      _setLoading(false);
     }
+  }
 
-    _setLoading(false);
+  /// Internal method to fetch stats (mocked or from API if available)
+  Future<void> _fetchProductStats(String productId) async {
+    if (_currentProductReviews.isNotEmpty) {
+      double totalRating = 0;
+      Map<int, int> distribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+
+      for (var r in _currentProductReviews) {
+        totalRating += r.rating;
+        // Ensure rating is valid integer 1-5
+        int rating = r.rating.toInt();
+        if (rating < 1) rating = 1;
+        if (rating > 5) rating = 5;
+
+        distribution[rating] = (distribution[rating] ?? 0) + 1;
+      }
+
+      _currentProductStats = ReviewStats(
+        averageRating: totalRating / _currentProductReviews.length,
+        totalReviews: _currentProductReviews.length,
+        ratingDistribution: distribution,
+      );
+      notifyListeners();
+    }
   }
 
   /// Submit a new review
   Future<bool> submitReview(ReviewSubmission submission) async {
-    _setSubmitting(true);
-    _clearError();
+    _setLoading(true);
 
     try {
-      // Prepare the request data
-      final requestData = {
-        'product': submission.productId,
-        'rating': submission.rating,
-        'comment': submission.comment,
-      };
+      // If there are images, we need to upload them
+      if (submission.imagePaths.isNotEmpty) {
+        // Convert paths to XFiles
+        final files = submission.imagePaths.map((path) => XFile(path)).toList();
 
-      if (submission.orderId != null) {
-        requestData['order'] = submission.orderId!;
-      }
+        // Prepare fields
+        final fields = {
+          'product': submission.productId,
+          'rating': submission.rating.toString(),
+          'comment': submission.comment,
+        };
 
-      if (submission.title != null && submission.title!.isNotEmpty) {
-        requestData['title'] = submission.title!;
-      }
+        if (submission.title != null) fields['title'] = submission.title!;
+        if (submission.orderId != null) fields['order'] = submission.orderId!;
 
-      // TODO: Handle image uploads when implementing multi-image upload
-      // For now, we'll skip images
+        final response = await _apiService.uploadFiles(
+          AppConfig.addReviewEndpoint,
+          files,
+          fields: fields,
+          fileField: 'images', // Backend expects 'images' field for files
+        );
 
-      final response = await _apiService.post(AppConfig.addReviewEndpoint,
-          body: requestData);
-
-      if (response.isSuccess) {
-        // Refresh reviews after successful submission
-        await fetchProductReviews(submission.productId);
-        _setSubmitting(false);
-        return true;
+        if (response.isSuccess) {
+          await fetchProductReviews(submission.productId, refresh: true);
+          return true;
+        } else {
+          _setError(response.message ?? 'Failed to submit review');
+          return false;
+        }
       } else {
-        _setError(response.message ?? 'Failed to submit review');
-        _setSubmitting(false);
-        return false;
+        // No images, standard POST request
+        final body = submission.toJson();
+
+        final response = await _apiService.post(
+          AppConfig.addReviewEndpoint,
+          body: body,
+        );
+
+        if (response.isSuccess) {
+          await fetchProductReviews(submission.productId, refresh: true);
+          return true;
+        } else {
+          _setError(response.message ?? 'Failed to submit review');
+          return false;
+        }
       }
     } catch (e) {
       _setError('Error submitting review: $e');
-      _setSubmitting(false);
       return false;
-    }
-  }
-
-  /// Update an existing review
-  Future<bool> updateReview(
-    String reviewId, {
-    int? rating,
-    String? title,
-    String? comment,
-  }) async {
-    _setSubmitting(true);
-    _clearError();
-
-    try {
-      final updateData = <String, dynamic>{};
-      if (rating != null) updateData['rating'] = rating;
-      if (title != null) updateData['title'] = title;
-      if (comment != null) updateData['comment'] = comment;
-
-      final endpoint = AppConfig.replaceParams(
-        AppConfig.updateReviewEndpoint,
-        {'id': reviewId},
-      );
-      final response = await _apiService.put(endpoint, body: updateData);
-
-      if (response.isSuccess) {
-        // Update local review
-        final index = _reviews.indexWhere((r) => r.id == reviewId);
-        if (index != -1) {
-          final updatedReview = _reviews[index].copyWith(
-            rating: rating ?? _reviews[index].rating,
-            title: title ?? _reviews[index].title,
-            comment: comment ?? _reviews[index].comment,
-            updatedAt: DateTime.now(),
-          );
-          _reviews[index] = updatedReview;
-          notifyListeners();
-        }
-        _setSubmitting(false);
-        return true;
-      } else {
-        _setError(response.message ?? 'Failed to update review');
-        _setSubmitting(false);
-        return false;
-      }
-    } catch (e) {
-      _setError('Error updating review: $e');
-      _setSubmitting(false);
-      return false;
-    }
-  }
-
-  /// Delete a review
-  Future<bool> deleteReview(String reviewId) async {
-    _setSubmitting(true);
-    _clearError();
-
-    try {
-      final endpoint = AppConfig.replaceParams(
-        AppConfig.deleteReviewEndpoint,
-        {'id': reviewId},
-      );
-      final response = await _apiService.delete(endpoint);
-
-      if (response.isSuccess) {
-        // Remove from local list
-        _reviews.removeWhere((r) => r.id == reviewId);
-        notifyListeners();
-        _setSubmitting(false);
-        return true;
-      } else {
-        _setError(response.message ?? 'Failed to delete review');
-        _setSubmitting(false);
-        return false;
-      }
-    } catch (e) {
-      _setError('Error deleting review: $e');
-      _setSubmitting(false);
-      return false;
+    } finally {
+      _setLoading(false);
     }
   }
 
   /// Mark review as helpful
-  Future<bool> markReviewHelpful(String reviewId) async {
+  Future<void> markReviewHelpful(String reviewId) async {
     try {
-      final endpoint = AppConfig.replaceParams(
-        AppConfig.markReviewHelpfulEndpoint,
-        {'id': reviewId},
-      );
+      final endpoint =
+          AppConfig.markReviewHelpfulEndpoint.replaceAll(':id', reviewId);
       final response = await _apiService.put(endpoint);
 
-      if (response.isSuccess && response.data != null) {
-        // Update local review helpful count
-        final index = _reviews.indexWhere((r) => r.id == reviewId);
+      if (response.isSuccess) {
+        // Update local state
+        final index =
+            _currentProductReviews.indexWhere((r) => r.id == reviewId);
         if (index != -1) {
-          final newHelpfulCount =
-              response.data['helpfulCount'] ?? _reviews[index].helpfulCount;
-          final updatedReview = _reviews[index].copyWith(
-            helpfulCount: newHelpfulCount,
-          );
-          _reviews[index] = updatedReview;
-          notifyListeners();
+          final review = _currentProductReviews[index];
+
+          if (response.data != null && response.data['data'] != null) {
+            final newCount = response.data['data']['helpfulCount'];
+            // Create new review object with updated count
+            _currentProductReviews[index] =
+                review.copyWith(helpfulCount: newCount);
+            notifyListeners();
+          } else {
+            // If no data returned, just increment locally as fallback
+            // (Assuming toggle behavior, but typically helpful is increment only or toggle)
+            // Ideally backend returns the new state.
+          }
         }
-        return true;
-      } else {
-        _setError(response.message ?? 'Failed to mark review as helpful');
-        return false;
       }
     } catch (e) {
-      _setError('Error marking review as helpful: $e');
-      return false;
+      debugPrint('Error marking helpful: $e');
     }
   }
 
-  /// Check if user can review a product
-  Future<Map<String, dynamic>> checkReviewEligibility(String productId) async {
-    try {
-      // This would typically check if user has purchased the product
-      // For now, return basic eligibility
-      return {
-        'canReview': true,
-        'hasPurchased': false,
-        'message': 'You can review this product',
-      };
-    } catch (e) {
-      return {
-        'canReview': false,
-        'hasPurchased': false,
-        'message': 'Unable to check review eligibility',
-      };
-    }
-  }
-
-  /// Clear all reviews (for when switching products)
-  void clearReviews() {
-    _reviews = [];
-    _reviewStats = null;
-    _errorMessage = null;
+  void _setLoading(bool value) {
+    _isLoading = value;
     notifyListeners();
   }
 
-  /// Refresh reviews
-  Future<void> refresh() async {
-    // This would need the current product ID
-    // For now, just clear error
-    _clearError();
+  void _setError(String msg) {
+    _errorMessage = msg;
+    _isLoading = false;
+    notifyListeners();
   }
 }

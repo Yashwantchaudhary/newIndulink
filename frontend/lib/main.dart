@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 // Core
 import 'core/theme/app_theme.dart';
@@ -38,6 +39,14 @@ import 'routes/navigation_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+    debugPrint('✅ Firebase initialized successfully');
+  } catch (e) {
+    debugPrint('❌ Firebase initialization error: $e');
+  }
 
   // Initialize Storage Service first
   await StorageService().init();
@@ -141,6 +150,9 @@ class _IndulinkAppState extends State<IndulinkApp> {
 
         // Analytics and Reporting
         ChangeNotifierProvider(create: (_) => AnalyticsProvider()),
+
+        // Review Provider
+        ChangeNotifierProvider(create: (_) => ReviewProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

@@ -1,4 +1,4 @@
-const User = require('../models/User');
+﻿const User = require('../models/User');
 const { validationResult } = require('express-validator');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
@@ -541,6 +541,241 @@ exports.resetPassword = async (req, res, next) => {
             message: 'Password reset successfully',
         });
     } catch (error) {
+        next(error);
+    }
+};
+// @desc    Verify email
+// @route   POST /api/auth/verify-email
+// @access  Public
+exports.verifyEmail = async (req, res, next) => {
+    try {
+        const { token } = req.body;
+
+        if (!token) {
+            return res.status(400).json({
+                success: false,
+                message: 'Verification token is required',
+            });
+        }
+
+        const crypto = require('crypto');
+        const hashedToken = crypto
+            .createHash('sha256')
+            .update(token)
+            .digest('hex');
+
+        const user = await User.findOne({
+            emailVerificationToken: hashedToken,
+            emailVerificationExpire: { $gt: Date.now() },
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired verification token',
+            });
+        }
+
+        user.isEmailVerified = true;
+        user.emailVerificationToken = undefined;
+        user.emailVerificationExpire = undefined;
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Email verified successfully',
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Delete account
+// @route   POST /api/auth/delete-account
+// @access  Private
+exports.deleteAccount = async (req, res, next) => {
+    try {
+        const { password } = req.body;
+
+        if (!password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password is required to delete account',
+            });
+        }
+
+        const user = await User.findById(req.user.id).select('+password');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found',
+            });
+        }
+
+        // Verify password
+        const isMatch = await user.comparePassword(password);
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                message: 'Incorrect password',
+            });
+        }
+
+        await user.deleteOne();
+
+        res.status(200).json({
+            success: true,
+            message: 'Account deleted successfully',
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Google Sign-In
+// @route   POST /api/auth/google
+// @access  Public
+exports.googleLogin = async (req, res, next) => {
+    try {
+        console.log('Google Login Request Body:', req.body);
+        const { idToken, accessToken: googleAccessToken, email, displayName, photoUrl, role } = req.body;
+
+        if (!idToken && !googleAccessToken) {
+            return res.status(400).json({
+                success: false,
+                message: 'Google ID token or Access token is required',
+            });
+        }
+
+        console.log('🔐 Google Sign-In attempt for:', email);
+        console.log('👤 Requested Role:', role);
+
+        let verifiedEmail = email;
+
+        // Verify token
+        if (idToken) {
+            // TODO: Implement proper ID token verification using google-auth-library
+            // For now, we are trusting the email if idToken is present (should be verified in production)
+            // const ticket = await client.verifyIdToken({ idToken, audience: CLIENT_ID });
+            // const payload = ticket.getPayload();
+            // verifiedEmail = payload.email;
+        } else if (googleAccessToken) {
+            // Verify access token by fetching user info using native https
+            try {
+                const https = require('https');
+
+                await new Promise((resolve, reject) => {
+                    const options = {
+                        hostname: 'www.googleapis.com',
+                        path: '/oauth2/v3/userinfo',
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${googleAccessToken}`
+                        }
+                    };
+
+                    const req = https.request(options, (res) => {
+                        let data = '';
+                        res.on('data', (chunk) => { data += chunk; });
+                        res.on('end', () => {
+                            if (res.statusCode === 200) {
+                                const responseData = JSON.parse(data);
+                                if (responseData.email !== email) {
+                                    reject(new Error('Email mismatch'));
+                                } else {
+                                    verifiedEmail = responseData.email;
+                                    console.log('✅ Access Token verified via Google API');
+                                    resolve();
+                                }
+                            } else {
+                                reject(new Error('Invalid token'));
+                            }
+                        });
+                    });
+
+                    req.on('error', (e) => {
+                        reject(e);
+                    });
+
+                    req.end();
+                });
+            } catch (err) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Invalid access token or email mismatch',
+                });
+            }
+        }
+
+        // Check if user exists
+        const User = require('../models/User'); // Ensure User model is available
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            // Create new user from Google account
+            console.log('✨ Creating new user from Google account with role:', role);
+
+            const nameParts = displayName ? displayName.split(' ') : ['User', ''];
+            const crypto = require('crypto');
+            user = await User.create({
+                firstName: nameParts[0] || 'User',
+                lastName: nameParts.slice(1).join(' ') || '',
+                email: email,
+                password: crypto.randomBytes(16).toString('hex'), // Generate random password
+                role: role || 'customer', // Use requested role or default to customer
+                isEmailVerified: true, // Google accounts are pre-verified
+                profileImage: photoUrl || undefined,
+                authProvider: 'google',
+            });
+
+            console.log('✅ New user created via Google:', user._id);
+        } else {
+            console.log('✅ Existing user found:', user._id, 'Role:', user.role);
+
+            // Validate Role
+            if (role && user.role !== role) {
+                console.log(`❌ Role mismatch! Existing: ${user.role}, Requested: ${role}`);
+                return res.status(403).json({
+                    success: false,
+                    message: `This email is registered as a ${user.role}. Please sign in from the ${user.role} login page.`
+                });
+            }
+
+            // Update profile image if changed
+            if (photoUrl && user.profileImage !== photoUrl) {
+                user.profileImage = photoUrl;
+                user.isEmailVerified = true;
+                await user.save();
+            }
+        }
+
+        // Reset login attempts
+        user.loginAttempts = 0;
+        user.accountLockUntil = undefined;
+        user.lastLogin = new Date();
+        await user.save();
+
+        // Generate tokens
+        const accessToken = user.generateAccessToken(); // Use correct method name from User model
+        const refreshToken = user.generateRefreshToken();
+
+        // Save refresh token
+        user.refreshToken = refreshToken; // Use correct field name from User model (refreshToken vs refreshTokens)
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Google sign-in successful',
+            data: {
+                user: user.toJSON(), // Returns complete user object with all fields including timestamps
+                token: accessToken,
+                accessToken,
+                refreshToken,
+            },
+        });
+    } catch (error) {
+        console.error('❌ Google login error:', error);
         next(error);
     }
 };

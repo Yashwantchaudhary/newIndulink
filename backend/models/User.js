@@ -230,6 +230,9 @@ const userSchema = new mongoose.Schema(
             enum: ['en', 'ne', 'hi'], // English, Nepali, Hindi
             default: 'en',
         },
+    },
+    {
+        timestamps: true, // Automatically manage createdAt and updatedAt fields
     });
 
 // Hash password before saving

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_typography.dart';
-import '../../../core/widgets/report_dialog.dart';
+import '../../../core/widgets/review_card_widget.dart';
+import '../../../core/widgets/loading_widgets.dart';
+import '../../../providers/review_provider.dart';
+import '../../../models/review.dart';
 
 /// 📝 Full Reviews Screen
 /// Shows all reviews for a specific product with filtering and sorting
@@ -26,6 +30,18 @@ class FullReviewsScreen extends StatefulWidget {
 class _FullReviewsScreenState extends State<FullReviewsScreen> {
   String _sortBy = 'newest'; // newest, oldest, highest, lowest
   int _ratingFilter = 0; // 0 = all, 1-5 = specific rating
+  bool _isInit = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isInit) {
+      // Fetch reviews when screen loads
+      Future.microtask(() => Provider.of<ReviewProvider>(context, listen: false)
+          .fetchProductReviews(widget.productId, refresh: true));
+      _isInit = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +66,20 @@ class _FullReviewsScreenState extends State<FullReviewsScreen> {
 
           // Reviews List
           Expanded(
-            child: _buildReviewsList(),
+            child: Consumer<ReviewProvider>(
+              builder: (context, reviewProvider, _) {
+                if (reviewProvider.isLoading &&
+                    reviewProvider.reviews.isEmpty) {
+                  return const Center(child: LoadingSpinner());
+                }
+
+                if (reviewProvider.errorMessage != null) {
+                  return Center(child: Text(reviewProvider.errorMessage!));
+                }
+
+                return _buildReviewsList(reviewProvider.reviews);
+              },
+            ),
           ),
         ],
       ),
@@ -105,10 +134,12 @@ class _FullReviewsScreenState extends State<FullReviewsScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Customer Reviews',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
+                Consumer<ReviewProvider>(
+                  builder: (context, provider, _) => Text(
+                    '${provider.reviews.length} Customer Reviews',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -129,7 +160,8 @@ class _FullReviewsScreenState extends State<FullReviewsScreen> {
           // Sort By
           Text(
             'Sort by',
-            style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.bold),
+            style:
+                AppTypography.labelLarge.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           SingleChildScrollView(
@@ -152,7 +184,8 @@ class _FullReviewsScreenState extends State<FullReviewsScreen> {
           // Filter by Rating
           Text(
             'Filter by rating',
-            style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.bold),
+            style:
+                AppTypography.labelLarge.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           SingleChildScrollView(
@@ -240,33 +273,28 @@ class _FullReviewsScreenState extends State<FullReviewsScreen> {
     );
   }
 
-  Widget _buildReviewsList() {
-    // TODO: Replace with actual review provider data
-    // For now, showing mock reviews
-    final mockReviews = _getMockReviews();
-
-    // Apply filters
-    var filteredReviews = mockReviews;
+  Widget _buildReviewsList(List<Review> reviews) {
+    // Apply filters matching local logic
+    // (Ideally backend handles this via API params, but we do client side filtering for now as per original code logic)
+    var filteredReviews = reviews.toList();
     if (_ratingFilter > 0) {
-      filteredReviews = filteredReviews.where((review) =>
-          (review)['rating'] == _ratingFilter).toList();
+      filteredReviews = filteredReviews
+          .where((review) => review.rating == _ratingFilter)
+          .toList();
     }
 
     // Apply sorting
     filteredReviews.sort((a, b) {
-      final reviewA = a;
-      final reviewB = b;
-
       switch (_sortBy) {
         case 'oldest':
-          return reviewA['date'].compareTo(reviewB['date']);
+          return a.createdAt.compareTo(b.createdAt);
         case 'highest':
-          return reviewB['rating'].compareTo(reviewA['rating']);
+          return b.rating.compareTo(a.rating);
         case 'lowest':
-          return reviewA['rating'].compareTo(reviewB['rating']);
+          return a.rating.compareTo(b.rating);
         case 'newest':
         default:
-          return reviewB['date'].compareTo(reviewA['date']);
+          return b.createdAt.compareTo(a.createdAt);
       }
     });
 
@@ -307,241 +335,8 @@ class _FullReviewsScreenState extends State<FullReviewsScreen> {
       separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         final review = filteredReviews[index];
-        return _buildMockReviewCard(review);
+        return ReviewCard(review: review);
       },
     );
-  }
-
-  Widget _buildMockReviewCard(Map<String, dynamic> review) {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.paddingL),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: AppColors.primaryLightest,
-                child: Text(
-                  review['userName'][0].toUpperCase(),
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          review['userName'],
-                          style: AppTypography.bodyMedium.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (review['verified']) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.success.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              'Verified',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: AppColors.success,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Row(
-                          children: List.generate(
-                            5,
-                            (index) => Icon(
-                              index < review['rating'] ? Icons.star : Icons.star_border,
-                              size: 16,
-                              color: index < review['rating'] ? AppColors.warning : AppColors.textTertiary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${review['date'].difference(DateTime.now()).inDays.abs()} days ago',
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Review content
-          if (review['title'] != null) ...[
-            Text(
-              review['title'],
-              style: AppTypography.bodyLarge.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-          ],
-
-          Text(
-            review['comment'],
-            style: AppTypography.bodyMedium.copyWith(
-              height: 1.5,
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Actions
-          Row(
-            children: [
-              TextButton.icon(
-                onPressed: () {
-                  // TODO: Mark as helpful
-                },
-                icon: Icon(
-                  Icons.thumb_up_outlined,
-                  size: 16,
-                  color: AppColors.textSecondary,
-                ),
-                label: Text(
-                  'Helpful (${review['helpful']})',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                ),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: () async {
-                  final result = await ReportDialog.show(
-                    context,
-                    contentType: 'review',
-                    contentId: review['id'],
-                    contentTitle: review['title'] ?? 'Review by ${review['userName']}',
-                  );
-
-                  if (result == true && context.mounted) {
-                    // Report was submitted successfully
-                    // Could update UI to show report submitted state
-                  }
-                },
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                ),
-                child: Text(
-                  'Report',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.error,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<Map<String, dynamic>> _getMockReviews() {
-    return [
-      {
-        'id': '1',
-        'userId': 'user1',
-        'userName': 'Rajesh Kumar',
-        'userAvatar': null,
-        'rating': 5,
-        'title': 'Excellent quality cement',
-        'comment': 'This cement is of very high quality. Used it for my house construction and the results are amazing. The finish is smooth and the setting time is perfect. Highly recommended for anyone looking for reliable construction materials.',
-        'date': DateTime.now().subtract(const Duration(days: 2)),
-        'helpful': 12,
-        'images': [],
-        'verified': true,
-      },
-      {
-        'id': '2',
-        'userId': 'user2',
-        'userName': 'Priya Sharma',
-        'userAvatar': null,
-        'rating': 4,
-        'title': 'Good value for money',
-        'comment': 'Decent quality steel rods. The price is reasonable compared to other brands. Delivery was on time and the packaging was good. Would buy again.',
-        'date': DateTime.now().subtract(const Duration(days: 5)),
-        'helpful': 8,
-        'images': [],
-        'verified': true,
-      },
-      {
-        'id': '3',
-        'userId': 'user3',
-        'userName': 'Amit Patel',
-        'userAvatar': null,
-        'rating': 5,
-        'title': 'Perfect for construction',
-        'comment': 'These bricks are exactly what I needed for my project. The size and quality are consistent. The supplier was very helpful with delivery arrangements.',
-        'date': DateTime.now().subtract(const Duration(days: 7)),
-        'helpful': 15,
-        'images': [],
-        'verified': true,
-      },
-      {
-        'id': '4',
-        'userId': 'user4',
-        'userName': 'Sunita Verma',
-        'userAvatar': null,
-        'rating': 3,
-        'title': 'Average quality',
-        'comment': 'The paint is okay but not exceptional. It covers well but the finish could be better. For the price, it\'s acceptable but I\'ve used better brands before.',
-        'date': DateTime.now().subtract(const Duration(days: 10)),
-        'helpful': 3,
-        'images': [],
-        'verified': false,
-      },
-      {
-        'id': '5',
-        'userId': 'user5',
-        'userName': 'Vikram Singh',
-        'userAvatar': null,
-        'rating': 5,
-        'title': 'Outstanding service',
-        'comment': 'Not only is the product excellent, but the customer service from INDULINK is top-notch. They helped me choose the right materials for my project and the delivery was flawless.',
-        'date': DateTime.now().subtract(const Duration(days: 12)),
-        'helpful': 20,
-        'images': [],
-        'verified': true,
-      },
-    ];
   }
 }

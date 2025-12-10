@@ -28,6 +28,19 @@ class AuthService {
     required UserRole role,
   }) async {
     try {
+      // 🧪 DEBUG: Try Health Check First
+      debugPrint('🧪 TESTING CONNECTION TO HEALTH ENDPOINT...');
+      final healthUri =
+          Uri.parse('${AppConfig.baseUrl.replaceAll('/api', '')}/health');
+      debugPrint('🧪 Health URI: $healthUri');
+      try {
+        final healthResponse = await _api.get('/../health',
+            requiresAuth: false); // relative path to go up from /api
+        debugPrint('🧪 Health Check Result: ${healthResponse.statusCode}');
+      } catch (e) {
+        debugPrint('❌ Health Check FAILED: $e');
+      }
+
       final response = await _api.post(
         AppConfig.loginEndpoint,
         body: {
@@ -48,14 +61,19 @@ class AuthService {
     } catch (e) {
       return AuthResult(
         success: false,
-        message: 'An error occurred during login',
+        message: 'Login error: $e',
       );
     }
   }
 
-  /// Login with Google
-  Future<AuthResult> loginWithGoogle() async {
+  /// Login with Google (using Firebase)
+  Future<AuthResult> loginWithGoogle({required UserRole role}) async {
     try {
+      debugPrint('🔐 Starting Google Sign-In with Firebase...');
+
+      // Force account selection by signing out first
+      await _googleSignIn.signOut();
+
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         return AuthResult(
@@ -64,31 +82,40 @@ class AuthService {
         );
       }
 
+      debugPrint('✅ Google user selected: ${googleUser.email}');
+
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
 
+      // Send ID token to backend for verification
       final response = await _api.post(
         AppConfig.googleLoginEndpoint,
         body: {
           'idToken': googleAuth.idToken,
           'accessToken': googleAuth.accessToken,
+          'email': googleUser.email,
+          'displayName': googleUser.displayName,
+          'photoUrl': googleUser.photoUrl,
+          'role': role.value, // Send selected role
         },
         requiresAuth: false,
       );
 
       if (response.isSuccess && response.data != null) {
+        debugPrint('✅ Backend verified Google token successfully');
         return await _handleAuthSuccess(response.data);
       } else {
+        debugPrint('❌ Backend verification failed: ${response.message}');
         return AuthResult(
           success: false,
           message: response.message ?? 'Google login failed',
         );
       }
     } catch (e) {
-      debugPrint('Google sign in error: $e');
+      debugPrint('❌ Google sign in error: $e');
       return AuthResult(
         success: false,
-        message: 'An error occurred during Google sign in',
+        message: 'Google sign in error: $e',
       );
     }
   }
@@ -420,7 +447,11 @@ class AuthService {
         message: 'Authentication successful',
         user: user,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ Failed to process auth response');
+      debugPrint('   Error: $e');
+      debugPrint('   Stack trace: $stackTrace');
+      debugPrint('   Raw response data: $data');
       return AuthResult(
         success: false,
         message: 'Failed to process authentication response: $e',
