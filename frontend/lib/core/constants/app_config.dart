@@ -21,7 +21,7 @@ class AppConfig {
 
   // Change this to your computer's IP for testing on physical devices
   static const String _hostIp =
-      '192.168.18.161'; // Computer's IP address for physical device testing
+      '192.168.1.206'; // Computer's IP address for physical device testing
   static const int _port = 5000;
 
   static String get devBaseUrl {
